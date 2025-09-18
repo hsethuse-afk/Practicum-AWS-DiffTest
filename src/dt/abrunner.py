@@ -1,6 +1,13 @@
-from typing import Callable
-from hypothesis import given, settings, HealthCheck
+from typing import Callable, Any, Dict, List, Tuple
+from hypothesis import given, settings, HealthCheck, seed as hseed
 from .contracts import StrategyPlan, RunConfig, CompareResult
+
+
+def _observe(fn: Callable, args: tuple) -> Tuple[str, Any]:
+    try:
+        return ("ret", fn(*args))
+    except Exception as e:
+        return ("exc", f"{type(e).__name__}: {e}")
 
 
 class ABRunner:
@@ -11,7 +18,15 @@ class ABRunner:
         strat: StrategyPlan,
         cfg: RunConfig,
     ) -> CompareResult:
-        # Early-stage: stop on first counterexample (let Hypothesis shrink it).
+        # Shared mutable state to collect a full run
+        total = {"count": 0}
+        mismatches: List[Dict[str, Any]] = []
+        successes = 0
+
+        # Optional determinism: if a seed is provided, use it
+        if cfg.seed is not None:
+            hseed(cfg.seed)
+
         @settings(
             max_examples=cfg.max_examples,
             suppress_health_check=[
@@ -19,17 +34,49 @@ class ABRunner:
                 HealthCheck.filter_too_much,
             ],
             deadline=None,
+            database=None,  # early-stage: no DB reuse
         )
         @given(strat.arg_strategy)
         def _property(args):
-            from .comparator import compare
+            # Run both sides and record the observable outcomes
+            total["count"] += 1
+            out_a = _observe(fn_a, args)
+            out_b = _observe(fn_b, args)
 
-            res = compare(fn_a, fn_b, args)
-            assert res.equal, res.reason or "difference"
+            if out_a == out_b:
+                nonlocal successes
+                successes += 1
+            else:
+                if len(mismatches) < 20:  # keep preview small
+                    mismatches.append(
+                        {
+                            "args": args,
+                            "A": out_a,
+                            "B": out_b,
+                        }
+                    )
+            # NOTE: no assert here → Hypothesis runs all examples
 
-        try:
-            _property()  # raises AssertionError on difference
-            return CompareResult(equal=True)
-        except AssertionError as e:
-            # Attempt to parse the shrunk example from the message if present; keep it simple otherwise.
-            return CompareResult(equal=False, reason=str(e))
+        # Drive generation; will not stop early
+        _property()
+
+        passed = len(mismatches) == 0
+        # Pick one illustrative example if any
+        example = mismatches[0]["args"] if mismatches else None
+        reason = (
+            None
+            if passed
+            else "Differences observed (see mismatches preview)."
+        )
+
+        return CompareResult(
+            equal=passed,
+            reason=reason,
+            example=example,
+            stats={
+                "total_examples": total["count"],
+                "successes": successes,
+                "mismatches": len(mismatches),
+            },
+            mismatches=mismatches,
+        )

@@ -10,13 +10,16 @@ class ResultCollector:
             passed=cmp.equal,
             detail={
                 "reason": cmp.reason,
-                "example": getattr(cmp, "example", None),
+                "example": cmp.example,
+                "stats": cmp.stats,
+                "mismatches": cmp.mismatches,
             },
         )
 
     @staticmethod
     def print(run: RunResult):
         t = run.target
+        stats = run.detail.get("stats") or {}
         if run.passed:
             print(
                 f"✅ {t.func_name}({t.file_a} vs {t.file_b}): no difference found"
@@ -25,6 +28,16 @@ class ResultCollector:
             print(
                 f"❌ {t.func_name}({t.file_a} vs {t.file_b}): {run.detail.get('reason')}"
             )
-            ex = run.detail.get("example")
-            if ex is not None:
-                print(f"   example: {ex}")
+            mm = run.detail.get("mismatches") or []
+            for i, m in enumerate(mm[:5], 1):  # brief preview
+                print(
+                    f"  #{i} args={m['args']}  A={m['A']}  B={m['B']}"
+                )
+            if len(mm) > 5:
+                print(f"  ... and {len(mm) - 5} more mismatches.")
+        if stats:
+            print(
+                f"Summary: total={stats.get('total_examples',0)}, "
+                f"successes={stats.get('successes',0)}, "
+                f"mismatches={stats.get('mismatches',0)}"
+            )

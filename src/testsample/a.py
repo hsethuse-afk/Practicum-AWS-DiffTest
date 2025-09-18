@@ -7,6 +7,6 @@ def has_close_elements(numbers: List[float], threshold: float) -> bool:
         for idx2, elem2 in enumerate(numbers):
             if idx != idx2:
                 distance = abs(elem - elem2)
-            if distance < threshold:
-                return True
+                if distance < threshold:
+                    return True
     return False

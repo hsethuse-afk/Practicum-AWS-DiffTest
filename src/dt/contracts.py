@@ -25,7 +25,11 @@ class RunConfig:
 class CompareResult:
     equal: bool
     reason: str | None = None
-    example: Tuple | None = None  # failing input if any
+    example: Tuple | None = None  # one illustrative failing input
+    stats: Dict[str, int] | None = None
+    mismatches: List[Dict[str, Any]] | None = (
+        None  # small preview of failures
+    )
 
 
 @dataclass
