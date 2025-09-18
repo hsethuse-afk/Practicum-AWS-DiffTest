@@ -140,7 +140,6 @@ dmypy.json
 Thumbs.db
 
 # Project specific
-benchmarks/pairs/
 results/
 artifacts/
 temp/
