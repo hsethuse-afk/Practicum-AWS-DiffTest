@@ -1,24 +1,18 @@
-# GPT-5-mini code
-from typing import List
-
-
-def has_close_elements(numbers: List[float], threshold: float) -> bool:
-    """Check if in given list of numbers, are any two numbers closer to each other than
-    given threshold.
-    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)
-    False
-    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)
-    True
+def make_palindrome(string: str) -> str:
+    """ Find the shortest palindrome that begins with a supplied string.
+    Algorithm idea is simple:
+    - Find the longest postfix of supplied string that is a palindrome.
+    - Append to the end of the string reverse of a string prefix that comes before the palindromic suffix.
+    >>> make_palindrome('')
+    ''
+    >>> make_palindrome('cat')
+    'catac'
+    >>> make_palindrome('cata')
+    'catac'
     """
-    if threshold <= 0.0:
-        return False
-    n = len(numbers)
-    if n < 2:
-        return False
-    nums = sorted(numbers)
-    prev = nums[0]
-    for x in nums[1:]:
-        if x - prev < threshold:
-            return True
-        prev = x
-    return False
+    n = len(string)
+    # If empty or already palindrome, this loop will handle or we return string at end.
+    for i in range(n):
+        if is_palindrome(string[i:]):
+            return string + string[:i][::-1]
+    return string
