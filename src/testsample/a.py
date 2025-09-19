@@ -1,28 +1,12 @@
 
 
-def is_palindrome(string: str) -> bool:
-    """ Test if given string is a palindrome """
-    return string == string[::-1]
+def truncate_number(number: float) -> float:
+    """ Given a positive floating point number, it can be decomposed into
+    and integer part (largest integer smaller than given number) and decimals
+    (leftover part always smaller than 1).
 
-
-def make_palindrome(string: str) -> str:
-    """ Find the shortest palindrome that begins with a supplied string.
-    Algorithm idea is simple:
-    - Find the longest postfix of supplied string that is a palindrome.
-    - Append to the end of the string reverse of a string prefix that comes before the palindromic suffix.
-    >>> make_palindrome('')
-    ''
-    >>> make_palindrome('cat')
-    'catac'
-    >>> make_palindrome('cata')
-    'catac'
+    Return the decimal part of the number.
+    >>> truncate_number(3.5)
+    0.5
     """
-    if not string:
-        return ''
-
-    beginning_of_suffix = 0
-
-    while not is_palindrome(string[beginning_of_suffix:]):
-        beginning_of_suffix += 1
-
-    return string + string[:beginning_of_suffix][::-1]
+    return number % 1.0
