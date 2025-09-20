@@ -92,7 +92,7 @@ if __name__ == "__main__":
     path = (
         sys.argv[1]
         if len(sys.argv) > 1
-        else "./benchmarks/human_eval/human_eval.jsonl"
+        else "./src/utilities/human_eval/human_eval.jsonl"
     )
     count = 0
     with open(path, "r", encoding="utf-8") as f:
