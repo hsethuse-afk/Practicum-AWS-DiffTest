@@ -19,7 +19,6 @@ class StrategySynthesizer:
     """Annotation-first strategy builder with a pluggable registry."""
 
     def __init__(self):
-        # Simple registry for direct types; extend as needed.
         self.registry: Dict[Any, Callable[[], st.SearchStrategy]] = {
             int: lambda: st.integers(min_value=-50, max_value=50),
             float: lambda: st.floats(
@@ -30,6 +29,17 @@ class StrategySynthesizer:
             ),
             str: lambda: st.text(max_size=10),
             bool: lambda: st.booleans(),
+            Any: lambda: st.one_of(
+                st.integers(min_value=-50, max_value=50),
+                st.floats(
+                    min_value=-50,
+                    max_value=50,
+                    allow_nan=False,
+                    allow_infinity=False,
+                ),
+                st.text(max_size=10),
+                st.booleans(),
+            ),
         }
 
     def create_strategy(
@@ -53,14 +63,19 @@ class StrategySynthesizer:
     ) -> st.SearchStrategy:
         # 1) Annotation
         if param.annotation is not inspect._empty:
+            print(
+                f"[StrategySynthesizer] Using Annotation for {param.annotation}"
+            )
             return self._from_annotation(param.annotation)
 
         # 2) Hint (either a ready-made strategy or a keyword)
         if param.name in hints:
+            print("[StrategySynthesizer] Using hints")
             return self._normalize_hint(hints[param.name])
 
         # 3) Default value type inference
         if param.default is not inspect._empty:
+            print("[StrategySynthesizer] Using Default Value")
             return self._from_annotation(type(param.default))
 
         # 4) Fallback mixed strategy
@@ -79,9 +94,7 @@ class StrategySynthesizer:
         if hint == "string":
             return st.text(max_size=20)
         if hint == "list":
-            return st.lists(
-                st.integers(min_value=-10, max_value=10), max_size=10
-            )
+            return st.lists(st.integers())
         if hint == "float":
             return st.floats(
                 min_value=-100,
@@ -93,50 +106,79 @@ class StrategySynthesizer:
         return self.registry[int]()
 
     def _from_annotation(self, annotation: Any) -> st.SearchStrategy:
-        # Direct hits via registry
+        # Direct hits
         if annotation in self.registry:
             return self.registry[annotation]()
+
+        # Handle typing.Any explicitly BEFORE from_type()
+        if annotation is Any:
+            return self.registry[Any]()
 
         origin = get_origin(annotation)
         args = get_args(annotation)
 
-        # typing aliases
+        # Normalize bare builtins: list, dict, set, tuple
+        if origin is None and annotation in (list, dict, set, tuple):
+            origin, args = annotation, ()
+
+        # Containers
         if origin in (list, List):
-            elem = args[0] if args else Any
-            return st.lists(self._from_annotation(elem), max_size=10)
+            # Use a concrete default element type if missing
+            elem_ann = args[0] if args else Any
+            elem = self._from_annotation(
+                elem_ann if elem_ann is not Any else int
+            )
+            return st.lists(elem, max_size=10)
+
+        if origin in (set, Set):
+            elem_ann = args[0] if args else Any
+            elem = self._from_annotation(
+                elem_ann if elem_ann is not Any else int
+            )
+            return st.sets(elem, max_size=10)
 
         if origin in (tuple, Tuple):
             if args and args[-1] is ...:  # Tuple[T, ...]
-                return st.lists(
-                    self._from_annotation(args[0]), max_size=5
-                ).map(tuple)
+                base_ann = args[0] if args else int
+                base = self._from_annotation(
+                    base_ann if base_ann is not Any else int
+                )
+                return st.lists(base, max_size=5).map(tuple)
             if args:  # Tuple[T1, T2, ...]
                 return st.tuples(
-                    *(self._from_annotation(a) for a in args)
+                    *(
+                        self._from_annotation(
+                            a if a is not Any else int
+                        )
+                        for a in args
+                    )
                 )
-            return st.tuples()  # Tuple[()] edge case
-
-        if origin in (set, Set):
-            elem = args[0] if args else Any
-            return st.sets(self._from_annotation(elem), max_size=10)
+            return st.tuples()
 
         if origin in (dict, Dict):
-            k = self._from_annotation(args[0] if args else Any)
-            v = self._from_annotation(args[1] if len(args) > 1 else Any)
+            # Safe defaults: int keys, int values if unspecified/Any
+            k_ann = args[0] if args else int
+            v_ann = args[1] if len(args) > 1 else int
+            k = self._from_annotation(
+                k_ann if k_ann is not Any else int
+            )
+            v = self._from_annotation(
+                v_ann if v_ann is not Any else int
+            )
             return st.dictionaries(k, v, max_size=10)
 
-        # Optional[T] = Union[T, NoneType], or general Union
+        # Unions / Optional
         if origin is Union:
-            # filter out NoneType for Optional
             non_none = [a for a in args if a is not type(None)]
             if len(non_none) == 1 and len(args) == 2:
                 return st.none() | self._from_annotation(non_none[0])
             return st.one_of(*(self._from_annotation(a) for a in args))
 
-        # Last-ditch: let Hypothesis infer if it can, else mixed fallback
+        # Last-ditch: try Hypothesis’ type-based strategy
         try:
             return st.from_type(annotation)
         except Exception:
+            # Conservative fallback that never touches `Any`
             return st.one_of(
                 self.registry[int](),
                 self.registry[float](),

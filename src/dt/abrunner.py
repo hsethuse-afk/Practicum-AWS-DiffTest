@@ -40,6 +40,7 @@ class ABRunner:
         def _property(args):
             # Run both sides and record the observable outcomes
             total["count"] += 1
+            # print(args)
             out_a = _observe(fn_a, args)
             out_b = _observe(fn_b, args)
 
