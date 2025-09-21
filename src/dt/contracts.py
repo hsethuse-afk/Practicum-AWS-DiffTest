@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable, Any, Dict, List, Tuple
+from enum import IntEnum
 
 
 @dataclass
@@ -37,3 +38,11 @@ class RunResult:
     target: TargetPair
     passed: bool
     detail: Dict[str, Any]
+
+
+@dataclass
+class LoggerMode(IntEnum):
+    Silent = 1
+    Normal = 2
+    Verbose = 3
+    Debug = 4

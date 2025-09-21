@@ -1,13 +1,17 @@
-from .contracts import RunConfig, TargetPair
+from .contracts import RunConfig, TargetPair, LoggerMode
 from .diffpairer import DiffPairer
 from .strategies import StrategySynthesizer
 from .harness import HarnessBuilder
 from .abrunner import ABRunner
 from .results import ResultCollector
+from .logger import Logger
+from . import logger
 
 
 class Orchestrator:
-    def __init__(self):
+    def __init__(self, log_mode: LoggerMode = LoggerMode.Normal):
+        logger.set_logger(Logger(log_mode))
+        self.log = logger.get_logger()
         self.harness = HarnessBuilder()
         self.strategy = StrategySynthesizer()
         self.runner = ABRunner()
@@ -20,15 +24,24 @@ class Orchestrator:
         func_name: str,
         max_examples: int = 200,
     ):
+
+        # Get Target Pairs
         target = TargetPair(
             file_a=file_a, file_b=file_b, func_name=func_name
         )
         fn_a, fn_b = self.harness.build(target)
+
+        # Generate strategy plan
         plan = self.strategy.create_strategy(fn_a)
-        print(f"✅ Test Startegies Successfully Generated:\n{plan}")
+        self.log.verbose(
+            f"✅ Test Startegies Successfully Generated:\n{plan}"
+        )
+
+        # Run and Compare
         cmp = self.runner.execute(
             fn_a, fn_b, plan, RunConfig(max_examples=max_examples)
         )
         out = self.results.collect(target, cmp)
         self.results.print(out)
+
         return out

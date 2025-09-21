@@ -17,8 +17,20 @@ def main():
         "--func", required=True, help="Function name (entrypoint)"
     )
     p.add_argument("--max-examples", type=int, default=200)
+    p.add_argument("--log", type=str, default="N")
     args = p.parse_args()
 
+    val = args.log.lower()
+    log_mode = 2
+
+    if val in ("s", "silent"):
+        log_mode = 1
+    elif val in ("v", "verbose"):
+        log_mode = 3
+    elif val in ("d", "debug"):
+        log_mode = 4
+
+    orch = Orchestrator(log_mode=log_mode)
     orch = Orchestrator()
     orch.run_pair(
         args.a, args.b, args.func, max_examples=args.max_examples

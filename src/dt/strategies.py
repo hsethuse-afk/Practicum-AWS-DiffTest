@@ -13,12 +13,14 @@ from typing import (
 )
 from hypothesis import strategies as st
 from .contracts import StrategyPlan
+from .logger import get_logger
 
 
 class StrategySynthesizer:
     """Annotation-first strategy builder with a pluggable registry."""
 
     def __init__(self):
+        self.log = get_logger()
         self.registry: Dict[Any, Callable[[], st.SearchStrategy]] = {
             int: lambda: st.integers(min_value=-50, max_value=50),
             float: lambda: st.floats(
@@ -63,19 +65,19 @@ class StrategySynthesizer:
     ) -> st.SearchStrategy:
         # 1) Annotation
         if param.annotation is not inspect._empty:
-            print(
+            self.log.debug(
                 f"[StrategySynthesizer] Using Annotation for {param.annotation}"
             )
             return self._from_annotation(param.annotation)
 
         # 2) Hint (either a ready-made strategy or a keyword)
         if param.name in hints:
-            print("[StrategySynthesizer] Using hints")
+            self.log.debug("[StrategySynthesizer] Using hints")
             return self._normalize_hint(hints[param.name])
 
         # 3) Default value type inference
         if param.default is not inspect._empty:
-            print("[StrategySynthesizer] Using Default Value")
+            self.log.debug("[StrategySynthesizer] Using Default Value")
             return self._from_annotation(type(param.default))
 
         # 4) Fallback mixed strategy

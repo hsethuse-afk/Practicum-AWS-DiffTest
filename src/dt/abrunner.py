@@ -1,6 +1,7 @@
 from typing import Callable, Any, Dict, List, Tuple
 from hypothesis import given, settings, HealthCheck, seed as hseed
 from .contracts import StrategyPlan, RunConfig, CompareResult
+from .logger import get_logger
 
 
 def _observe(fn: Callable, args: tuple) -> Tuple[str, Any]:
@@ -11,6 +12,9 @@ def _observe(fn: Callable, args: tuple) -> Tuple[str, Any]:
 
 
 class ABRunner:
+    def __init__(self):
+        self.log = get_logger()
+
     def execute(
         self,
         fn_a: Callable,
@@ -40,7 +44,10 @@ class ABRunner:
         def _property(args):
             # Run both sides and record the observable outcomes
             total["count"] += 1
-            # print(args)
+
+            self.log.verbose(
+                f"[ABRunner] input {total["count"]}: {args}"
+            )
             out_a = _observe(fn_a, args)
             out_b = _observe(fn_b, args)
 

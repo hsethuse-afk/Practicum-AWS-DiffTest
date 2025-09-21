@@ -17,7 +17,6 @@ def extract_task(
     Returns:
         The path to the written .py file
     """
-    print(f"privided path is {jsonl_path}")
     with open(jsonl_path, "r", encoding="utf-8") as f:
         for line in f:
             if not line.strip():
