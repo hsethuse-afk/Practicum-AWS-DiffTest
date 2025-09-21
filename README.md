@@ -9,3 +9,8 @@
 
     cd src
     python run_he_taskid.py --t HumanEval/10
+
+## Running all tests
+    
+    cd src
+    python run_all_tests.py --jsonl-results testsample/samples.jsonl_results.jsonl
