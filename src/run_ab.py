@@ -31,7 +31,6 @@ def main():
         log_mode = 4
 
     orch = Orchestrator(log_mode=log_mode)
-    orch = Orchestrator()
     orch.run_pair(
         args.a, args.b, args.func, max_examples=args.max_examples
     )

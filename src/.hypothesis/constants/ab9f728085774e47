@@ -1,0 +1,4 @@
+# file: /home/toris/practicum/Practicum-AWS-DiffTest/src/run_ab.py
+# hypothesis_version: 6.138.15
+
+[200, '--a', '--b', '--func', '--log', '--max-examples', 'N', '__main__', 'd', 'debug', 's', 'silent', 'v', 'verbose']

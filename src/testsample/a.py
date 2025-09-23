@@ -1,24 +1,12 @@
 from typing import List
 
 
-def parse_nested_parens(paren_string: str) -> List[int]:
-    """ Input to this function is a string represented multiple groups for nested parentheses separated by spaces.
-    For each of the group, output the deepest level of nesting of parentheses.
-    E.g. (()()) has maximum two levels of nesting while ((())) has three.
-
-    >>> parse_nested_parens('(()()) ((())) () ((())()())')
-    [2, 3, 1, 3]
+def rescale_to_unit(numbers: List[float]) -> List[float]:
+    """ Given list of numbers (of at least two elements), apply a linear transform to that list,
+    such that the smallest number will become 0 and the largest will become 1
+    >>> rescale_to_unit([1.0, 2.0, 3.0, 4.0, 5.0])
+    [0.0, 0.25, 0.5, 0.75, 1.0]
     """
-    def parse_paren_group(s):
-        depth = 0
-        max_depth = 0
-        for c in s:
-            if c == '(':
-                depth += 1
-                max_depth = max(depth, max_depth)
-            else:
-                depth -= 1
-
-        return max_depth
-
-    return [parse_paren_group(x) for x in paren_string.split(' ') if x]
+    min_number = min(numbers)
+    max_number = max(numbers)
+    return [(x - min_number) / (max_number - min_number) for x in numbers]

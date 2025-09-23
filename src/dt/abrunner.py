@@ -45,11 +45,13 @@ class ABRunner:
             # Run both sides and record the observable outcomes
             total["count"] += 1
 
-            self.log.verbose(
-                f"[ABRunner] input {total["count"]}: {args}"
-            )
+            self.log.debug(f"[ABRunner] input {total["count"]}: {args}")
             out_a = _observe(fn_a, args)
             out_b = _observe(fn_b, args)
+
+            self.log.debug(
+                f"[ABRunner] output {total["count"]}: A {out_a}, B {out_b}"
+            )
 
             if out_a == out_b:
                 nonlocal successes

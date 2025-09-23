@@ -42,5 +42,5 @@ class ResultCollector:
             log.normal(
                 f"Summary: total={stats.get('total_examples',0)}, "
                 f"successes={stats.get('successes',0)}, "
-                f"mismatches={stats.get('mismatches',0)}"
+                # f"mismatches={stats.get('mismatches',0)}"
             )
