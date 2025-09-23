@@ -1,0 +1,29 @@
+# Python cache/bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Hypothesis test database
+.hypothesis/
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# IDE/editor settings
+.vscode/
+.idea/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+
+# OS-specific junk
+.DS_Store
+Thumbs.db

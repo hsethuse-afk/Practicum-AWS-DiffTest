@@ -1,4 +1,4 @@
-from .contracts import TargetPair, CompareResult, RunResult
+from .contracts import TargetPair, CompareResult, TestResult
 from .logger import get_logger
 
 
@@ -6,8 +6,8 @@ class ResultCollector:
 
     def collect(
         self, target: TargetPair, cmp: CompareResult
-    ) -> RunResult:
-        return RunResult(
+    ) -> TestResult:
+        return TestResult(
             target=target,
             passed=cmp.equal,
             detail={
@@ -19,7 +19,7 @@ class ResultCollector:
         )
 
     @staticmethod
-    def print(run: RunResult):
+    def print(run: TestResult):
         log = get_logger()
         t = run.target
         stats = run.detail.get("stats") or {}
@@ -42,5 +42,5 @@ class ResultCollector:
             log.normal(
                 f"Summary: total={stats.get('total_examples',0)}, "
                 f"successes={stats.get('successes',0)}, "
-                # f"mismatches={stats.get('mismatches',0)}"
+                f"mismatches={stats.get('mismatches',0)}"
             )

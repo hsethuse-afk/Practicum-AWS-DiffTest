@@ -23,6 +23,12 @@ class RunConfig:
 
 
 @dataclass
+class RunResult:
+    input: Any
+    output: Any
+
+
+@dataclass
 class CompareResult:
     equal: bool
     reason: str | None = None
@@ -34,7 +40,7 @@ class CompareResult:
 
 
 @dataclass
-class RunResult:
+class TestResult:
     target: TargetPair
     passed: bool
     detail: Dict[str, Any]

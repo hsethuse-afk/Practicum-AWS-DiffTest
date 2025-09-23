@@ -1,17 +1,25 @@
-from typing import List
-
-
-def rescale_to_unit(numbers: List[float]) -> List[float]:
-    """ Given list of numbers (of at least two elements), apply a linear transform to that list,
-    such that the smallest number will become 0 and the largest will become 1
-    >>> rescale_to_unit([1.0, 2.0, 3.0, 4.0, 5.0])
-    [0.0, 0.25, 0.5, 0.75, 1.0]
+def largest_prime_factor(n: int):
+    """Return the largest prime factor of n. Assume n > 1 and is not a prime.
+    >>> largest_prime_factor(13195)
+    29
+    >>> largest_prime_factor(2048)
+    2
     """
-    if len(numbers) < 2:
-        raise ValueError("numbers must contain at least two elements")
-    mn = min(numbers)
-    mx = max(numbers)
-    if mx == mn:
-        raise ValueError("cannot rescale when all numbers are equal")
-    span = mx - mn
-    return [(float(x) - mn) / span for x in numbers]
+    if n <= 1:
+        raise ValueError("n must be greater than 1")
+    max_factor = 1
+    # Remove factors of 2
+    while n % 2 == 0:
+        max_factor = 2
+        n //= 2
+    # Check odd factors
+    f = 3
+    while f * f <= n:
+        while n % f == 0:
+            max_factor = f
+            n //= f
+        f += 2
+    # If remaining n is > 1 then it is a prime factor larger than sqrt(original n)
+    if n > 1:
+        max_factor = n
+    return int(max_factor)

@@ -1,12 +1,21 @@
-from typing import List
 
 
-def rescale_to_unit(numbers: List[float]) -> List[float]:
-    """ Given list of numbers (of at least two elements), apply a linear transform to that list,
-    such that the smallest number will become 0 and the largest will become 1
-    >>> rescale_to_unit([1.0, 2.0, 3.0, 4.0, 5.0])
-    [0.0, 0.25, 0.5, 0.75, 1.0]
+def largest_prime_factor(n: int):
+    """Return the largest prime factor of n. Assume n > 1 and is not a prime.
+    >>> largest_prime_factor(13195)
+    29
+    >>> largest_prime_factor(2048)
+    2
     """
-    min_number = min(numbers)
-    max_number = max(numbers)
-    return [(x - min_number) / (max_number - min_number) for x in numbers]
+    def is_prime(k):
+        if k < 2:
+            return False
+        for i in range(2, k - 1):
+            if k % i == 0:
+                return False
+        return True
+    largest = 1
+    for j in range(2, n + 1):
+        if n % j == 0 and is_prime(j):
+            largest = max(largest, j)
+    return largest

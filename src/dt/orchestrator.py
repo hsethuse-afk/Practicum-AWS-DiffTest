@@ -5,6 +5,7 @@ from .harness import HarnessBuilder
 from .abrunner import ABRunner
 from .results import ResultCollector
 from .logger import Logger
+from .comparator import ABComparator
 from . import logger
 
 
@@ -15,6 +16,7 @@ class Orchestrator:
         self.harness = HarnessBuilder()
         self.strategy = StrategySynthesizer()
         self.runner = ABRunner()
+        self.comparator = ABComparator()
         self.results = ResultCollector()
 
     def run_pair(
@@ -38,9 +40,10 @@ class Orchestrator:
         )
 
         # Run and Compare
-        cmp = self.runner.execute(
+        a_results, b_results = self.runner.execute(
             fn_a, fn_b, plan, RunConfig(max_examples=max_examples)
         )
+        cmp = self.comparator.compare(a_results, b_results)
         out = self.results.collect(target, cmp)
         self.results.print(out)
 

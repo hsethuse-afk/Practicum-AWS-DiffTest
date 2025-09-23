@@ -1,6 +1,6 @@
 from typing import Callable, Any, Dict, List, Tuple
 from hypothesis import given, settings, HealthCheck, seed as hseed
-from .contracts import StrategyPlan, RunConfig, CompareResult
+from .contracts import StrategyPlan, RunConfig, CompareResult, RunResult
 from .logger import get_logger
 
 
@@ -21,11 +21,12 @@ class ABRunner:
         fn_b: Callable,
         strat: StrategyPlan,
         cfg: RunConfig,
-    ) -> CompareResult:
+    ) -> Tuple[List[RunResult], List[RunResult]]:
+        self.log.verbose("[ABRunner] Executing Tests")
         # Shared mutable state to collect a full run
         total = {"count": 0}
-        mismatches: List[Dict[str, Any]] = []
-        successes = 0
+        a_results: List[RunResult] = []
+        b_results: List[RunResult] = []
 
         # Optional determinism: if a seed is provided, use it
         if cfg.seed is not None:
@@ -53,40 +54,9 @@ class ABRunner:
                 f"[ABRunner] output {total["count"]}: A {out_a}, B {out_b}"
             )
 
-            if out_a == out_b:
-                nonlocal successes
-                successes += 1
-            else:
-                if len(mismatches) < 20:  # keep preview small
-                    mismatches.append(
-                        {
-                            "args": args,
-                            "A": out_a,
-                            "B": out_b,
-                        }
-                    )
-            # NOTE: no assert here → Hypothesis runs all examples
+            a_results.append(RunResult(input=args, output=out_a))
+            b_results.append(RunResult(input=args, output=out_b))
 
         # Drive generation; will not stop early
         _property()
-
-        passed = len(mismatches) == 0
-        # Pick one illustrative example if any
-        example = mismatches[0]["args"] if mismatches else None
-        reason = (
-            None
-            if passed
-            else "Differences observed (see mismatches preview)."
-        )
-
-        return CompareResult(
-            equal=passed,
-            reason=reason,
-            example=example,
-            stats={
-                "total_examples": total["count"],
-                "successes": successes,
-                "mismatches": len(mismatches),
-            },
-            mismatches=mismatches,
-        )
+        return a_results, b_results
