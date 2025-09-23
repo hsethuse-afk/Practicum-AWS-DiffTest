@@ -52,3 +52,10 @@ class LoggerMode(IntEnum):
     Normal = 2
     Verbose = 3
     Debug = 4
+
+@dataclass
+class EqOptions:
+    rel_tol: float = 1e-9 
+    abs_total: float = 0.0
+    treat_nan_equal: bool = True
+    compare_exceptions_by: str = "type"
