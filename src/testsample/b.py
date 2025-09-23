@@ -1,25 +1,23 @@
-def largest_prime_factor(n: int):
-    """Return the largest prime factor of n. Assume n > 1 and is not a prime.
-    >>> largest_prime_factor(13195)
-    29
-    >>> largest_prime_factor(2048)
-    2
+from typing import List
+
+
+def has_close_elements(numbers: List[float], threshold: float) -> bool:
+    """ Check if in given list of numbers, are any two numbers closer to each other than
+    given threshold.
+    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)
+    False
+    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)
+    True
     """
-    if n <= 1:
-        raise ValueError("n must be greater than 1")
-    max_factor = 1
-    # Remove factors of 2
-    while n % 2 == 0:
-        max_factor = 2
-        n //= 2
-    # Check odd factors
-    f = 3
-    while f * f <= n:
-        while n % f == 0:
-            max_factor = f
-            n //= f
-        f += 2
-    # If remaining n is > 1 then it is a prime factor larger than sqrt(original n)
-    if n > 1:
-        max_factor = n
-    return int(max_factor)
+    if threshold <= 0.0:
+        return False
+    n = len(numbers)
+    if n < 2:
+        return False
+    nums = sorted(numbers)
+    prev = nums[0]
+    for x in nums[1:]:
+        if x - prev < threshold:
+            return True
+        prev = x
+    return False

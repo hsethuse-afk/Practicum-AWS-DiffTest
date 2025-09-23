@@ -1,11 +1,13 @@
 from typing import Any, Dict, List
 from .contracts import CompareResult, RunResult
+from .logger import get_logger
 
 
 class ABComparator:
     def __init__(self, output_check=True, input_check=False):
         self.output_check = output_check
         self.input_check = input_check
+        self.log = get_logger()
 
     def compare(
         self, a_results: RunResult, b_results: RunResult
