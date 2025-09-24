@@ -1,21 +1,12 @@
 
 
-def largest_prime_factor(n: int):
-    """Return the largest prime factor of n. Assume n > 1 and is not a prime.
-    >>> largest_prime_factor(13195)
-    29
-    >>> largest_prime_factor(2048)
-    2
+def truncate_number(number: float) -> float:
+    """ Given a positive floating point number, it can be decomposed into
+    and integer part (largest integer smaller than given number) and decimals
+    (leftover part always smaller than 1).
+
+    Return the decimal part of the number.
+    >>> truncate_number(3.5)
+    0.5
     """
-    def is_prime(k):
-        if k < 2:
-            return False
-        for i in range(2, k - 1):
-            if k % i == 0:
-                return False
-        return True
-    largest = 1
-    for j in range(2, n + 1):
-        if n % j == 0 and is_prime(j):
-            largest = max(largest, j)
-    return largest
+    return number % 1.0

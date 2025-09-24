@@ -1,25 +1,16 @@
-def largest_prime_factor(n: int):
-    """Return the largest prime factor of n. Assume n > 1 and is not a prime.
-    >>> largest_prime_factor(13195)
-    29
-    >>> largest_prime_factor(2048)
-    2
+def truncate_number(number: float) -> float:
+    """ Given a positive floating point number, it can be decomposed into
+    and integer part (largest integer smaller than given number) and decimals
+    (leftover part always smaller than 1).
+
+    Return the decimal part of the number.
+    >>> truncate_number(3.5)
+    0.5
     """
-    if n <= 1:
-        raise ValueError("n must be greater than 1")
-    max_factor = 1
-    # Remove factors of 2
-    while n % 2 == 0:
-        max_factor = 2
-        n //= 2
-    # Check odd factors
-    f = 3
-    while f * f <= n:
-        while n % f == 0:
-            max_factor = f
-            n //= f
-        f += 2
-    # If remaining n is > 1 then it is a prime factor larger than sqrt(original n)
-    if n > 1:
-        max_factor = n
-    return int(max_factor)
+    import math
+    # Use floor to get the integer part and subtract to get the fractional part.
+    frac = number - math.floor(number)
+    # Normalize -0.0 to 0.0
+    if frac == 0.0:
+        return 0.0
+    return frac

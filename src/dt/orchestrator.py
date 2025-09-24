@@ -1,4 +1,4 @@
-from .contracts import RunConfig, TargetPair, LoggerMode
+from .contracts import RunConfig, TargetPair, LoggerMode, EqOptions
 from .diffpairer import DiffPairer
 from .strategies import StrategySynthesizer
 from .harness import HarnessBuilder
@@ -10,7 +10,7 @@ from . import logger
 
 
 class Orchestrator:
-    def __init__(self, log_mode: LoggerMode = LoggerMode.Normal):
+    def __init__(self, log_mode: LoggerMode = LoggerMode.Normal, eq: EqOptions | None=None):
         logger.set_logger(Logger(log_mode))
         self.log = logger.get_logger()
         self.harness = HarnessBuilder()

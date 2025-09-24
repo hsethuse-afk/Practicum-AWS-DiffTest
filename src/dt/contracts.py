@@ -56,6 +56,6 @@ class LoggerMode(IntEnum):
 @dataclass
 class EqOptions:
     rel_tol: float = 1e-9 
-    abs_total: float = 0.0
+    abs_tol: float = 0.0
     treat_nan_equal: bool = True
     compare_exceptions_by: str = "type"
