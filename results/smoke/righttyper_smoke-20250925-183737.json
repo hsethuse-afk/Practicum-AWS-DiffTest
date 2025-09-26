@@ -1,0 +1,7 @@
+{
+  "id": "00011_publish_plugin_cmd",
+  "success": true,
+  "elapsed_sec": 5.3726,
+  "annotated_content": "\"\"\"DyPyBench HF sample: 40/lektor/devcli.py (row 9712)\"\"\"\n\nimport sys\nimport os\nimport datetime\nimport warnings\nimport json\nimport re\nfrom typing import Any, Dict, List, Optional, Union\ntry:\n    import pandas as pd\nexcept ImportError:\n    pd = None\ntry:\n    import requests\nexcept ImportError:\n    requests = None\ntry:\n    from bs4 import BeautifulSoup\nexcept ImportError:\n    BeautifulSoup = None\ntry:\n    import numpy as np\nexcept ImportError:\n    np = None\n\ndef publish_plugin_cmd():\n    \"\"\"Publishes the current version of the plugin in the current folder.\n\n    This generally requires that your setup.py has at least the bare minimum\n    configuration for valid publishing to PyPI.\n    \"\"\"\n    info = ensure_plugin()\n    for key in \"author\", \"author_email\", \"license\", \"url\":\n        if not info[key]:\n            raise click.UsageError(\n                \"Cannot publish plugin without setting \" '\"%s\" in setup.py.' % key\n            )\n    register_package(info[\"path\"])\n    publish_package(info[\"path\"])\n",
+  "error_message": null
+}

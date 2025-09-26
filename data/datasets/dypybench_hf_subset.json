@@ -1,0 +1,398 @@
+{
+  "dataset": "dypybench_hf",
+  "created": "2025-09-26T01:15:21Z",
+  "root": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset",
+  "count": 30,
+  "items": [
+    {
+      "id": "00000_plot_figures",
+      "project": "2",
+      "rel_path": "00000_plot_figures.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00000_plot_figures.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 364,
+        "source_rel_path": "PathTracking/cgmres_nmpc/cgmres_nmpc.py",
+        "identifier": "plot_figures"
+      }
+    },
+    {
+      "id": "00001_VectorPlotter.scale_datetime",
+      "project": "26",
+      "rel_path": "00001_VectorPlotter.scale_datetime.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00001_VectorPlotter.scale_datetime.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 6390,
+        "source_rel_path": "seaborn/_oldcore.py",
+        "identifier": "VectorPlotter.scale_datetime"
+      }
+    },
+    {
+      "id": "00002_check_encoding",
+      "project": "6",
+      "rel_path": "00002_check_encoding.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00002_check_encoding.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 1880,
+        "source_rel_path": "supervisor/supervisorctl.py",
+        "identifier": "check_encoding"
+      }
+    },
+    {
+      "id": "00003_convert_grid_coordinate",
+      "project": "2",
+      "rel_path": "00003_convert_grid_coordinate.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00003_convert_grid_coordinate.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 827,
+        "source_rel_path": "PathPlanning/GridBasedSweepCPP/grid_based_sweep_coverage_path_planner.py",
+        "identifier": "convert_grid_coordinate"
+      }
+    },
+    {
+      "id": "00004_ViewContext.__init__",
+      "project": "6",
+      "rel_path": "00004_ViewContext.__init__.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00004_ViewContext.__init__.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 1717,
+        "source_rel_path": "supervisor/web.py",
+        "identifier": "ViewContext.__init__"
+      }
+    },
+    {
+      "id": "00005_Card.text_color",
+      "project": "18",
+      "rel_path": "00005_Card.text_color.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00005_Card.text_color.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 4053,
+        "source_rel_path": "errbot/backends/base.py",
+        "identifier": "Card.text_color"
+      }
+    },
+    {
+      "id": "00006_Signal._disconnect",
+      "project": "35",
+      "rel_path": "00006_Signal._disconnect.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00006_Signal._disconnect.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 7765,
+        "source_rel_path": "blinker/base.py",
+        "identifier": "Signal._disconnect"
+      }
+    },
+    {
+      "id": "00007_match",
+      "project": "20",
+      "rel_path": "00007_match.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00007_match.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 4415,
+        "source_rel_path": "thefuck/rules/pacman_invalid_option.py",
+        "identifier": "match"
+      }
+    },
+    {
+      "id": "00008_AlgV5.generate_values",
+      "project": "39",
+      "rel_path": "00008_AlgV5.generate_values.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00008_AlgV5.generate_values.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 8550,
+        "source_rel_path": "pypdf/_encryption.py",
+        "identifier": "AlgV5.generate_values"
+      }
+    },
+    {
+      "id": "00009_Point.__ne__",
+      "project": "31",
+      "rel_path": "00009_Point.__ne__.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00009_Point.__ne__.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 7132,
+        "source_rel_path": "geopy/point.py",
+        "identifier": "Point.__ne__"
+      }
+    },
+    {
+      "id": "00010_futures_dce_position_rank_other",
+      "project": "25",
+      "rel_path": "00010_futures_dce_position_rank_other.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00010_futures_dce_position_rank_other.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 5520,
+        "source_rel_path": "akshare/futures/cot.py",
+        "identifier": "futures_dce_position_rank_other"
+      }
+    },
+    {
+      "id": "00011_publish_plugin_cmd",
+      "project": "40",
+      "rel_path": "00011_publish_plugin_cmd.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00011_publish_plugin_cmd.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 9712,
+        "source_rel_path": "lektor/devcli.py",
+        "identifier": "publish_plugin_cmd"
+      }
+    },
+    {
+      "id": "00012_HelpFormatter.indent",
+      "project": "10",
+      "rel_path": "00012_HelpFormatter.indent.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00012_HelpFormatter.indent.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 2947,
+        "source_rel_path": "src/click/formatting.py",
+        "identifier": "HelpFormatter.indent"
+      }
+    },
+    {
+      "id": "00013_pan",
+      "project": "14",
+      "rel_path": "00013_pan.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00013_pan.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 3320,
+        "source_rel_path": "pydub/effects.py",
+        "identifier": "pan"
+      }
+    },
+    {
+      "id": "00014__ViolinPlotter.draw_quartiles",
+      "project": "26",
+      "rel_path": "00014__ViolinPlotter.draw_quartiles.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00014__ViolinPlotter.draw_quartiles.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 6455,
+        "source_rel_path": "seaborn/categorical.py",
+        "identifier": "_ViolinPlotter.draw_quartiles"
+      }
+    },
+    {
+      "id": "00015_BaseRateLimiter._clock",
+      "project": "31",
+      "rel_path": "00015_BaseRateLimiter._clock.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00015_BaseRateLimiter._clock.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 7372,
+        "source_rel_path": "geopy/extra/rate_limiter.py",
+        "identifier": "BaseRateLimiter._clock"
+      }
+    },
+    {
+      "id": "00016_bond_zh_hs_cov_min",
+      "project": "25",
+      "rel_path": "00016_bond_zh_hs_cov_min.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00016_bond_zh_hs_cov_min.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 5081,
+        "source_rel_path": "akshare/bond/bond_zh_cov_sina.py",
+        "identifier": "bond_zh_hs_cov_min"
+      }
+    },
+    {
+      "id": "00017_LineWidth.default_range",
+      "project": "26",
+      "rel_path": "00017_LineWidth.default_range.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00017_LineWidth.default_range.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 6654,
+        "source_rel_path": "seaborn/_core/properties.py",
+        "identifier": "LineWidth.default_range"
+      }
+    },
+    {
+      "id": "00018_stock_hot_tgb",
+      "project": "25",
+      "rel_path": "00018_stock_hot_tgb.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00018_stock_hot_tgb.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 5291,
+        "source_rel_path": "akshare/stock_feature/stock_hot_tgb.py",
+        "identifier": "stock_hot_tgb"
+      }
+    },
+    {
+      "id": "00019_do_simulation",
+      "project": "2",
+      "rel_path": "00019_do_simulation.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00019_do_simulation.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 384,
+        "source_rel_path": "PathTracking/lqr_speed_steer_control/lqr_speed_steer_control.py",
+        "identifier": "do_simulation"
+      }
+    },
+    {
+      "id": "00020_number2uppercase_roman_numeral",
+      "project": "39",
+      "rel_path": "00020_number2uppercase_roman_numeral.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00020_number2uppercase_roman_numeral.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 8468,
+        "source_rel_path": "pypdf/_page_labels.py",
+        "identifier": "number2uppercase_roman_numeral"
+      }
+    },
+    {
+      "id": "00021_Expression.__gt__",
+      "project": "40",
+      "rel_path": "00021_Expression.__gt__.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00021_Expression.__gt__.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 9468,
+        "source_rel_path": "lektor/db.py",
+        "identifier": "Expression.__gt__"
+      }
+    },
+    {
+      "id": "00022_BooleanObject.read_from_stream",
+      "project": "39",
+      "rel_path": "00022_BooleanObject.read_from_stream.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00022_BooleanObject.read_from_stream.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 8876,
+        "source_rel_path": "pypdf/generic/_base.py",
+        "identifier": "BooleanObject.read_from_stream"
+      }
+    },
+    {
+      "id": "00023__code_id_map",
+      "project": "25",
+      "rel_path": "00023__code_id_map.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00023__code_id_map.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 5080,
+        "source_rel_path": "akshare/bond/bond_zh_cov_sina.py",
+        "identifier": "_code_id_map"
+      }
+    },
+    {
+      "id": "00024_BotPluginBase.bot_identifier",
+      "project": "18",
+      "rel_path": "00024_BotPluginBase.bot_identifier.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00024_BotPluginBase.bot_identifier.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 3803,
+        "source_rel_path": "errbot/botplugin.py",
+        "identifier": "BotPluginBase.bot_identifier"
+      }
+    },
+    {
+      "id": "00025_AlgoliaPlaces._parse_json",
+      "project": "31",
+      "rel_path": "00025_AlgoliaPlaces._parse_json.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00025_AlgoliaPlaces._parse_json.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 7363,
+        "source_rel_path": "geopy/geocoders/algolia.py",
+        "identifier": "AlgoliaPlaces._parse_json"
+      }
+    },
+    {
+      "id": "00026_SortKeyType.value_from_raw",
+      "project": "40",
+      "rel_path": "00026_SortKeyType.value_from_raw.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00026_SortKeyType.value_from_raw.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 9991,
+        "source_rel_path": "lektor/types/special.py",
+        "identifier": "SortKeyType.value_from_raw"
+      }
+    },
+    {
+      "id": "00027_do_batch",
+      "project": "42",
+      "rel_path": "00027_do_batch.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00027_do_batch.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 10184,
+        "source_rel_path": "src/jinja2/filters.py",
+        "identifier": "do_batch"
+      }
+    },
+    {
+      "id": "00028_deferring_chunked_producer.more",
+      "project": "6",
+      "rel_path": "00028_deferring_chunked_producer.more.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00028_deferring_chunked_producer.more.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 1676,
+        "source_rel_path": "supervisor/http.py",
+        "identifier": "deferring_chunked_producer.more"
+      }
+    },
+    {
+      "id": "00029_Response.__iter__",
+      "project": "33",
+      "rel_path": "00029_Response.__iter__.py",
+      "abs_path": "/home/intern/Practicum/righttyper-dypybench/data/hf_subset/00029_Response.__iter__.py",
+      "meta": {
+        "hf_name": "claudios/dypybench_functions",
+        "split": "train",
+        "row_index": 7544,
+        "source_rel_path": "requests/models.py",
+        "identifier": "Response.__iter__"
+      }
+    }
+  ]
+}
