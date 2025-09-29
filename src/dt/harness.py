@@ -1,16 +1,34 @@
-import importlib.util, sys, types, uuid
+import importlib
+import sys
+import types
+import os
 from typing import Callable
 from .contracts import TargetPair
 
 
 def _load_function_from_file(path: str, func_name: str) -> Callable:
-    mod_name = f"simpledt_mod_{uuid.uuid4().hex}"
-    spec = importlib.util.spec_from_file_location(mod_name, path)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Cannot load module from {path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[mod_name] = module
-    spec.loader.exec_module(module)  # type: ignore[attr-defined]
+    """
+    Loads a function from a Python file using a standard import mechanism
+    that is compatible with coverage tools.
+    """
+    path_obj = os.path.abspath(path)
+    dir_name = os.path.dirname(path_obj)
+    mod_name = os.path.splitext(os.path.basename(path_obj))[0]
+
+    # Temporarily add the file's directory to the system path
+    if dir_name not in sys.path:
+        sys.path.insert(0, dir_name)
+
+    try:
+        # Import the module
+        module = importlib.import_module(mod_name)
+        # It might have been imported before, so reload to get the latest version
+        importlib.reload(module)
+    finally:
+        # Clean up sys.path
+        if dir_name in sys.path and sys.path[0] == dir_name:
+            sys.path.pop(0)
+
     func = getattr(module, func_name, None)
     if not callable(func):
         raise AttributeError(f"{path} has no callable '{func_name}'")

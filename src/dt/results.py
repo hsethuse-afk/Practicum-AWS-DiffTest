@@ -25,11 +25,11 @@ class ResultCollector:
         stats = run.detail.get("stats") or {}
         if run.passed:
             log.normal(
-                f"✅ {t.func_name}({t.file_a} vs {t.file_b}): no difference found"
+                f"{t.func_name}({t.file_a} vs {t.file_b}): no difference found"
             )
         else:
             log.normal(
-                f"❌ {t.func_name}({t.file_a} vs {t.file_b}): {run.detail.get('reason')}"
+                f"{t.func_name}({t.file_a} vs {t.file_b}): {run.detail.get('reason')}"
             )
             mm = run.detail.get("mismatches") or []
             for i, m in enumerate(mm[:5], 1):  # brief preview
