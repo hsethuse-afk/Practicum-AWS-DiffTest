@@ -1,0 +1,8 @@
+/home/toris/practicum/rightTyperTests/a.py:
+===========================================
+
+split_words
+
+- def split_words(txt):
++ def split_words(txt: str) -> list[str]:
+
