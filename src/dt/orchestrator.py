@@ -16,7 +16,7 @@ class Orchestrator:
         self.harness = HarnessBuilder()
         self.strategy = StrategySynthesizer()
         self.runner = ABRunner()
-        self.comparator = ABComparator()
+        self.comparator = ABComparator(eq=eq)
         self.results = ResultCollector()
 
     def run_pair(

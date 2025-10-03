@@ -11,42 +11,82 @@ from typing import (
     get_origin,
     get_args,
 )
+from decimal import Decimal
+from datetime import datetime, date, time
 from hypothesis import strategies as st
 from .contracts import StrategyPlan
 from .logger import get_logger
+from .righttyper import RightTyper
 
 
 class StrategySynthesizer:
-    """Annotation-first strategy builder with a pluggable registry."""
+    """Annotation-first strategy builder with RightTyper integration."""
 
-    def __init__(self):
+    def __init__(self, use_righttyper: bool = True):
         self.log = get_logger()
+        self.use_righttyper = use_righttyper
+        self.righttyper = RightTyper() if use_righttyper else None
+
+        # Enhanced registry with advanced types
         self.registry: Dict[Any, Callable[[], st.SearchStrategy]] = {
-            int: lambda: st.integers(min_value=-50, max_value=50),
+            # Basic types (expanded ranges)
+            int: lambda: st.integers(min_value=-100, max_value=100),
             float: lambda: st.floats(
-                min_value=-50,
-                max_value=50,
+                min_value=-100,
+                max_value=100,
                 allow_nan=False,
                 allow_infinity=False,
             ),
-            str: lambda: st.text(max_size=10),
+            str: lambda: st.text(max_size=20),
             bool: lambda: st.booleans(),
+            bytes: lambda: st.binary(max_size=50),
+
+            # Advanced numeric types
+            complex: lambda: st.complex_numbers(
+                min_magnitude=0, max_magnitude=100
+            ),
+            Decimal: lambda: st.decimals(
+                min_value=-100, max_value=100,
+                allow_nan=False, allow_infinity=False
+            ),
+
+            # Date/time types
+            datetime: lambda: st.datetimes(
+                min_value=datetime(2020, 1, 1),
+                max_value=datetime(2025, 12, 31)
+            ),
+            date: lambda: st.dates(
+                min_value=date(2020, 1, 1),
+                max_value=date(2025, 12, 31)
+            ),
+            time: lambda: st.times(),
+
+            # Enhanced Any strategy
             Any: lambda: st.one_of(
-                st.integers(min_value=-50, max_value=50),
+                st.integers(min_value=-100, max_value=100),
                 st.floats(
-                    min_value=-50,
-                    max_value=50,
+                    min_value=-100,
+                    max_value=100,
                     allow_nan=False,
                     allow_infinity=False,
                 ),
-                st.text(max_size=10),
+                st.text(max_size=20),
                 st.booleans(),
+                st.binary(max_size=20),
             ),
         }
 
     def create_strategy(
         self, func: Callable, param_hints: Dict[str, Any] | None = None
     ) -> StrategyPlan:
+        # Use RightTyper for optimal strategy if available
+        if self.use_righttyper and self.righttyper:
+            try:
+                return self.righttyper.get_optimal_strategy(func)
+            except Exception as e:
+                self.log.debug(f"[StrategySynthesizer] RightTyper failed: {e}, falling back")
+
+        # Fallback to original logic
         sig = inspect.signature(func)
         strategies = []
         for param in sig.parameters.values():
