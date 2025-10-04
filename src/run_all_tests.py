@@ -36,17 +36,17 @@ class ComprehensiveTestRunner:
         """Run pytest tests if tests directory exists."""
         tests_dir = Path("tests")
         if tests_dir.exists():
-            print("🧪 Running pytest tests...")
+            print("Running pytest tests...")
             result = subprocess.run(["python", "-m", "pytest", "tests/", "-v"],
                                   capture_output=False)
             return result.returncode == 0
         else:
-            print("📝 No tests/ directory found, skipping pytest tests")
+            print("No tests/ directory found, skipping pytest tests")
             return True
 
     def run_orchestrator_differential_tests(self):
         """Run differential tests using the orchestrator framework."""
-        print("🔍 Running orchestrator differential tests...")
+        print("Running orchestrator differential tests...")
 
         # Test the palindrome functions in testsample/
         testsample_dir = Path("testsample")
@@ -61,7 +61,7 @@ class ComprehensiveTestRunner:
                 )
                 return result is not None
             except Exception as e:
-                print(f"    ❌ Differential test failed: {e}")
+                print(f"    Differential test failed: {e}")
                 return False
         else:
             print("  No sample test files found in testsample/")
@@ -73,7 +73,7 @@ class ComprehensiveTestRunner:
 
     def run_doctests(self):
         """Run doctests on modules that contain them."""
-        print("📚 Running doctests...")
+        print("Running doctests...")
 
         success = True
 
@@ -86,18 +86,18 @@ class ComprehensiveTestRunner:
                 ], capture_output=True, text=True)
 
                 if result.returncode != 0:
-                    print(f"    ❌ Doctests failed for {py_file}")
+                    print(f"    Doctests failed for {py_file}")
                     print(result.stdout)
                     print(result.stderr)
                     success = False
                 else:
-                    print(f"    ✅ Doctests passed for {py_file}")
+                    print(f"    Doctests passed for {py_file}")
 
         return success
 
     def run_linting(self):
         """Run code quality checks."""
-        print("🧹 Running code quality checks...")
+        print("Running code quality checks...")
 
         success = True
 
@@ -106,22 +106,22 @@ class ComprehensiveTestRunner:
         result = subprocess.run(["python", "-m", "ruff", "check", "src/"],
                               capture_output=True, text=True)
         if result.returncode != 0:
-            print("    ❌ Ruff linting failed:")
+            print("    Ruff linting failed:")
             print(result.stdout)
             success = False
         else:
-            print("    ✅ Ruff linting passed")
+            print("    Ruff linting passed")
 
         # Run mypy type checking
         print("  Running mypy type checking...")
         result = subprocess.run(["python", "-m", "mypy", "src/"],
                               capture_output=True, text=True)
         if result.returncode != 0:
-            print("    ❌ Type checking failed:")
+            print("    Type checking failed:")
             print(result.stdout)
             success = False
         else:
-            print("    ✅ Type checking passed")
+            print("    Type checking passed")
 
         return success
 
@@ -140,7 +140,7 @@ def main():
 
     args = parser.parse_args()
 
-    print("🚀 Starting comprehensive test suite...")
+    print("Starting comprehensive test suite...")
     print("=" * 50)
 
     # Change to src directory for relative imports
@@ -187,10 +187,10 @@ def main():
 
         print("=" * 50)
         if success:
-            print("🎉 All tests passed successfully!")
+            print("All tests passed successfully!")
             return 0
         else:
-            print("❌ Some tests failed. Please check the output above.")
+            print("Some tests failed. Please check the output above.")
             return 1
 
     finally:
