@@ -1,0 +1,8 @@
+/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/test.py:
+====================================================================
+
+check
+
+- def check(candidate):
++ def check(candidate: Callable[[list[float]], tuple[float, float]]) -> None:
+

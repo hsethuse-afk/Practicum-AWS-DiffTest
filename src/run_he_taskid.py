@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 import argparse
 from dt.orchestrator import Orchestrator
-from utilities.extractor import extract_task, extract_entry
+from utilities.extractor import (
+    extract_task,
+    extract_entry,
+    extract_test,
+)
 
 
 def main():
@@ -41,11 +45,14 @@ def main():
         args.t,
         OUT_PATH + "b.py",
     )
+    # extract test files
+    test_path = extract_test(
+        ORIGINAL_JSON, args.t, OUT_PATH + "test.py"
+    )
     if log_mode > 1:
         print(
             f"Canonical Solution saved to: {canonical_path}, GPT Solution saved to {completion_path}"
         )
-
     function_name = extract_entry(ORIGINAL_JSON, args.t)
 
     orch = Orchestrator(log_mode=log_mode)

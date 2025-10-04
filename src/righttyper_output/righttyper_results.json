@@ -1,0 +1,18 @@
+{
+  "command": [
+    "/home/toris/anaconda3/bin/python",
+    "-m",
+    "righttyper",
+    "./testsample/test.py",
+    "--json-output"
+  ],
+  "filepath": "./testsample/test.py",
+  "output_dir": "righttyper_output",
+  "stdout": "\n",
+  "stderr": "",
+  "return_code": 0,
+  "output_files": [
+    "righttyper_output/righttyper_results.json"
+  ],
+  "success": true
+}
