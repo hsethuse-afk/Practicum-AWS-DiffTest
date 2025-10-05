@@ -18,6 +18,12 @@ def main():
     )
     p.add_argument("--max-examples", type=int, default=200)
     p.add_argument("--log", type=str, default="N")
+    p.add_argument(
+        "--test-file",
+        type=str,
+        default=None,
+        help="Optional path to test file for type inference (e.g., 'test.py')",
+    )
     args = p.parse_args()
 
     val = args.log.lower()
@@ -32,7 +38,11 @@ def main():
 
     orch = Orchestrator(log_mode=log_mode)
     orch.run_pair(
-        args.a, args.b, args.func, max_examples=args.max_examples
+        args.a,
+        args.b,
+        args.func,
+        max_examples=args.max_examples,
+        test_file=args.test_file,
     )
 
 

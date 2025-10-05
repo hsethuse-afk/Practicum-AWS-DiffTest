@@ -1,26 +1,23 @@
-from typing import List, Tuple
-
-
-def find_closest_elements(numbers: List[float]) -> Tuple[float, float]:
-    """From a supplied list of numbers (of length at least two) select and return two that are the closest to each
-    other and return them in order (smaller number, larger number).
-    >>> find_closest_elements([1.0, 2.0, 3.0, 4.0, 5.0, 2.2])
-    (2.0, 2.2)
-    >>> find_closest_elements([1.0, 2.0, 3.0, 4.0, 5.0, 2.0])
-    (2.0, 2.0)
-    """
-    if len(numbers) < 2:
-        raise ValueError("numbers must contain at least two elements")
-    sorted_nums = sorted(numbers)
-    best_pair = (sorted_nums[0], sorted_nums[1])
-    best_diff = best_pair[1] - best_pair[0]
-    for i in range(1, len(sorted_nums) - 0):
-        if i >= len(sorted_nums):
-            break
-        a = sorted_nums[i - 1]
-        b = sorted_nums[i]
-        diff = b - a
-        if diff < best_diff:
-            best_diff = diff
-            best_pair = (a, b)
-    return best_pair
+def split_words(txt):
+    '''
+    Given a string of words, return a list of words split on whitespace, if no whitespaces exists in the text you
+    should split on commas ',' if no commas exists you should return the number of lower-case letters with odd order in the
+    alphabet, ord('a') = 0, ord('b') = 1, ... ord('z') = 25
+    Examples
+    split_words("Hello world!") ➞ ["Hello", "world!"]
+    split_words("Hello,world!") ➞ ["Hello", "world!"]
+    split_words("abcdef") == 3 
+    '''
+    # If any whitespace present, split on whitespace
+    if any(ch.isspace() for ch in txt):
+        return txt.split()
+    # If no whitespace but commas present, split on commas
+    if ',' in txt:
+        return txt.split(',')
+    # Otherwise count lower-case letters with odd order in the alphabet
+    count = 0
+    for ch in txt:
+        if 'a' <= ch <= 'z':
+            if (ord(ch) - ord('a')) % 2 == 1:
+                count += 1
+    return count

@@ -9,11 +9,14 @@ import threading
 from pathlib import Path
 from typing import Callable, Optional
 
-from .strategies import StrategySynthesizer
+from .strategy.strategies import StrategySynthesizer
 from .abrunner import ABRunner
 from .results import ResultCollector
 from .contracts import RunConfig, TargetPair
-from .function_extractor import load_jsonl, extract_function_pair_from_record
+from ..utilities.function_extractor import (
+    load_jsonl,
+    extract_function_pair_from_record,
+)
 
 
 class TestRunner:
@@ -25,7 +28,9 @@ class TestRunner:
         self.runner = ABRunner()
         self.results = ResultCollector()
 
-    def test_differential_behavior(self, func_a: Callable, func_b: Callable) -> tuple[bool, str]:
+    def test_differential_behavior(
+        self, func_a: Callable, func_b: Callable
+    ) -> tuple[bool, str]:
         """Test two functions for differential behavior using ABRunner with timeout"""
 
         result_container = [None]
@@ -34,16 +39,22 @@ class TestRunner:
             try:
                 # Use existing framework classes
                 strategy_plan = self.synthesizer.create_strategy(func_a)
-                config = RunConfig(max_examples=50)  # Reduced for faster execution
+                config = RunConfig(
+                    max_examples=50
+                )  # Reduced for faster execution
 
                 # Run the comparison
-                compare_result = self.runner.execute(func_a, func_b, strategy_plan, config)
+                compare_result = self.runner.execute(
+                    func_a, func_b, strategy_plan, config
+                )
 
                 if compare_result.equal:
                     result_container[0] = (True, "No differences found")
                 else:
                     # Extract first mismatch for details
-                    reason = compare_result.reason or "Differences found"
+                    reason = (
+                        compare_result.reason or "Differences found"
+                    )
                     if compare_result.mismatches:
                         first_mismatch = compare_result.mismatches[0]
                         reason += f" (e.g., args={first_mismatch['args']}, A={first_mismatch['A']}, B={first_mismatch['B']})"
@@ -59,9 +70,16 @@ class TestRunner:
         thread.join(timeout=self.timeout_seconds)
 
         if thread.is_alive():
-            return False, f"Test timed out after {self.timeout_seconds} seconds"
+            return (
+                False,
+                f"Test timed out after {self.timeout_seconds} seconds",
+            )
 
-        return result_container[0] if result_container[0] else (False, "Test completed but no result")
+        return (
+            result_container[0]
+            if result_container[0]
+            else (False, "Test completed but no result")
+        )
 
     def run_jsonl_differential_tests(self, jsonl_path: str) -> bool:
         """Run differential tests on JSONL results file"""
@@ -78,18 +96,24 @@ class TestRunner:
         failed = 0
 
         for record in records:
-            task_id = record.get('task_id', 'unknown')
+            task_id = record.get("task_id", "unknown")
 
             try:
                 # Extract functions using the utility module
-                comp_func, canon_func = extract_function_pair_from_record(record)
+                comp_func, canon_func = (
+                    extract_function_pair_from_record(record)
+                )
 
                 if not comp_func or not canon_func:
-                    print(f"  SKIP {task_id}: Could not extract functions")
+                    print(
+                        f"  SKIP {task_id}: Could not extract functions"
+                    )
                     continue
 
                 # Test differential behavior
-                success, error = self.test_differential_behavior(comp_func, canon_func)
+                success, error = self.test_differential_behavior(
+                    comp_func, canon_func
+                )
 
                 if success:
                     print(f"  PASS {task_id}")

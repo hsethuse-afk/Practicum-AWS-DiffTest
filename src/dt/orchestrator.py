@@ -1,6 +1,6 @@
 from .contracts import RunConfig, TargetPair, LoggerMode
 from .diffpairer import DiffPairer
-from .strategies import StrategySynthesizer
+from .strategy.strategies import StrategySynthesizer
 from .harness import HarnessBuilder
 from .abrunner import ABRunner
 from .results import ResultCollector
@@ -25,7 +25,19 @@ class Orchestrator:
         file_b: str,
         func_name: str,
         max_examples: int = 200,
+        test_file: str = None,
     ):
+        """
+        Run differential testing on a pair of functions.
+
+        Args:
+            file_a: Path to first file
+            file_b: Path to second file
+            func_name: Name of the function to test
+            max_examples: Maximum number of test examples
+            test_file: Optional path to test file for RightTyper type inference
+                      (e.g., "test.py") that will be used if annotations are missing
+        """
 
         # Get Target Pairs
         target = TargetPair(
@@ -33,8 +45,22 @@ class Orchestrator:
         )
         fn_a, fn_b = self.harness.build(target)
 
-        # Generate strategy plan
-        plan = self.strategy.create_strategy(fn_a)
+        # Validate test file if provided
+        if test_file:
+            import os
+
+            if not os.path.exists(test_file):
+                self.log.debug(
+                    f"[Orchestrator] Test file not found: {test_file}"
+                )
+                test_file = None
+            else:
+                self.log.verbose(
+                    f"[Orchestrator] Using test file for type inference: {test_file}"
+                )
+
+        # Generate strategy plan (with optional test file for type inference)
+        plan = self.strategy.create_strategy(fn_a, test_file=test_file)
         self.log.verbose(
             f"✅ Test Startegies Successfully Generated:\n{plan}"
         )

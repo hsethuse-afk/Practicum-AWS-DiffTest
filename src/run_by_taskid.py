@@ -94,6 +94,7 @@ def main():
         completion_path,
         function_name,
         max_examples=args.max_examples,
+        test_file=test_path,
     )
 
 
