@@ -1,0 +1,18 @@
+Project: 04_schedule
+Commit: 1173f2820b6e996fd80c51e61353a31a4c260b3b
+File: schedule/__init__.py
+
+============================================================
+diff --git a/schedule/__init__.py b/schedule/__init__.py
+index 54760b5..3f7267d 100644
+--- a/schedule/__init__.py
++++ b/schedule/__init__.py
+@@ -15,7 +15,7 @@ Features:
+     - A simple to use API for scheduling jobs.
+     - Very lightweight and no external dependencies.
+     - Excellent test coverage.
+-    - Tested on Python 3.7, 3.8, 3.9, 3.10 and 3.11
++    - Tested on Python 3.7, 3.8, 3.9, 3.10, 3.11 and 3.12
+ 
+ Usage:
+     >>> import schedule

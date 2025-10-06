@@ -1,0 +1,16 @@
+Project: 01_grab
+Commit: 4dc5e434e07490cd51f88e68c033832cf25c3b42
+File: grab/__init__.py
+
+============================================================
+diff --git a/grab/__init__.py b/grab/__init__.py
+index 3f2d717..8e8d8d5 100644
+--- a/grab/__init__.py
++++ b/grab/__init__.py
+@@ -11,5 +11,5 @@ from grab.error import (  # noqa
+ from grab.upload import UploadContent, UploadFile  # noqa
+ from grab.util.log import default_logging  # noqa
+ 
+-__version__ = "1.1.0"
++__version__ = "1.2.0"
+ VERSION_NUMERIC = tuple(map(int, __version__.split(".")))

@@ -1,0 +1,6 @@
+Project: schedule
+Number: 4
+URL: https://github.com/dbader/schedule.git
+Flags: rt
+Test Path: test_schedule.py
+Requirements: requirements-dev.txt

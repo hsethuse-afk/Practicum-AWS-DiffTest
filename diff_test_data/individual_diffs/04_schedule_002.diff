@@ -1,0 +1,18 @@
+Project: 04_schedule
+Commit: 82a43db1b938d8fdf60103bd41f329e06c8d3651
+File: setup.py
+
+============================================================
+diff --git a/setup.py b/setup.py
+index 9bd5a4f..3b34033 100644
+--- a/setup.py
++++ b/setup.py
+@@ -2,7 +2,7 @@ import codecs
+ from setuptools import setup
+ 
+ 
+-SCHEDULE_VERSION = "1.2.1"
++SCHEDULE_VERSION = "1.2.2"
+ SCHEDULE_DOWNLOAD_URL = "https://github.com/dbader/schedule/tarball/" + SCHEDULE_VERSION
+ 
+ 

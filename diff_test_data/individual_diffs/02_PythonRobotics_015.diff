@@ -1,0 +1,20 @@
+Project: 02_PythonRobotics
+Commit: a8a45033c6daffcb6e5ccc8b02727d407314ee6a
+File: tests/test_pure_pursuit.py
+
+============================================================
+diff --git a/tests/test_pure_pursuit.py b/tests/test_pure_pursuit.py
+index 0e0b83b..89c1829 100644
+--- a/tests/test_pure_pursuit.py
++++ b/tests/test_pure_pursuit.py
+@@ -6,6 +6,10 @@ def test1():
+     m.show_animation = False
+     m.main()
+ 
++def test_backward():
++    m.show_animation = False
++    m.is_reverse_mode = True
++    m.main()
+ 
+ if __name__ == '__main__':
+     conftest.run_this_test(__file__)

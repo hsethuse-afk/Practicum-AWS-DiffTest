@@ -1,0 +1,32 @@
+[
+  {
+    "id": "schedule_e393670c",
+    "project": "04_schedule",
+    "file": "schedule/__init__.py",
+    "path": "diff_test_cases/schedule_e393670c"
+  },
+  {
+    "id": "schedule_e94a4dd6",
+    "project": "04_schedule",
+    "file": "schedule/__init__.py",
+    "path": "diff_test_cases/schedule_e94a4dd6"
+  },
+  {
+    "id": "PythonRobotics_e0c6c237",
+    "project": "02_PythonRobotics",
+    "file": "PathPlanning/TimeBasedPathPlanning/GridWithDynamicObstacles.py",
+    "path": "diff_test_cases/PythonRobotics_e0c6c237"
+  },
+  {
+    "id": "PythonRobotics_6376b11f",
+    "project": "02_PythonRobotics",
+    "file": "PathPlanning/DStarLite/d_star_lite.py",
+    "path": "diff_test_cases/PythonRobotics_6376b11f"
+  },
+  {
+    "id": "click_54ae0564",
+    "project": "10_click",
+    "file": "src/click/core.py",
+    "path": "diff_test_cases/click_54ae0564"
+  }
+]

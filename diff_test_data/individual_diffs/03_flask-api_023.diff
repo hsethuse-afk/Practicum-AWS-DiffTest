@@ -1,0 +1,22 @@
+Project: 03_flask-api
+Commit: 6dcb9dd7f5f2bd7734f6e1b6a5716915a3ed8f41
+File: flask_api/tests/test_parsers.py
+
+============================================================
+diff --git a/flask_api/tests/test_parsers.py b/flask_api/tests/test_parsers.py
+index 85307aa..8aa6945 100644
+--- a/flask_api/tests/test_parsers.py
++++ b/flask_api/tests/test_parsers.py
+@@ -31,6 +31,12 @@ class ParserTests(unittest.TestCase):
+         data = parser.parse(stream, "application/json")
+         self.assertEqual(data, {"key": 1, "other": "two"})
+ 
++    def test_parse_urlencoded(self):
++        parser = parsers.URLEncodedParser()
++        stream = io.BytesIO(b'next=http://www.example.com&test1=val1&test%5c=val%2f')
++        data = parser.parse(stream, "application/x-www-form-urlencoded")
++        self.assertEqual(data, {"next": "http://www.example.com", "test1": "val1", "test\\": "val/"})
++
+     def test_invalid_json(self):
+         parser = parsers.JSONParser()
+         stream = io.BytesIO(b'{key: 1, "other": "two"}')

@@ -1,0 +1,17 @@
+Project: 04_schedule
+Commit: 1173f2820b6e996fd80c51e61353a31a4c260b3b
+File: setup.py
+
+============================================================
+diff --git a/setup.py b/setup.py
+index 1f5df09..9bd5a4f 100644
+--- a/setup.py
++++ b/setup.py
+@@ -48,6 +48,7 @@ setup(
+         "Programming Language :: Python :: 3.9",
+         "Programming Language :: Python :: 3.10",
+         "Programming Language :: Python :: 3.11",
++        "Programming Language :: Python :: 3.12",
+         "Natural Language :: English",
+     ],
+     python_requires=">=3.7",

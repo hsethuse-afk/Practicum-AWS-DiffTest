@@ -1,0 +1,41 @@
+{
+  "test_id": "PythonRobotics_e0c6c237",
+  "project": "02_PythonRobotics",
+  "commit": "d918947360f7e2393c2f1cef110dab77bbbe50db",
+  "file": "PathPlanning/TimeBasedPathPlanning/GridWithDynamicObstacles.py",
+  "changed_functions": [
+    {
+      "name": "__init__",
+      "before": {
+        "name": "__init__",
+        "lineno": 70,
+        "args": [
+          "self",
+          "grid_size",
+          "num_obstacles",
+          "obstacle_avoid_points",
+          "obstacle_arrangement",
+          "time_limit"
+        ],
+        "has_annotations": true,
+        "source": "def __init__(self, grid_size: np.ndarray, num_obstacles: int=40, obstacle_avoid_points: list[Position]=[], obstacle_arrangement: ObstacleArrangement=ObstacleArrangement.RANDOM, time_limit: int=100):\n    self.obstacle_avoid_points = obstacle_avoid_points\n    self.time_limit = time_limit\n    self.grid_size = grid_size\n    self.reservation_matrix = np.zeros((grid_size[0], grid_size[1], self.time_limit))\n    if num_obstacles > self.grid_size[0] * self.grid_size[1]:\n        raise Exception('Number of obstacles is greater than grid size!')\n    if obstacle_arrangement == ObstacleArrangement.RANDOM:\n        self.obstacle_paths = self.generate_dynamic_obstacles(num_obstacles)\n    elif obstacle_arrangement == ObstacleArrangement.ARRANGEMENT1:\n        self.obstacle_paths = self.obstacle_arrangement_1(num_obstacles)\n    for i, path in enumerate(self.obstacle_paths):\n        obs_idx = i + 1\n        for t, position in enumerate(path):\n            if t > 0:\n                self.reservation_matrix[path[t - 1].x, path[t - 1].y, t] = obs_idx\n            self.reservation_matrix[position.x, position.y, t] = obs_idx"
+      },
+      "after": {
+        "name": "__init__",
+        "lineno": 48,
+        "args": [
+          "self",
+          "grid_size",
+          "num_obstacles",
+          "obstacle_avoid_points",
+          "obstacle_arrangement",
+          "time_limit"
+        ],
+        "has_annotations": true,
+        "source": "def __init__(self, grid_size: np.ndarray, num_obstacles: int=40, obstacle_avoid_points: list[Position]=[], obstacle_arrangement: ObstacleArrangement=ObstacleArrangement.RANDOM, time_limit: int=100):\n    self.obstacle_avoid_points = obstacle_avoid_points\n    self.time_limit = time_limit\n    self.grid_size = grid_size\n    self.reservation_matrix = np.zeros((grid_size[0], grid_size[1], self.time_limit))\n    if num_obstacles > self.grid_size[0] * self.grid_size[1]:\n        raise Exception('Number of obstacles is greater than grid size!')\n    if obstacle_arrangement == ObstacleArrangement.RANDOM:\n        self.obstacle_paths = self.generate_dynamic_obstacles(num_obstacles)\n    elif obstacle_arrangement == ObstacleArrangement.ARRANGEMENT1:\n        self.obstacle_paths = self.obstacle_arrangement_1(num_obstacles)\n    elif obstacle_arrangement == ObstacleArrangement.NARROW_CORRIDOR:\n        self.obstacle_paths = self.generate_narrow_corridor_obstacles(num_obstacles)\n    for i, path in enumerate(self.obstacle_paths):\n        obs_idx = i + 1\n        for t, position in enumerate(path):\n            if t > 0:\n                self.reservation_matrix[path[t - 1].x, path[t - 1].y, t] = obs_idx\n            self.reservation_matrix[position.x, position.y, t] = obs_idx"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "test_id": "PythonRobotics_93254e26",
+  "project": "02_PythonRobotics",
+  "commit": "a8a45033c6daffcb6e5ccc8b02727d407314ee6a",
+  "file": "PathTracking/pure_pursuit/pure_pursuit.py",
+  "changed_functions": [
+    {
+      "name": "main",
+      "before": {
+        "name": "main",
+        "lineno": 146,
+        "args": [],
+        "has_annotations": false,
+        "source": "def main():\n    cx = np.arange(0, 50, 0.5)\n    cy = [math.sin(ix / 5.0) * ix / 2.0 for ix in cx]\n    target_speed = 10.0 / 3.6\n    T = 100.0\n    state = State(x=-0.0, y=-3.0, yaw=0.0, v=0.0)\n    lastIndex = len(cx) - 1\n    time = 0.0\n    states = States()\n    states.append(time, state)\n    target_course = TargetCourse(cx, cy)\n    target_ind, _ = target_course.search_target_index(state)\n    while T >= time and lastIndex > target_ind:\n        ai = proportional_control(target_speed, state.v)\n        di, target_ind = pure_pursuit_steer_control(state, target_course, target_ind)\n        state.update(ai, di)\n        time += dt\n        states.append(time, state)\n        if show_animation:\n            plt.cla()\n            plt.gcf().canvas.mpl_connect('key_release_event', lambda event: [exit(0) if event.key == 'escape' else None])\n            plot_arrow(state.x, state.y, state.yaw)\n            plt.plot(cx, cy, '-r', label='course')\n            plt.plot(states.x, states.y, '-b', label='trajectory')\n            plt.plot(cx[target_ind], cy[target_ind], 'xg', label='target')\n            plt.axis('equal')\n            plt.grid(True)\n            plt.title('Speed[km/h]:' + str(state.v * 3.6)[:4])\n            plt.pause(0.001)\n    assert lastIndex >= target_ind, 'Cannot goal'\n    if show_animation:\n        plt.cla()\n        plt.plot(cx, cy, '.r', label='course')\n        plt.plot(states.x, states.y, '-b', label='trajectory')\n        plt.legend()\n        plt.xlabel('x[m]')\n        plt.ylabel('y[m]')\n        plt.axis('equal')\n        plt.grid(True)\n        plt.subplots(1)\n        plt.plot(states.t, [iv * 3.6 for iv in states.v], '-r')\n        plt.xlabel('Time[s]')\n        plt.ylabel('Speed[km/h]')\n        plt.grid(True)\n        plt.show()"
+      },
+      "after": {
+        "name": "main",
+        "lineno": 269,
+        "args": [],
+        "has_annotations": false,
+        "source": "def main():\n    cx = -1 * np.arange(0, 50, 0.5) if is_reverse_mode else np.arange(0, 50, 0.5)\n    cy = [math.sin(ix / 5.0) * ix / 2.0 for ix in cx]\n    target_speed = 10.0 / 3.6\n    T = 100.0\n    state = State(x=-0.0, y=-3.0, yaw=math.pi if is_reverse_mode else 0.0, v=0.0, is_reverse=is_reverse_mode)\n    lastIndex = len(cx) - 1\n    time = 0.0\n    states = States()\n    states.append(time, state)\n    target_course = TargetCourse(cx, cy)\n    target_ind, _ = target_course.search_target_index(state)\n    while T >= time and lastIndex > target_ind:\n        ai = proportional_control(target_speed, state.v)\n        di, target_ind = pure_pursuit_steer_control(state, target_course, target_ind)\n        state.update(ai, di)\n        time += dt\n        states.append(time, state)\n        if show_animation:\n            plt.cla()\n            plt.gcf().canvas.mpl_connect('key_release_event', on_key)\n            plot_vehicle(state.x, state.y, state.yaw, di, is_reverse=is_reverse_mode)\n            plt.plot(cx, cy, '-r', label='course')\n            plt.plot(states.x, states.y, '-b', label='trajectory')\n            plt.plot(cx[target_ind], cy[target_ind], 'xg', label='target')\n            plt.axis('equal')\n            plt.grid(True)\n            plt.title('Speed[km/h]:' + str(state.v * 3.6)[:4])\n            plt.legend()\n            if pause_simulation:\n                plt.text(0.02, 0.95, 'PAUSED', transform=plt.gca().transAxes, bbox=dict(facecolor='red', alpha=0.5))\n            plt.pause(0.001)\n            while pause_simulation:\n                plt.pause(0.1)\n                if not plt.get_fignums():\n                    exit(0)\n    assert lastIndex >= target_ind, 'Cannot goal'\n    if show_animation:\n        plt.cla()\n        plt.plot(cx, cy, '.r', label='course')\n        plt.plot(states.x, states.y, '-b', label='trajectory')\n        plt.legend()\n        plt.xlabel('x[m]')\n        plt.ylabel('y[m]')\n        plt.axis('equal')\n        plt.grid(True)\n        plt.subplots(1)\n        plt.plot(states.t, [iv * 3.6 for iv in states.v], '-r')\n        plt.xlabel('Time[s]')\n        plt.ylabel('Speed[km/h]')\n        plt.grid(True)\n        plt.show()"
+      },
+      "has_type_hints_before": false,
+      "has_type_hints_after": false
+    },
+    {
+      "name": "pure_pursuit_steer_control",
+      "before": {
+        "name": "pure_pursuit_steer_control",
+        "lineno": 111,
+        "args": [
+          "state",
+          "trajectory",
+          "pind"
+        ],
+        "has_annotations": false,
+        "source": "def pure_pursuit_steer_control(state, trajectory, pind):\n    ind, Lf = trajectory.search_target_index(state)\n    if pind >= ind:\n        ind = pind\n    if ind < len(trajectory.cx):\n        tx = trajectory.cx[ind]\n        ty = trajectory.cy[ind]\n    else:\n        tx = trajectory.cx[-1]\n        ty = trajectory.cy[-1]\n        ind = len(trajectory.cx) - 1\n    alpha = math.atan2(ty - state.rear_y, tx - state.rear_x) - state.yaw\n    delta = math.atan2(2.0 * WB * math.sin(alpha) / Lf, 1.0)\n    return (delta, ind)"
+      },
+      "after": {
+        "name": "pure_pursuit_steer_control",
+        "lineno": 129,
+        "args": [
+          "state",
+          "trajectory",
+          "pind"
+        ],
+        "has_annotations": false,
+        "source": "def pure_pursuit_steer_control(state, trajectory, pind):\n    ind, Lf = trajectory.search_target_index(state)\n    if pind >= ind:\n        ind = pind\n    if ind < len(trajectory.cx):\n        tx = trajectory.cx[ind]\n        ty = trajectory.cy[ind]\n    else:\n        tx = trajectory.cx[-1]\n        ty = trajectory.cy[-1]\n        ind = len(trajectory.cx) - 1\n    alpha = math.atan2(ty - state.rear_y, tx - state.rear_x) - state.yaw\n    delta = state.direction * math.atan2(2.0 * WB * math.sin(alpha) / Lf, 1.0)\n    delta = np.clip(delta, -MAX_STEER, MAX_STEER)\n    return (delta, ind)"
+      },
+      "has_type_hints_before": false,
+      "has_type_hints_after": false
+    },
+    {
+      "name": "append",
+      "before": {
+        "name": "append",
+        "lineno": 56,
+        "args": [
+          "self",
+          "t",
+          "state"
+        ],
+        "has_annotations": false,
+        "source": "def append(self, t, state):\n    self.x.append(state.x)\n    self.y.append(state.y)\n    self.yaw.append(state.yaw)\n    self.v.append(state.v)\n    self.t.append(t)"
+      },
+      "after": {
+        "name": "append",
+        "lineno": 73,
+        "args": [
+          "self",
+          "t",
+          "state"
+        ],
+        "has_annotations": false,
+        "source": "def append(self, t, state):\n    self.x.append(state.x)\n    self.y.append(state.y)\n    self.yaw.append(state.yaw)\n    self.v.append(state.v)\n    self.direction.append(state.direction)\n    self.t.append(t)"
+      },
+      "has_type_hints_before": false,
+      "has_type_hints_after": false
+    },
+    {
+      "name": "update",
+      "before": {
+        "name": "update",
+        "lineno": 33,
+        "args": [
+          "self",
+          "a",
+          "delta"
+        ],
+        "has_annotations": false,
+        "source": "def update(self, a, delta):\n    self.x += self.v * math.cos(self.yaw) * dt\n    self.y += self.v * math.sin(self.yaw) * dt\n    self.yaw += self.v / WB * math.tan(delta) * dt\n    self.v += a * dt\n    self.rear_x = self.x - WB / 2 * math.cos(self.yaw)\n    self.rear_y = self.y - WB / 2 * math.sin(self.yaw)"
+      },
+      "after": {
+        "name": "update",
+        "lineno": 48,
+        "args": [
+          "self",
+          "a",
+          "delta"
+        ],
+        "has_annotations": false,
+        "source": "def update(self, a, delta):\n    self.x += self.v * math.cos(self.yaw) * dt\n    self.y += self.v * math.sin(self.yaw) * dt\n    self.yaw += self.direction * self.v / WB * math.tan(delta) * dt\n    self.yaw = angle_mod(self.yaw)\n    self.v += a * dt\n    self.rear_x = self.x - self.direction * (WB / 2 * math.cos(self.yaw))\n    self.rear_y = self.y - self.direction * (WB / 2 * math.sin(self.yaw))"
+      },
+      "has_type_hints_before": false,
+      "has_type_hints_after": false
+    }
+  ]
+}

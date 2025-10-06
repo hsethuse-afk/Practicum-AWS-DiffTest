@@ -1,0 +1,46 @@
+================================================================================
+DIFF ANALYSIS REPORT
+================================================================================
+
+Total diffs analyzed: 33
+
+
+TRIVIAL: 22
+
+FUNCTION CHANGES NO TYPES: 4
+----------------------------------------
+  1. 02_PythonRobotics: PathPlanning/RRT/rrt_with_pathsmoothing.py
+     Functions: line_collision_check, path_smoothing, main
+  2. 02_PythonRobotics: PathTracking/pure_pursuit/pure_pursuit.py
+     Functions: main, pure_pursuit_steer_control, append
+  3. 01_grab: grab/transport/urllib3.py
+     Functions: request, prepare_response
+  4. 01_grab: grab/document.py
+     Functions: build_html_tree
+
+FUNCTION CHANGES WITH TYPES: 5
+----------------------------------------
+  1. 04_schedule: schedule/__init__.py
+     Functions: __init__, _schedule_next_run
+  2. 04_schedule: schedule/__init__.py
+     Functions: _schedule_next_run
+  3. 02_PythonRobotics: PathPlanning/TimeBasedPathPlanning/GridWithDynamicObstacles.py
+     Functions: __init__
+  4. 02_PythonRobotics: PathPlanning/DStarLite/d_star_lite.py
+     Functions: __init__, is_obstacle, initialize
+  5. 10_click: src/click/core.py
+     Functions: close, __exit__
+
+NEW FUNCTIONS: 0
+
+COMPLEX CHANGES: 2
+----------------------------------------
+  1. 01_grab: tests/grab_url_processing.py
+  2. 01_grab: grab/base.py
+
+================================================================================
+RECOMMENDATIONS FOR DIFFERENTIAL TESTING
+================================================================================
+
+Best candidates (function changes without type hints): 4
+These are ideal for testing type inference tools.

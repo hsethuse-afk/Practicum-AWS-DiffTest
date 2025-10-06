@@ -1,0 +1,104 @@
+# coding: utf-8
+from test_server import Request, Response
+from tests.util import BaseGrabTestCase, build_grab, only_grab_transport, temp_file
+
+
+class GrabSimpleTestCase(BaseGrabTestCase):
+    def setUp(self):
+        self.server.reset()
+
+    def test_default_random_user_agent(self):
+        grab = build_grab()
+        self.server.add_response(Response())
+        grab.go(self.server.get_url())
+        self.assertTrue(
+            self.server.get_request()
+            .headers.get("user-agent")
+            .startswith("Mozilla/5.0 ")
+        )
+
+    @only_grab_transport("pycurl")
+    def test_empty_useragent_pycurl(self):
+        grab = build_grab()
+
+        # Empty string disable default pycurl user-agent
+        grab.setup(user_agent="")
+        self.server.add_response(Response())
+        grab.go(self.server.get_url())
+        req = self.server.get_request()
+        with self.assertRaises(KeyError):
+            req.headers.get("user-agent")
+
+    def test_useragent_simple(self):
+        grab = build_grab()
+
+        # Simple case: setup user agent manually
+        grab.setup(user_agent="foo")
+        self.server.add_response(Response())
+        grab.go(self.server.get_url())
+        req = self.server.get_request()
+        self.assertEqual(req.headers.get("user-agent"), "foo")
+
+    def test_useragent(self):
+        grab = build_grab()
+
+        # Null value activates default random user-agent
+        # For some transports it just allow them to send default user-agent
+        # like in Kit transport case
+        grab = build_grab()
+        grab.setup(user_agent=None)
+        self.server.add_response(Response())
+        grab.go(self.server.get_url())
+        req = self.server.get_request()
+        self.assertTrue(req.headers.count_items() > 0)
+        self.assertFalse(
+            "PycURL" in self.server.get_request().headers.get("user-agent")
+        )
+
+        # By default user_agent is None => random user agent is generated
+        grab = build_grab()
+        self.server.add_response(Response())
+        grab.go(self.server.get_url())
+        req = self.server.get_request()
+        self.assertTrue(req.headers.count_items() > 0)
+        self.assertFalse("PycURL" in req.headers.get("user-agent"))
+
+        # Simple case: setup user agent manually
+        grab.setup(user_agent="foo")
+        self.server.add_response(Response())
+        grab.go(self.server.get_url())
+        req = self.server.get_request()
+        self.assertEqual(req.headers.get("user-agent"), "foo")
+
+        with temp_file() as ua_file:
+            # user agent from file should be loaded
+            with open(ua_file, "w") as out:
+                out.write("GOD")
+            grab.setup(user_agent=None, user_agent_file=ua_file)
+            self.server.add_response(Response())
+            grab.go(self.server.get_url())
+            req = self.server.get_request()
+            self.assertEqual(req.headers.get("user-agent"), "GOD")
+
+        with temp_file() as ua_file:
+            # random user agent from file should be loaded
+            with open(ua_file, "w") as out:
+                out.write("GOD1\nGOD2")
+            grab.setup(user_agent=None, user_agent_file=ua_file)
+            self.server.add_response(Response())
+            grab.go(self.server.get_url())
+            req = self.server.get_request()
+            self.assertTrue(req.headers.get("user-agent") in ("GOD1", "GOD2"))
+            agent = grab.config["user_agent"]
+
+        # User-agent should not change
+        self.server.add_response(Response())
+        grab.go(self.server.get_url())
+        req = self.server.get_request()
+        self.assertEqual(req.headers.get("user-agent"), agent)
+
+        # User-agent should not change
+        self.server.add_response(Response())
+        grab.go(self.server.get_url())
+        req = self.server.get_request()
+        self.assertEqual(req.headers.get("user-agent"), agent)

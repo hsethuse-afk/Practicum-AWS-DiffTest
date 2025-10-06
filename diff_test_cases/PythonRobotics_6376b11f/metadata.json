@@ -1,0 +1,110 @@
+{
+  "test_id": "PythonRobotics_6376b11f",
+  "project": "02_PythonRobotics",
+  "commit": "4ffd8e76e3429daaeb85a2db0764e7af71604af3",
+  "file": "PathPlanning/DStarLite/d_star_lite.py",
+  "changed_functions": [
+    {
+      "name": "__init__",
+      "before": {
+        "name": "__init__",
+        "lineno": 56,
+        "args": [
+          "self",
+          "ox",
+          "oy"
+        ],
+        "has_annotations": true,
+        "source": "def __init__(self, ox: list, oy: list):\n    self.x_min_world = int(min(ox))\n    self.y_min_world = int(min(oy))\n    self.x_max = int(abs(max(ox) - self.x_min_world))\n    self.y_max = int(abs(max(oy) - self.y_min_world))\n    self.obstacles = [Node(x - self.x_min_world, y - self.y_min_world) for x, y in zip(ox, oy)]\n    self.obstacles_xy = np.array([[obstacle.x, obstacle.y] for obstacle in self.obstacles])\n    self.start = Node(0, 0)\n    self.goal = Node(0, 0)\n    self.U = list()\n    self.km = 0.0\n    self.kold = 0.0\n    self.rhs = self.create_grid(float('inf'))\n    self.g = self.create_grid(float('inf'))\n    self.detected_obstacles_xy = np.empty((0, 2))\n    self.xy = np.empty((0, 2))\n    if show_animation:\n        self.detected_obstacles_for_plotting_x = list()\n        self.detected_obstacles_for_plotting_y = list()\n    self.initialized = False"
+      },
+      "after": {
+        "name": "__init__",
+        "lineno": 56,
+        "args": [
+          "self",
+          "ox",
+          "oy"
+        ],
+        "has_annotations": true,
+        "source": "def __init__(self, ox: list, oy: list):\n    self.x_min_world = int(min(ox))\n    self.y_min_world = int(min(oy))\n    self.x_max = int(abs(max(ox) - self.x_min_world))\n    self.y_max = int(abs(max(oy) - self.y_min_world))\n    self.obstacles = [Node(x - self.x_min_world, y - self.y_min_world) for x, y in zip(ox, oy)]\n    self.obstacles_xy = {(obstacle.x, obstacle.y) for obstacle in self.obstacles}\n    self.start = Node(0, 0)\n    self.goal = Node(0, 0)\n    self.U = list()\n    self.km = 0.0\n    self.kold = 0.0\n    self.rhs = self.create_grid(float('inf'))\n    self.g = self.create_grid(float('inf'))\n    self.detected_obstacles_xy: set[tuple[int, int]] = set()\n    self.xy = np.empty((0, 2))\n    if show_animation:\n        self.detected_obstacles_for_plotting_x = list()\n        self.detected_obstacles_for_plotting_y = list()\n    self.initialized = False"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    },
+    {
+      "name": "is_obstacle",
+      "before": {
+        "name": "is_obstacle",
+        "lineno": 86,
+        "args": [
+          "self",
+          "node"
+        ],
+        "has_annotations": true,
+        "source": "def is_obstacle(self, node: Node):\n    x = np.array([node.x])\n    y = np.array([node.y])\n    obstacle_x_equal = self.obstacles_xy[:, 0] == x\n    obstacle_y_equal = self.obstacles_xy[:, 1] == y\n    is_in_obstacles = (obstacle_x_equal & obstacle_y_equal).any()\n    is_in_detected_obstacles = False\n    if self.detected_obstacles_xy.shape[0] > 0:\n        is_x_equal = self.detected_obstacles_xy[:, 0] == x\n        is_y_equal = self.detected_obstacles_xy[:, 1] == y\n        is_in_detected_obstacles = (is_x_equal & is_y_equal).any()\n    return is_in_obstacles or is_in_detected_obstacles"
+      },
+      "after": {
+        "name": "is_obstacle",
+        "lineno": 84,
+        "args": [
+          "self",
+          "node"
+        ],
+        "has_annotations": true,
+        "source": "def is_obstacle(self, node: Node):\n    is_in_obstacles = (node.x, node.y) in self.obstacles_xy\n    is_in_detected_obstacles = (node.x, node.y) in self.detected_obstacles_xy\n    return is_in_obstacles or is_in_detected_obstacles"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    },
+    {
+      "name": "initialize",
+      "before": {
+        "name": "initialize",
+        "lineno": 146,
+        "args": [
+          "self",
+          "start",
+          "goal"
+        ],
+        "has_annotations": true,
+        "source": "def initialize(self, start: Node, goal: Node):\n    self.start.x = start.x - self.x_min_world\n    self.start.y = start.y - self.y_min_world\n    self.goal.x = goal.x - self.x_min_world\n    self.goal.y = goal.y - self.y_min_world\n    if not self.initialized:\n        self.initialized = True\n        print('Initializing')\n        self.U = list()\n        self.km = 0.0\n        self.rhs = self.create_grid(math.inf)\n        self.g = self.create_grid(math.inf)\n        self.rhs[self.goal.x][self.goal.y] = 0\n        self.U.append((self.goal, self.calculate_key(self.goal)))\n        self.detected_obstacles_xy = np.empty((0, 2))"
+      },
+      "after": {
+        "name": "initialize",
+        "lineno": 134,
+        "args": [
+          "self",
+          "start",
+          "goal"
+        ],
+        "has_annotations": true,
+        "source": "def initialize(self, start: Node, goal: Node):\n    self.start.x = start.x - self.x_min_world\n    self.start.y = start.y - self.y_min_world\n    self.goal.x = goal.x - self.x_min_world\n    self.goal.y = goal.y - self.y_min_world\n    if not self.initialized:\n        self.initialized = True\n        print('Initializing')\n        self.U = list()\n        self.km = 0.0\n        self.rhs = self.create_grid(math.inf)\n        self.g = self.create_grid(math.inf)\n        self.rhs[self.goal.x][self.goal.y] = 0\n        self.U.append((self.goal, self.calculate_key(self.goal)))\n        self.detected_obstacles_xy = set()"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    },
+    {
+      "name": "detect_changes",
+      "before": {
+        "name": "detect_changes",
+        "lineno": 210,
+        "args": [
+          "self"
+        ],
+        "has_annotations": false,
+        "source": "def detect_changes(self):\n    changed_vertices = list()\n    if len(self.spoofed_obstacles) > 0:\n        for spoofed_obstacle in self.spoofed_obstacles[0]:\n            if compare_coordinates(spoofed_obstacle, self.start) or compare_coordinates(spoofed_obstacle, self.goal):\n                continue\n            changed_vertices.append(spoofed_obstacle)\n            self.detected_obstacles_xy = np.concatenate((self.detected_obstacles_xy, [[spoofed_obstacle.x, spoofed_obstacle.y]]))\n            if show_animation:\n                self.detected_obstacles_for_plotting_x.append(spoofed_obstacle.x + self.x_min_world)\n                self.detected_obstacles_for_plotting_y.append(spoofed_obstacle.y + self.y_min_world)\n                plt.plot(self.detected_obstacles_for_plotting_x, self.detected_obstacles_for_plotting_y, '.k')\n                plt.pause(pause_time)\n        self.spoofed_obstacles.pop(0)\n    random.seed()\n    if random.random() > 1 - p_create_random_obstacle:\n        x = random.randint(0, self.x_max - 1)\n        y = random.randint(0, self.y_max - 1)\n        new_obs = Node(x, y)\n        if compare_coordinates(new_obs, self.start) or compare_coordinates(new_obs, self.goal):\n            return changed_vertices\n        changed_vertices.append(Node(x, y))\n        self.detected_obstacles_xy = np.concatenate((self.detected_obstacles_xy, [[x, y]]))\n        if show_animation:\n            self.detected_obstacles_for_plotting_x.append(x + self.x_min_world)\n            self.detected_obstacles_for_plotting_y.append(y + self.y_min_world)\n            plt.plot(self.detected_obstacles_for_plotting_x, self.detected_obstacles_for_plotting_y, '.k')\n            plt.pause(pause_time)\n    return changed_vertices"
+      },
+      "after": {
+        "name": "detect_changes",
+        "lineno": 198,
+        "args": [
+          "self"
+        ],
+        "has_annotations": false,
+        "source": "def detect_changes(self):\n    changed_vertices = list()\n    if len(self.spoofed_obstacles) > 0:\n        for spoofed_obstacle in self.spoofed_obstacles[0]:\n            if compare_coordinates(spoofed_obstacle, self.start) or compare_coordinates(spoofed_obstacle, self.goal):\n                continue\n            changed_vertices.append(spoofed_obstacle)\n            self.detected_obstacles_xy.add((spoofed_obstacle.x, spoofed_obstacle.y))\n            if show_animation:\n                self.detected_obstacles_for_plotting_x.append(spoofed_obstacle.x + self.x_min_world)\n                self.detected_obstacles_for_plotting_y.append(spoofed_obstacle.y + self.y_min_world)\n                plt.plot(self.detected_obstacles_for_plotting_x, self.detected_obstacles_for_plotting_y, '.k')\n                plt.pause(pause_time)\n        self.spoofed_obstacles.pop(0)\n    random.seed()\n    if random.random() > 1 - p_create_random_obstacle:\n        x = random.randint(0, self.x_max - 1)\n        y = random.randint(0, self.y_max - 1)\n        new_obs = Node(x, y)\n        if compare_coordinates(new_obs, self.start) or compare_coordinates(new_obs, self.goal):\n            return changed_vertices\n        changed_vertices.append(Node(x, y))\n        self.detected_obstacles_xy.add((x, y))\n        if show_animation:\n            self.detected_obstacles_for_plotting_x.append(x + self.x_min_world)\n            self.detected_obstacles_for_plotting_y.append(y + self.y_min_world)\n            plt.plot(self.detected_obstacles_for_plotting_x, self.detected_obstacles_for_plotting_y, '.k')\n            plt.pause(pause_time)\n    return changed_vertices"
+      },
+      "has_type_hints_before": false,
+      "has_type_hints_after": false
+    }
+  ]
+}

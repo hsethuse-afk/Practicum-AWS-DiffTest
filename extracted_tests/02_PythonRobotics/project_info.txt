@@ -1,0 +1,6 @@
+Project: PythonRobotics
+Number: 2
+URL: https://github.com/AtsushiSakai/PythonRobotics.git
+Flags: rt
+Test Path: tests
+Requirements: requirements/requirements.txt

@@ -1,0 +1,6 @@
+Project: grab
+Number: 1
+URL: https://github.com/lorien/grab.git
+Flags: rt
+Test Path: tests
+Requirements: requirements_dev.txt

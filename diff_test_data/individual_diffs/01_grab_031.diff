@@ -1,0 +1,19 @@
+Project: 01_grab
+Commit: 0896bbd58268219e1a6dceeeb3a9cb973e3f90cc
+File: grab/base.py
+
+============================================================
+diff --git a/grab/base.py b/grab/base.py
+index 14fb1d2..cd345f8 100644
+--- a/grab/base.py
++++ b/grab/base.py
+@@ -41,9 +41,6 @@ __all__ = ("Grab",)
+ # creates multiple Grab instances - in case of shared counter
+ # grab instances do not overwrite dump logs
+ REQUEST_COUNTER = itertools.count(1)
+-GLOBAL_STATE = {
+-    "dom_build_time": 0,
+-}
+ MUTABLE_CONFIG_KEYS = ("post", "multipart_post", "headers", "cookies")
+ TRANSPORT_CACHE = {}
+ TRANSPORT_ALIAS = {

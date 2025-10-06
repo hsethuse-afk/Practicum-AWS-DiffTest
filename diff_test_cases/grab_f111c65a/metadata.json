@@ -1,0 +1,31 @@
+{
+  "test_id": "grab_f111c65a",
+  "project": "01_grab",
+  "commit": "0896bbd58268219e1a6dceeeb3a9cb973e3f90cc",
+  "file": "grab/document.py",
+  "changed_functions": [
+    {
+      "name": "build_html_tree",
+      "before": {
+        "name": "build_html_tree",
+        "lineno": 558,
+        "args": [
+          "self"
+        ],
+        "has_annotations": false,
+        "source": "def build_html_tree(self):\n    from grab.base import GLOBAL_STATE\n    if self._lxml_tree is None:\n        body = self.unicode_body().strip()\n        if self._grab_config['lowercased_tree']:\n            body = body.lower()\n        body = RE_XML_DECLARATION.sub('', body)\n        if not body:\n            body = '<html></html>'\n        start = time.time()\n        try:\n            self._lxml_tree = self._build_dom(body, 'html')\n        except Exception as ex:\n            if isinstance(ex, ParserError) and 'Document is empty' in str(ex) and ('<html' not in body):\n                body = '<html>%s</html>' % body\n                self._lxml_tree = self._build_dom(body, 'html')\n            elif isinstance(ex, TypeError) and \"object of type 'NoneType' has no len\" in str(ex) and ('<html' not in body):\n                body = '<html>%s</html>' % body\n                self._lxml_tree = self._build_dom(body, 'html')\n            else:\n                raise\n        GLOBAL_STATE['dom_build_time'] += time.time() - start\n    return self._lxml_tree"
+      },
+      "after": {
+        "name": "build_html_tree",
+        "lineno": 558,
+        "args": [
+          "self"
+        ],
+        "has_annotations": false,
+        "source": "def build_html_tree(self):\n    if self._lxml_tree is None:\n        body = self.unicode_body().strip()\n        if self._grab_config['lowercased_tree']:\n            body = body.lower()\n        body = RE_XML_DECLARATION.sub('', body)\n        if not body:\n            body = '<html></html>'\n        start = time.time()\n        try:\n            self._lxml_tree = self._build_dom(body, 'html')\n        except Exception as ex:\n            if isinstance(ex, ParserError) and 'Document is empty' in str(ex) and ('<html' not in body):\n                body = '<html>%s</html>' % body\n                self._lxml_tree = self._build_dom(body, 'html')\n            elif isinstance(ex, TypeError) and \"object of type 'NoneType' has no len\" in str(ex) and ('<html' not in body):\n                body = '<html>%s</html>' % body\n                self._lxml_tree = self._build_dom(body, 'html')\n            else:\n                raise\n    return self._lxml_tree"
+      },
+      "has_type_hints_before": false,
+      "has_type_hints_after": false
+    }
+  ]
+}

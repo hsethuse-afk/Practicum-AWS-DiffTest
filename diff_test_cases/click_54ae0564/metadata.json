@@ -1,0 +1,60 @@
+{
+  "test_id": "click_54ae0564",
+  "project": "10_click",
+  "commit": "555fa9bb37770a6845a98be60b0c84876775552e",
+  "file": "src/click/core.py",
+  "changed_functions": [
+    {
+      "name": "close",
+      "before": {
+        "name": "close",
+        "lineno": 613,
+        "args": [
+          "self"
+        ],
+        "has_annotations": true,
+        "source": "def close(self) -> None:\n    \"\"\"Invoke all close callbacks registered with\n        :meth:`call_on_close`, and exit all context managers entered\n        with :meth:`with_resource`.\n        \"\"\"\n    self._exit_stack.close()\n    self._exit_stack = ExitStack()"
+      },
+      "after": {
+        "name": "close",
+        "lineno": 616,
+        "args": [
+          "self"
+        ],
+        "has_annotations": true,
+        "source": "def close(self) -> None:\n    \"\"\"Invoke all close callbacks registered with\n        :meth:`call_on_close`, and exit all context managers entered\n        with :meth:`with_resource`.\n        \"\"\"\n    self._close_with_exception_info(None, None, None)"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    },
+    {
+      "name": "__exit__",
+      "before": {
+        "name": "__exit__",
+        "lineno": 481,
+        "args": [
+          "self",
+          "exc_type",
+          "exc_value",
+          "tb"
+        ],
+        "has_annotations": true,
+        "source": "def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, tb: TracebackType | None) -> None:\n    self._depth -= 1\n    if self._depth == 0:\n        self.close()\n    pop_context()"
+      },
+      "after": {
+        "name": "__exit__",
+        "lineno": 481,
+        "args": [
+          "self",
+          "exc_type",
+          "exc_value",
+          "tb"
+        ],
+        "has_annotations": true,
+        "source": "def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, tb: TracebackType | None) -> bool | None:\n    self._depth -= 1\n    exit_result: bool | None = None\n    if self._depth == 0:\n        exit_result = self._close_with_exception_info(exc_type, exc_value, tb)\n    pop_context()\n    return exit_result"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    }
+  ]
+}

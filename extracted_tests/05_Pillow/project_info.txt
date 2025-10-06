@@ -1,0 +1,6 @@
+Project: Pillow
+Number: 5
+URL: https://github.com/python-pillow/Pillow.git
+Flags: t
+Test Path: Tests
+Requirements: N/A

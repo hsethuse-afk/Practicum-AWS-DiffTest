@@ -1,0 +1,19 @@
+Project: 02_PythonRobotics
+Commit: 453c25e461a0cda5c8a572c388307b41c92759a2
+File: PathPlanning/StateLatticePlanner/state_lattice_planner.py
+
+============================================================
+diff --git a/PathPlanning/StateLatticePlanner/state_lattice_planner.py b/PathPlanning/StateLatticePlanner/state_lattice_planner.py
+index 05f8df7..554cd0f 100644
+--- a/PathPlanning/StateLatticePlanner/state_lattice_planner.py
++++ b/PathPlanning/StateLatticePlanner/state_lattice_planner.py
+@@ -22,7 +22,9 @@ from matplotlib import pyplot as plt
+ import numpy as np
+ import math
+ import pathlib
++
+ sys.path.append(str(pathlib.Path(__file__).parent.parent))
++sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
+ 
+ import ModelPredictiveTrajectoryGenerator.trajectory_generator as planner
+ import ModelPredictiveTrajectoryGenerator.motion_model as motion_model

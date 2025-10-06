@@ -1,0 +1,18 @@
+Project: 10_click
+Commit: 7db1f209b0b01939ba1e864fe74d3f00dac89dd5
+File: src/click/_termui_impl.py
+
+============================================================
+diff --git a/src/click/_termui_impl.py b/src/click/_termui_impl.py
+index 47f87b8..8c2946d 100644
+--- a/src/click/_termui_impl.py
++++ b/src/click/_termui_impl.py
+@@ -450,7 +450,7 @@ def _pipepager(
+ 
+     c = subprocess.Popen(
+         [str(cmd_path)] + cmd_params,
+-        shell=True,
++        shell=False,
+         stdin=subprocess.PIPE,
+         env=env,
+         errors="replace",

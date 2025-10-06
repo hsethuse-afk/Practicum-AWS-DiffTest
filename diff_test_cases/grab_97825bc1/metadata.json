@@ -1,0 +1,56 @@
+{
+  "test_id": "grab_97825bc1",
+  "project": "01_grab",
+  "commit": "c6b703ace922365cf49526297bd577079b155f88",
+  "file": "grab/transport/urllib3.py",
+  "changed_functions": [
+    {
+      "name": "request",
+      "before": {
+        "name": "request",
+        "lineno": 232,
+        "args": [
+          "self"
+        ],
+        "has_annotations": false,
+        "source": "def request(self):\n    req = self._request\n    if req.proxy:\n        if req.proxy_userpwd:\n            headers = make_headers(proxy_basic_auth=req.proxy_userpwd)\n        else:\n            headers = None\n        proxy_url = '%s://%s' % (req.proxy_type, req.proxy)\n        if req.proxy_type == 'socks5':\n            pool = SOCKSProxyManager(proxy_url, cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())\n        else:\n            pool = ProxyManager(proxy_url, proxy_headers=headers, cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())\n    else:\n        pool = self.pool\n    try:\n        retry = Retry(total=False, connect=False, read=False, redirect=0, status=None)\n        timeout = Timeout(connect=req.connect_timeout, read=req.timeout)\n        if six.PY3:\n            req_url = make_unicode(req.url)\n            req_method = make_unicode(req.method)\n        else:\n            req_url = make_str(req.url)\n            req_method = req.method\n        req.op_started = time.time()\n        try:\n            res = pool.urlopen(req_method, req_url, body=req.data, timeout=timeout, retries=retry, headers=req.headers, preload_content=False)\n        except UnicodeError as ex:\n            raise error.GrabConnectionError('GrabInvalidUrl', ex)\n    except exceptions.ReadTimeoutError as ex:\n        raise error.GrabTimeoutError('ReadTimeoutError', ex)\n    except exceptions.ConnectTimeoutError as ex:\n        raise error.GrabConnectionError('ConnectTimeoutError', ex)\n    except exceptions.ProtocolError as ex:\n        raise error.GrabConnectionError('ProtocolError', ex)\n    except exceptions.SSLError as ex:\n        raise error.GrabConnectionError('SSLError', ex)\n    self.request_head = b''\n    self.request_body = b''\n    self.request_log = b''\n    self._response = res"
+      },
+      "after": {
+        "name": "request",
+        "lineno": 233,
+        "args": [
+          "self"
+        ],
+        "has_annotations": false,
+        "source": "def request(self):\n    req = self._request\n    if req.proxy:\n        if req.proxy_userpwd:\n            headers = make_headers(proxy_basic_auth=req.proxy_userpwd)\n        else:\n            headers = None\n        proxy_url = '%s://%s' % (req.proxy_type, req.proxy)\n        if req.proxy_type == 'socks5':\n            pool = SOCKSProxyManager(proxy_url, cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())\n        else:\n            pool = ProxyManager(proxy_url, proxy_headers=headers, cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())\n    else:\n        pool = self.pool\n    try:\n        retry = Retry(total=False, connect=False, read=False, redirect=0, status=None)\n        timeout = Timeout(connect=req.connect_timeout, read=req.timeout)\n        if six.PY3:\n            req_url = make_unicode(req.url)\n            req_method = make_unicode(req.method)\n        else:\n            req_url = make_str(req.url)\n            req_method = req.method\n        req.op_started = time.time()\n        try:\n            res = pool.urlopen(req_method, req_url, body=req.data, timeout=timeout, retries=retry, headers=req.headers, preload_content=False)\n        except UnicodeError as ex:\n            raise error.GrabConnectionError('GrabInvalidUrl', ex)\n        except LocationParseError as ex:\n            raise error.GrabConnectionError('GrabInvalidUrl', ex)\n    except exceptions.ReadTimeoutError as ex:\n        raise error.GrabTimeoutError('ReadTimeoutError', ex)\n    except exceptions.ConnectTimeoutError as ex:\n        raise error.GrabConnectionError('ConnectTimeoutError', ex)\n    except exceptions.ProtocolError as ex:\n        raise error.GrabConnectionError('ProtocolError', ex)\n    except exceptions.SSLError as ex:\n        raise error.GrabConnectionError('SSLError', ex)\n    self.request_head = b''\n    self.request_body = b''\n    self.request_log = b''\n    self._response = res"
+      },
+      "has_type_hints_before": false,
+      "has_type_hints_after": false
+    },
+    {
+      "name": "prepare_response",
+      "before": {
+        "name": "prepare_response",
+        "lineno": 324,
+        "args": [
+          "self",
+          "grab"
+        ],
+        "has_annotations": false,
+        "source": "def prepare_response(self, grab):\n    try:\n        response = Document()\n        head = ''\n        for key, val in self._response.getheaders().items():\n            if six.PY2:\n                key = key.decode('utf-8', errors='ignore')\n                val = val.decode('utf-8', errors='ignore')\n            if six.PY3:\n                key = key.encode('latin').decode('utf-8', errors='ignore')\n                val = val.encode('latin').decode('utf-8', errors='ignore')\n            head += '%s: %s\\r\\n' % (key, val)\n        head += '\\r\\n'\n        response.head = make_str(head, encoding='utf-8')\n\n        def read_with_timeout():\n            if self._request.config_nobody:\n                return b''\n            maxsize = self._request.config_body_maxsize\n            chunks = []\n            default_chunk_size = 10000\n            if maxsize:\n                chunk_size = min(default_chunk_size, maxsize + 1)\n            else:\n                chunk_size = default_chunk_size\n            bytes_read = 0\n            while True:\n                chunk = self._response.read(chunk_size)\n                if chunk:\n                    bytes_read += len(chunk)\n                    chunks.append(chunk)\n                    if maxsize and bytes_read > maxsize:\n                        break\n                else:\n                    break\n                if self._request.timeout:\n                    if time.time() - self._request.op_started > self._request.timeout:\n                        raise GrabTimeoutError\n            data = b''.join(chunks)\n            if maxsize:\n                data = data[:maxsize]\n            return data\n        if self._request.response_path:\n            response.body_path = self._request.response_path\n            self._request.response_file.write(read_with_timeout())\n            self._request.response_file.close()\n        else:\n            response.body = read_with_timeout()\n        response.code = self._response.status\n        response.url = self._response.get_redirect_location() or self._request.url\n        import email.message\n        hdr = email.message.Message()\n        for key, val in self._response.getheaders().items():\n            if six.PY2:\n                key = key.decode('utf-8', errors='ignore')\n                val = val.decode('utf-8', errors='ignore')\n            if six.PY3:\n                key = key.encode('latin').decode('utf-8', errors='ignore')\n                val = val.encode('latin').decode('utf-8', errors='ignore')\n            hdr[key] = val\n        response.parse(charset=grab.config['document_charset'], headers=hdr)\n        jar = self.extract_cookiejar()\n        response.cookies = CookieManager(jar)\n        return response\n    finally:\n        self._response.release_conn()"
+      },
+      "after": {
+        "name": "prepare_response",
+        "lineno": 327,
+        "args": [
+          "self",
+          "grab"
+        ],
+        "has_annotations": false,
+        "source": "def prepare_response(self, grab):\n    try:\n        response = Document()\n        head = ''\n        for key, val in self._response.getheaders().items():\n            if six.PY2:\n                key = key.decode('utf-8', errors='ignore')\n                val = val.decode('utf-8', errors='ignore')\n            if six.PY3:\n                key = key.encode('latin').decode('utf-8', errors='ignore')\n                val = val.encode('latin').decode('utf-8', errors='ignore')\n            head += '%s: %s\\r\\n' % (key, val)\n        head += '\\r\\n'\n        response.head = make_str(head, encoding='utf-8')\n\n        def read_with_timeout():\n            if self._request.config_nobody:\n                return b''\n            maxsize = self._request.config_body_maxsize\n            chunks = []\n            default_chunk_size = 10000\n            if maxsize:\n                chunk_size = min(default_chunk_size, maxsize + 1)\n            else:\n                chunk_size = default_chunk_size\n            bytes_read = 0\n            while True:\n                chunk = self._response.read(chunk_size)\n                if chunk:\n                    bytes_read += len(chunk)\n                    chunks.append(chunk)\n                    if maxsize and bytes_read > maxsize:\n                        break\n                else:\n                    break\n                if self._request.timeout:\n                    if time.time() - self._request.op_started > self._request.timeout:\n                        raise GrabTimeoutError\n            data = b''.join(chunks)\n            if maxsize:\n                data = data[:maxsize]\n            return data\n        if self._request.response_path:\n            response.body_path = self._request.response_path\n            self._request.response_file.write(read_with_timeout())\n            self._request.response_file.close()\n        else:\n            response.body = read_with_timeout()\n        response.code = self._response.status\n        res_url = self._response.get_redirect_location() or self._request.url\n        parts = urlsplit(res_url)\n        res_url = urlunsplit((parts.scheme, parts.netloc, parts.path or '/', parts.query, parts.fragment))\n        response.url = res_url\n        import email.message\n        hdr = email.message.Message()\n        for key, val in self._response.getheaders().items():\n            if six.PY2:\n                key = key.decode('utf-8', errors='ignore')\n                val = val.decode('utf-8', errors='ignore')\n            if six.PY3:\n                key = key.encode('latin').decode('utf-8', errors='ignore')\n                val = val.encode('latin').decode('utf-8', errors='ignore')\n            hdr[key] = val\n        response.parse(charset=grab.config['document_charset'], headers=hdr)\n        jar = self.extract_cookiejar()\n        response.cookies = CookieManager(jar)\n        return response\n    finally:\n        self._response.release_conn()"
+      },
+      "has_type_hints_before": false,
+      "has_type_hints_after": false
+    }
+  ]
+}

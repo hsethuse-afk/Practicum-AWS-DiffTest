@@ -1,0 +1,58 @@
+{
+  "test_id": "schedule_e393670c",
+  "project": "04_schedule",
+  "commit": "2dcb5833cdf2b7d7a1bda90c19e2fb7e373e66df",
+  "file": "schedule/__init__.py",
+  "changed_functions": [
+    {
+      "name": "__init__",
+      "before": {
+        "name": "__init__",
+        "lineno": 226,
+        "args": [
+          "self",
+          "interval",
+          "scheduler"
+        ],
+        "has_annotations": true,
+        "source": "def __init__(self, interval: int, scheduler: Optional[Scheduler]=None):\n    self.interval: int = interval\n    self.latest: Optional[int] = None\n    self.job_func: Optional[functools.partial] = None\n    self.unit: Optional[str] = None\n    self.at_time: Optional[datetime.time] = None\n    self.at_time_zone = None\n    self.last_run: Optional[datetime.datetime] = None\n    self.next_run: Optional[datetime.datetime] = None\n    self.period: Optional[datetime.timedelta] = None\n    self.start_day: Optional[str] = None\n    self.cancel_after: Optional[datetime.datetime] = None\n    self.tags: Set[Hashable] = set()\n    self.scheduler: Optional[Scheduler] = scheduler"
+      },
+      "after": {
+        "name": "__init__",
+        "lineno": 227,
+        "args": [
+          "self",
+          "interval",
+          "scheduler"
+        ],
+        "has_annotations": true,
+        "source": "def __init__(self, interval: int, scheduler: Optional[Scheduler]=None):\n    self.interval: int = interval\n    self.latest: Optional[int] = None\n    self.job_func: Optional[functools.partial] = None\n    self.unit: Optional[str] = None\n    self.at_time: Optional[datetime.time] = None\n    self.at_time_zone = None\n    self.last_run: Optional[datetime.datetime] = None\n    self.next_run: Optional[datetime.datetime] = None\n    self.start_day: Optional[str] = None\n    self.cancel_after: Optional[datetime.datetime] = None\n    self.tags: Set[Hashable] = set()\n    self.scheduler: Optional[Scheduler] = scheduler"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    },
+    {
+      "name": "_schedule_next_run",
+      "before": {
+        "name": "_schedule_next_run",
+        "lineno": 701,
+        "args": [
+          "self"
+        ],
+        "has_annotations": true,
+        "source": "def _schedule_next_run(self) -> None:\n    \"\"\"\n        Compute the instant when this job should run next.\n        \"\"\"\n    if self.unit not in ('seconds', 'minutes', 'hours', 'days', 'weeks'):\n        raise ScheduleValueError('Invalid unit (valid units are `seconds`, `minutes`, `hours`, `days`, and `weeks`)')\n    if self.latest is not None:\n        if not self.latest >= self.interval:\n            raise ScheduleError('`latest` is greater than `interval`')\n        interval = random.randint(self.interval, self.latest)\n    else:\n        interval = self.interval\n    if self.at_time_zone is not None:\n        now = datetime.datetime.now(self.at_time_zone)\n    else:\n        now = datetime.datetime.now()\n    self.period = datetime.timedelta(**{self.unit: interval})\n    self.next_run = now + self.period\n    if self.start_day is not None:\n        if self.unit != 'weeks':\n            raise ScheduleValueError(\"`unit` should be 'weeks'\")\n        weekdays = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')\n        if self.start_day not in weekdays:\n            raise ScheduleValueError('Invalid start day (valid start days are {})'.format(weekdays))\n        weekday = weekdays.index(self.start_day)\n        days_ahead = weekday - self.next_run.weekday()\n        if days_ahead <= 0:\n            days_ahead += 7\n        self.next_run += datetime.timedelta(days_ahead) - self.period\n    if self.at_time_zone is not None:\n        self.next_run = self.at_time_zone.normalize(self.next_run)\n    if self.at_time is not None:\n        if self.unit not in ('days', 'hours', 'minutes') and self.start_day is None:\n            raise ScheduleValueError('Invalid unit without specifying start day')\n        kwargs = {'second': self.at_time.second, 'microsecond': 0}\n        if self.unit == 'days' or self.start_day is not None:\n            kwargs['hour'] = self.at_time.hour\n        if self.unit in ['days', 'hours'] or self.start_day is not None:\n            kwargs['minute'] = self.at_time.minute\n        self.next_run = self.next_run.replace(**kwargs)\n        last_run_tz = self._to_at_timezone(self.last_run)\n        if not last_run_tz or self.next_run - last_run_tz > self.period:\n            if self.unit == 'days' and self.next_run.time() > now.time() and (self.interval == 1):\n                self.next_run = self.next_run - datetime.timedelta(days=1)\n            elif self.unit == 'hours' and (self.at_time.minute > now.minute or (self.at_time.minute == now.minute and self.at_time.second > now.second)):\n                self.next_run = self.next_run - datetime.timedelta(hours=1)\n            elif self.unit == 'minutes' and self.at_time.second > now.second:\n                self.next_run = self.next_run - datetime.timedelta(minutes=1)\n    if self.start_day is not None and self.at_time is not None:\n        if (self.next_run - now).days >= 7:\n            self.next_run -= self.period\n    if self.at_time_zone is not None:\n        self.next_run = self._normalize_preserve_timestamp(self.next_run)\n        self.next_run = self.next_run.astimezone().replace(tzinfo=None)"
+      },
+      "after": {
+        "name": "_schedule_next_run",
+        "lineno": 700,
+        "args": [
+          "self"
+        ],
+        "has_annotations": true,
+        "source": "def _schedule_next_run(self) -> None:\n    \"\"\"\n        Compute the instant when this job should run next.\n        \"\"\"\n    if self.unit not in ('seconds', 'minutes', 'hours', 'days', 'weeks'):\n        raise ScheduleValueError('Invalid unit (valid units are `seconds`, `minutes`, `hours`, `days`, and `weeks`)')\n    if self.latest is not None:\n        if not self.latest >= self.interval:\n            raise ScheduleError('`latest` is greater than `interval`')\n        interval = random.randint(self.interval, self.latest)\n    else:\n        interval = self.interval\n    now = datetime.datetime.now(self.at_time_zone)\n    next_run = now\n    if self.start_day is not None:\n        if self.unit != 'weeks':\n            raise ScheduleValueError(\"`unit` should be 'weeks'\")\n        next_run = _move_to_next_weekday(next_run, self.start_day)\n    if self.at_time is not None:\n        next_run = self._move_to_at_time(next_run)\n    period = datetime.timedelta(**{self.unit: interval})\n    if interval != 1:\n        next_run += period\n    while next_run <= now:\n        next_run += period\n    next_run = self._correct_utc_offset(next_run, fixate_time=self.at_time is not None)\n    if self.at_time_zone is not None:\n        next_run = next_run.astimezone()\n        next_run = next_run.replace(tzinfo=None)\n    self.next_run = next_run"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    }
+  ]
+}

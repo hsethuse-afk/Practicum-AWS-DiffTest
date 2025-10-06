@@ -1,0 +1,18 @@
+Project: 01_grab
+Commit: 4dc5e434e07490cd51f88e68c033832cf25c3b42
+File: setup.py
+
+============================================================
+diff --git a/setup.py b/setup.py
+index ff92fc2..c4f598e 100644
+--- a/setup.py
++++ b/setup.py
+@@ -2,7 +2,7 @@ from setuptools import setup
+ 
+ setup(
+     name="grab",
+-    version="1.1.0",
++    version="1.2.0",
+     packages=[
+         "grab",
+         "grab.script",

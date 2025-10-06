@@ -1,0 +1,18 @@
+Project: 03_flask-api
+Commit: 1ceda547fb51470252685d15c2b1d9675d4ea898
+File: flask_api/renderers.py
+
+============================================================
+diff --git a/flask_api/renderers.py b/flask_api/renderers.py
+index b5951a2..8fd1689 100644
+--- a/flask_api/renderers.py
++++ b/flask_api/renderers.py
+@@ -96,7 +96,7 @@ class BrowsableAPIRenderer(BaseRenderer):
+ 
+         # Determine the allowed methods on this view.
+         if hasattr(flask, 'globals') and \
+-            hasattr(flask.globals, 'request_ctx'):
++                hasattr(flask.globals, 'request_ctx'):
+             # update session for Flask >= 2.2
+             ctx = flask.globals.request_ctx._get_current_object()
+         else:  # pragma: no cover
