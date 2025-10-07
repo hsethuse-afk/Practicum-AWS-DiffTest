@@ -1,30 +1,35 @@
+from typing import List, Optional
 
-def split_words(txt):
-    '''
-    Given a string of words, return a list of words split on whitespace, if no whitespaces exists in the text you
-    should split on commas ',' if no commas exists you should return the number of lower-case letters with odd order in the
-    alphabet, ord('a') = 0, ord('b') = 1, ... ord('z') = 25
-    Examples
-    split_words("Hello world!") ➞ ["Hello", "world!"]
-    split_words("Hello,world!") ➞ ["Hello", "world!"]
-    split_words("abcdef") == 3 
-    '''
-    if " " in txt:
-        return txt.split()
-    elif "," in txt:
-        return txt.replace(',',' ').split()
-    else:
-        return len([i for i in txt if i.islower() and ord(i)%2 == 0])
+
+def longest(strings: List[str]) -> Optional[str]:
+    """ Out of list of strings, return the longest one. Return the first one in case of multiple
+    strings of the same length. Return None in case the input list is empty.
+    >>> longest([])
+
+    >>> longest(['a', 'b', 'c'])
+    'a'
+    >>> longest(['a', 'bb', 'ccc'])
+    'ccc'
+    """
+    if not strings:
+        return None
+
+    maxlen = max(len(x) for x in strings)
+    for s in strings:
+        if len(s) == maxlen:
+            return s
+
+
+
+METADATA = {
+    'author': 'jt',
+    'dataset': 'test'
+}
+
 
 def check(candidate):
+    assert candidate([]) == None
+    assert candidate(['x', 'y', 'z']) == 'x'
+    assert candidate(['x', 'yyy', 'zzzz', 'www', 'kkkk', 'abc']) == 'zzzz'
 
-    assert candidate("Hello world!") == ["Hello","world!"]
-    assert candidate("Hello,world!") == ["Hello","world!"]
-    assert candidate("Hello world,!") == ["Hello","world,!"]
-    assert candidate("Hello,Hello,world !") == ["Hello,Hello,world","!"]
-    assert candidate("abcdef") == 3
-    assert candidate("aaabb") == 2
-    assert candidate("aaaBb") == 1
-    assert candidate("") == 0
-
-check(split_words)
+check(longest)

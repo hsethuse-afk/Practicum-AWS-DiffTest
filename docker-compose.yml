@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  difftest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: difftest-env
+    volumes:
+      # Mount source code for live development
+      - ./src:/app/src
+      # Mount test samples
+      - ./tests:/app/tests
+      # Mount dynamic dependencies directory
+      - ./dynamic_deps:/app/dynamic_deps
+    environment:
+      - PYTHONPATH=/app/src:/app
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # Service for running differential tests in isolation
+  difftest-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: difftest-runner
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./dynamic_deps:/app/dynamic_deps
+      - ./results:/app/results
+    environment:
+      - PYTHONPATH=/app/src:/app
+      - PYTHONUNBUFFERED=1
+    profiles:
+      - runner

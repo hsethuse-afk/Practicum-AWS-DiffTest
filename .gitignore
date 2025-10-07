@@ -27,3 +27,8 @@ build/
 # OS-specific junk
 .DS_Store
 Thumbs.db
+
+# Environment builder generated files
+requirements_discovered.txt
+*_generated.txt
+.difftest_requirements.txt
