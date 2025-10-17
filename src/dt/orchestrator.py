@@ -6,6 +6,7 @@ from .abrunner import ABRunner
 from .results import ResultCollector
 from .logger import Logger
 from .comparator import ABComparator
+from .project_builder import ProjectBuilder
 from . import logger
 
 
@@ -18,6 +19,7 @@ class Orchestrator:
         self.runner = ABRunner()
         self.comparator = ABComparator()
         self.results = ResultCollector()
+        self.project_builder = ProjectBuilder()
 
     def run_pair(
         self,
@@ -74,3 +76,248 @@ class Orchestrator:
         self.results.print(out)
 
         return out
+
+    def run_git_diff(
+        self,
+        commit: str = "HEAD",
+        func_name: str = None,
+        max_examples: int = 200,
+        test_file: str = None,
+    ):
+        """
+        Run differential testing on modified functions from a git commit.
+
+        Args:
+            commit: Git commit reference (e.g., "HEAD", "abc123", "HEAD~1")
+            func_name: Optional filter for specific function name
+            max_examples: Maximum number of test examples per function
+            test_file: Optional path to test file for type inference
+
+        Returns:
+            List of test results for each modified function
+        """
+        from .diffpairer import DiffPairer
+
+        pairer = DiffPairer()
+
+        # Get modified functions from git diff
+        self.log.verbose(f"[Orchestrator] Parsing git commit: {commit}")
+        pairs = pairer.pair_from_git_commit(commit, func_name)
+
+        if not pairs:
+            self.log.verbose("[Orchestrator] No modified functions found")
+            return []
+
+        self.log.verbose(
+            f"[Orchestrator] Found {len(pairs)} modified function(s)"
+        )
+
+        # Run tests on each pair
+        results = []
+        for i, (target, cleanup) in enumerate(pairs, 1):
+            self.log.verbose(
+                f"[Orchestrator] Testing {i}/{len(pairs)}: {target.func_name}"
+            )
+
+            try:
+                result = self.run_pair(
+                    file_a=target.file_a,
+                    file_b=target.file_b,
+                    func_name=target.func_name,
+                    max_examples=max_examples,
+                    test_file=test_file,
+                )
+                results.append(result)
+            finally:
+                cleanup()
+
+        return results
+
+    def run_diff_file(
+        self,
+        diff_file_path: str,
+        func_name: str = None,
+        max_examples: int = 200,
+        test_file: str = None,
+    ):
+        """
+        Run differential testing on modified functions from a diff file.
+
+        Args:
+            diff_file_path: Path to file containing git diff
+            func_name: Optional filter for specific function name
+            max_examples: Maximum number of test examples per function
+            test_file: Optional path to test file for type inference
+
+        Returns:
+            List of test results for each modified function
+        """
+        from .diffpairer import DiffPairer
+
+        pairer = DiffPairer()
+
+        # Get modified functions from diff file
+        self.log.verbose(f"[Orchestrator] Parsing diff file: {diff_file_path}")
+        pairs = pairer.pair_from_diff_file(diff_file_path, func_name)
+
+        if not pairs:
+            self.log.verbose("[Orchestrator] No modified functions found")
+            return []
+
+        self.log.verbose(
+            f"[Orchestrator] Found {len(pairs)} modified function(s)"
+        )
+
+        # Run tests on each pair
+        results = []
+        for i, (target, cleanup) in enumerate(pairs, 1):
+            self.log.verbose(
+                f"[Orchestrator] Testing {i}/{len(pairs)}: {target.func_name}"
+            )
+
+            try:
+                result = self.run_pair(
+                    file_a=target.file_a,
+                    file_b=target.file_b,
+                    func_name=target.func_name,
+                    max_examples=max_examples,
+                    test_file=test_file,
+                )
+                results.append(result)
+            finally:
+                cleanup()
+
+        return results
+
+    def run_diff_with_repo(
+        self,
+        diff_file_path: str,
+        repo_url: str,
+        commit: str = None,
+        func_name: str = None,
+        max_examples: int = 200,
+        install_deps: bool = True,
+    ):
+        """
+        Run differential testing from a diff file with repository context.
+
+        This is the key method for testing when you only have a git diff.
+        It will:
+        1. Clone the repository
+        2. Install dependencies
+        3. Parse the diff to find modified functions
+        4. Run differential tests with full type inference support
+
+        Args:
+            diff_file_path: Path to file containing git diff
+            repo_url: Repository URL to clone (e.g., "https://github.com/user/repo.git")
+            commit: Optional specific commit (extracted from diff if not provided)
+            func_name: Optional filter for specific function name
+            max_examples: Maximum number of test examples per function
+            install_deps: Whether to install dependencies from requirements.txt
+
+        Returns:
+            List of test results for each modified function
+        """
+        import os
+
+        # Read diff file
+        with open(diff_file_path, 'r') as f:
+            diff_content = f.read()
+
+        # Build project environment
+        self.log.verbose(f"[Orchestrator] Building project from {repo_url}")
+        if install_deps:
+            env = self.project_builder.build_from_url(repo_url, commit or "HEAD", install_deps=True)
+        else:
+            env = self.project_builder.build_from_diff_with_repo(
+                diff_content, repo_url, commit
+            )
+
+        try:
+            self.log.verbose(
+                f"[Orchestrator] Project cloned to: {env.project_root}"
+            )
+
+            # Find test file if exists (for type inference)
+            test_file = self._find_test_file(env.project_root)
+
+            # Parse diff to find modified functions
+            pairer = DiffPairer()
+            self.log.verbose(f"[Orchestrator] Parsing diff file: {diff_file_path}")
+
+            # Change to project root for relative paths to work
+            original_cwd = os.getcwd()
+            os.chdir(env.project_root)
+
+            try:
+                pairs = pairer.pair_from_diff_file(diff_file_path, func_name)
+
+                if not pairs:
+                    self.log.verbose("[Orchestrator] No modified functions found")
+                    return []
+
+                self.log.verbose(
+                    f"[Orchestrator] Found {len(pairs)} modified function(s)"
+                )
+
+                # Run tests on each pair
+                results = []
+                for i, (target, cleanup_pair) in enumerate(pairs, 1):
+                    self.log.verbose(
+                        f"[Orchestrator] Testing {i}/{len(pairs)}: {target.func_name}"
+                    )
+
+                    try:
+                        result = self.run_pair(
+                            file_a=target.file_a,
+                            file_b=target.file_b,
+                            func_name=target.func_name,
+                            max_examples=max_examples,
+                            test_file=test_file,
+                        )
+                        results.append(result)
+                    finally:
+                        cleanup_pair()
+
+                return results
+            finally:
+                os.chdir(original_cwd)
+
+        finally:
+            env.cleanup()
+
+    def _find_test_file(self, project_root: str) -> str:
+        """
+        Try to find a test file for type inference.
+
+        Args:
+            project_root: Root directory of the project
+
+        Returns:
+            Path to test file if found, None otherwise
+        """
+        import os
+        import glob
+
+        # Common test file patterns
+        patterns = [
+            "test_*.py",
+            "*_test.py",
+            "tests/test_*.py",
+            "tests/*_test.py",
+        ]
+
+        for pattern in patterns:
+            matches = glob.glob(
+                os.path.join(project_root, "**", pattern),
+                recursive=True
+            )
+            if matches:
+                self.log.verbose(
+                    f"[Orchestrator] Found test file: {matches[0]}"
+                )
+                return matches[0]
+
+        self.log.verbose("[Orchestrator] No test file found")
+        return None

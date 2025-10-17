@@ -1,15 +1,110 @@
 from .contracts import TargetPair
+from .git_diff_parser import GitDiffParser, ModifiedFunction
+from .temp_file_builder import TempFileBuilder
+from typing import List, Optional, Tuple
 
 
 class DiffPairer:
     """
-    Early-stage: no real diffing. Just accept two file paths and a known entrypoint.
-    Later you can swap this for a Git-based pairer without touching callers.
+    Pairs old and new versions of functions for differential testing.
+
+    Supports two modes:
+    1. Manual mode: Accept two file paths and a function name
+    2. Git diff mode: Parse git diff to automatically find modified functions
     """
+
+    def __init__(self):
+        self.git_parser = GitDiffParser()
+        self.temp_builder = TempFileBuilder()
 
     def pair(
         self, file_a: str, file_b: str, func_name: str
     ) -> TargetPair:
+        """
+        Manual pairing mode: accept two file paths and a function name.
+
+        Args:
+            file_a: Path to old version file
+            file_b: Path to new version file
+            func_name: Function name to test
+
+        Returns:
+            TargetPair object
+        """
         return TargetPair(
             file_a=file_a, file_b=file_b, func_name=func_name
         )
+
+    def pair_from_git_commit(
+        self,
+        commit: str = "HEAD",
+        func_name: Optional[str] = None
+    ) -> List[Tuple[TargetPair, callable]]:
+        """
+        Git diff mode: parse commit to find modified functions.
+
+        Args:
+            commit: Git commit reference (e.g., "HEAD", "abc123")
+            func_name: Optional filter for specific function name
+
+        Returns:
+            List of (TargetPair, cleanup_function) tuples
+            The cleanup function should be called after testing to remove temp files
+        """
+        # Parse git diff
+        modified_funcs = self.git_parser.parse_diff_from_commit(commit)
+
+        # Filter by function name if specified
+        if func_name:
+            modified_funcs = [
+                f for f in modified_funcs
+                if f.function_name == func_name
+            ]
+
+        # Create temp files and target pairs
+        pairs = []
+        for mod_func in modified_funcs:
+            temp_files = self.temp_builder.build_temp_files(mod_func)
+            target = TargetPair(
+                file_a=temp_files.old_file,
+                file_b=temp_files.new_file,
+                func_name=mod_func.function_name
+            )
+            pairs.append((target, temp_files.cleanup))
+
+        return pairs
+
+    def pair_from_diff_file(
+        self,
+        diff_file_path: str,
+        func_name: Optional[str] = None
+    ) -> List[Tuple[TargetPair, callable]]:
+        """
+        Git diff mode: parse diff file to find modified functions.
+
+        Args:
+            diff_file_path: Path to file containing git diff
+            func_name: Optional filter for specific function name
+
+        Returns:
+            List of (TargetPair, cleanup_function) tuples
+        """
+        modified_funcs = self.git_parser.parse_diff_from_file(diff_file_path)
+
+        if func_name:
+            modified_funcs = [
+                f for f in modified_funcs
+                if f.function_name == func_name
+            ]
+
+        pairs = []
+        for mod_func in modified_funcs:
+            temp_files = self.temp_builder.build_temp_files(mod_func)
+            target = TargetPair(
+                file_a=temp_files.old_file,
+                file_b=temp_files.new_file,
+                func_name=mod_func.function_name
+            )
+            pairs.append((target, temp_files.cleanup))
+
+        return pairs
