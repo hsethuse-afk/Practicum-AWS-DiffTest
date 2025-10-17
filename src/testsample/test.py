@@ -1,30 +1,51 @@
 
-def split_words(txt):
-    '''
-    Given a string of words, return a list of words split on whitespace, if no whitespaces exists in the text you
-    should split on commas ',' if no commas exists you should return the number of lower-case letters with odd order in the
-    alphabet, ord('a') = 0, ord('b') = 1, ... ord('z') = 25
-    Examples
-    split_words("Hello world!") ➞ ["Hello", "world!"]
-    split_words("Hello,world!") ➞ ["Hello", "world!"]
-    split_words("abcdef") == 3 
-    '''
-    if " " in txt:
-        return txt.split()
-    elif "," in txt:
-        return txt.replace(',',' ').split()
-    else:
-        return len([i for i in txt if i.islower() and ord(i)%2 == 0])
+def maximum(arr, k):
+    """
+    Given an array arr of integers and a positive integer k, return a sorted list 
+    of length k with the maximum k numbers in arr.
+
+    Example 1:
+
+        Input: arr = [-3, -4, 5], k = 3
+        Output: [-4, -3, 5]
+
+    Example 2:
+
+        Input: arr = [4, -4, 4], k = 2
+        Output: [4, 4]
+
+    Example 3:
+
+        Input: arr = [-3, 2, 1, 2, -1, -2, 1], k = 1
+        Output: [2]
+
+    Note:
+        1. The length of the array will be in the range of [1, 1000].
+        2. The elements in the array will be in the range of [-1000, 1000].
+        3. 0 <= k <= len(arr)
+    """
+    if k == 0:
+        return []
+    arr.sort()
+    ans = arr[-k:]
+    return ans
 
 def check(candidate):
 
-    assert candidate("Hello world!") == ["Hello","world!"]
-    assert candidate("Hello,world!") == ["Hello","world!"]
-    assert candidate("Hello world,!") == ["Hello","world,!"]
-    assert candidate("Hello,Hello,world !") == ["Hello,Hello,world","!"]
-    assert candidate("abcdef") == 3
-    assert candidate("aaabb") == 2
-    assert candidate("aaaBb") == 1
-    assert candidate("") == 0
+    # Check some simple cases
+    assert candidate([-3, -4, 5], 3) == [-4, -3, 5]
+    assert candidate([4, -4, 4], 2) == [4, 4]
+    assert candidate([-3, 2, 1, 2, -1, -2, 1], 1) == [2]
+    assert candidate([123, -123, 20, 0 , 1, 2, -3], 3) == [2, 20, 123]
+    assert candidate([-123, 20, 0 , 1, 2, -3], 4) == [0, 1, 2, 20]
+    assert candidate([5, 15, 0, 3, -13, -8, 0], 7) == [-13, -8, 0, 0, 3, 5, 15]
+    assert candidate([-1, 0, 2, 5, 3, -10], 2) == [3, 5]
+    assert candidate([1, 0, 5, -7], 1) == [5]
+    assert candidate([4, -4], 2) == [-4, 4]
+    assert candidate([-10, 10], 2) == [-10, 10]
 
-check(split_words)
+    # Check some edge cases that are easy to work out by hand.
+    assert candidate([1, 2, 3, -23, 243, -400, 0], 0) == []
+
+
+check(maximum)
