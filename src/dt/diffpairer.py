@@ -77,7 +77,8 @@ class DiffPairer:
     def pair_from_diff_file(
         self,
         diff_file_path: str,
-        func_name: Optional[str] = None
+        func_name: Optional[str] = None,
+        commit: Optional[str] = None
     ) -> List[Tuple[TargetPair, callable]]:
         """
         Git diff mode: parse diff file to find modified functions.
@@ -85,20 +86,28 @@ class DiffPairer:
         Args:
             diff_file_path: Path to file containing git diff
             func_name: Optional filter for specific function name
+            commit: Optional commit reference for getting file content
 
         Returns:
             List of (TargetPair, cleanup_function) tuples
         """
-        modified_funcs = self.git_parser.parse_diff_from_file(diff_file_path)
+        modified_funcs = self.git_parser.parse_diff_from_file(diff_file_path, commit)
 
+        # Filter by function name if specified
         if func_name:
             modified_funcs = [
                 f for f in modified_funcs
                 if f.function_name == func_name
             ]
 
+        # Filter out class methods (not supported yet)
+        module_level_funcs = [
+            f for f in modified_funcs
+            if not f.is_class_method
+        ]
+
         pairs = []
-        for mod_func in modified_funcs:
+        for mod_func in module_level_funcs:
             temp_files = self.temp_builder.build_temp_files(mod_func)
             target = TargetPair(
                 file_a=temp_files.old_file,

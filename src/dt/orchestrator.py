@@ -251,15 +251,42 @@ class Orchestrator:
             os.chdir(env.project_root)
 
             try:
-                pairs = pairer.pair_from_diff_file(diff_file_path, func_name)
+                # Get pairs for testing and extract info about all modified functions
+                pairs = pairer.pair_from_diff_file(diff_file_path, func_name, commit)
+
+                # Also get ALL modified functions (including class methods) for reporting
+                all_modified = pairer.git_parser.parse_diff_from_file(diff_file_path, commit)
+
+                # Report all found functions/methods
+                if all_modified:
+                    module_funcs = [m for m in all_modified if not m.is_class_method]
+                    class_methods = [m for m in all_modified if m.is_class_method]
+
+                    print(f"\n📋 Found {len(all_modified)} modified function(s)/method(s):")
+
+                    if module_funcs:
+                        print(f"\n✅ Module-level functions (can test): {len(module_funcs)}")
+                        for m in module_funcs:
+                            print(f"   - {m.function_name}() at lines {m.line_start}-{m.line_end}")
+
+                    if class_methods:
+                        print(f"\n📦 Class methods (extracted but not tested yet): {len(class_methods)}")
+                        for m in class_methods:
+                            print(f"   - {m.class_name}.{m.function_name}() at lines {m.line_start}-{m.line_end}")
+                    print()
 
                 if not pairs:
-                    self.log.verbose("[Orchestrator] No modified functions found")
+                    self.log.verbose("[Orchestrator] No testable functions found (class methods are not supported yet)")
                     return []
 
                 self.log.verbose(
-                    f"[Orchestrator] Found {len(pairs)} modified function(s)"
+                    f"[Orchestrator] Testing {len(pairs)} module-level function(s)"
                 )
+
+                # Update harness with venv_path if available
+                if env.venv_path:
+                    self.log.verbose(f"[Orchestrator] Using virtual environment: {env.venv_path}")
+                    self.harness = HarnessBuilder(venv_path=env.venv_path)
 
                 # Run tests on each pair
                 results = []

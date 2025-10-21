@@ -22,6 +22,8 @@ class ModifiedFunction:
     new_content: str  # Full file content after change
     line_start: int  # Function start line in new version
     line_end: int    # Function end line in new version
+    class_name: Optional[str] = None  # Class name if this is a method
+    is_class_method: bool = False  # True if this is a class method
 
 
 class GitDiffParser:
@@ -63,19 +65,20 @@ class GitDiffParser:
         """
         return self._parse_diff_output(diff_string, None)
 
-    def parse_diff_from_file(self, diff_file_path: str) -> List[ModifiedFunction]:
+    def parse_diff_from_file(self, diff_file_path: str, commit: Optional[str] = None) -> List[ModifiedFunction]:
         """
         Parse a diff file.
 
         Args:
             diff_file_path: Path to file containing git diff output
+            commit: Optional commit reference for getting file content
 
         Returns:
             List of ModifiedFunction objects
         """
         with open(diff_file_path, 'r') as f:
             diff_string = f.read()
-        return self._parse_diff_output(diff_string, None)
+        return self._parse_diff_output(diff_string, commit)
 
     def _get_git_diff(self, commit: str) -> str:
         """Get git diff output for a commit"""
@@ -133,14 +136,16 @@ class GitDiffParser:
                 file_diff['changed_lines']
             )
 
-            for func_name, line_start, line_end in changed_funcs:
+            for func_name, line_start, line_end, class_name, is_class_method in changed_funcs:
                 modified_functions.append(ModifiedFunction(
                     file_path=file_diff['path'],
                     function_name=func_name,
                     old_content=old_content,
                     new_content=new_content,
                     line_start=line_start,
-                    line_end=line_end
+                    line_end=line_end,
+                    class_name=class_name,
+                    is_class_method=is_class_method
                 ))
 
         return modified_functions
@@ -164,8 +169,8 @@ class GitDiffParser:
                         'path': current_file,
                         'changed_lines': changed_lines
                     })
-                # Extract file path
-                match = re.search(r'b/(.+)$', line)
+                # Extract file path - match the last b/ to get the new file path
+                match = re.search(r' b/(.+)$', line)
                 current_file = match.group(1) if match else None
                 changed_lines = []
 
@@ -238,9 +243,11 @@ class GitDiffParser:
         old_content: str,
         new_content: str,
         changed_lines: List[int]
-    ) -> List[Tuple[str, int, int]]:
+    ) -> List[Tuple[str, int, int, Optional[str], bool]]:
         """
         Use AST to find which functions were modified.
+
+        Now identifies both module-level functions AND class methods.
 
         Args:
             old_content: File content before change
@@ -248,7 +255,7 @@ class GitDiffParser:
             changed_lines: Line numbers that changed
 
         Returns:
-            List of (function_name, start_line, end_line) tuples
+            List of (function_name, start_line, end_line, class_name, is_class_method) tuples
         """
         modified_functions = []
 
@@ -256,8 +263,8 @@ class GitDiffParser:
             # Parse new version to get function definitions
             new_tree = ast.parse(new_content)
 
-            # Find functions that contain changed lines
-            for node in ast.walk(new_tree):
+            # Find MODULE-LEVEL functions
+            for node in new_tree.body:
                 if isinstance(node, ast.FunctionDef):
                     func_start = node.lineno
                     func_end = node.end_lineno or func_start
@@ -267,8 +274,36 @@ class GitDiffParser:
                         modified_functions.append((
                             node.name,
                             func_start,
-                            func_end
+                            func_end,
+                            None,  # No class name
+                            False  # Not a class method
                         ))
+                        self.log.debug(
+                            f"[GitDiffParser] Found modified module-level function: {node.name}"
+                        )
+
+            # Find CLASS METHODS
+            for node in new_tree.body:
+                if isinstance(node, ast.ClassDef):
+                    class_name = node.name
+
+                    for item in node.body:
+                        if isinstance(item, ast.FunctionDef):
+                            func_start = item.lineno
+                            func_end = item.end_lineno or func_start
+
+                            # Check if any changed line is within this method
+                            if any(func_start <= line <= func_end for line in changed_lines):
+                                modified_functions.append((
+                                    item.name,
+                                    func_start,
+                                    func_end,
+                                    class_name,  # Class name
+                                    True  # Is a class method
+                                ))
+                                self.log.verbose(
+                                    f"[GitDiffParser] Found modified class method: {class_name}.{item.name} (lines {func_start}-{func_end})"
+                                )
 
         except SyntaxError as e:
             self.log.debug(f"[GitDiffParser] Failed to parse Python file: {e}")

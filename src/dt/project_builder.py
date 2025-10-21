@@ -160,50 +160,127 @@ class ProjectBuilder:
             shutil.rmtree(temp_dir, ignore_errors=True)
             raise RuntimeError(f"Failed to build project from {repo_url}: {e}")
 
-    def _install_dependencies(self, project_root: str) -> Optional[str]:
+    def _create_venv(self, project_root: str) -> str:
         """
-        Install project dependencies.
-
-        Strategy:
-        1. Look for requirements.txt
-        2. Install in current environment (simple mode)
-
-        Future: Create virtual environment for isolation
+        Create a virtual environment for the project.
 
         Args:
             project_root: Root directory of the project
 
         Returns:
-            Path to virtual environment (None for now)
+            Path to virtual environment
         """
-        requirements_file = os.path.join(project_root, "requirements.txt")
+        venv_path = os.path.join(project_root, ".venv")
 
-        if not os.path.exists(requirements_file):
-            self.log.verbose(
-                "[ProjectBuilder] No requirements.txt found, skipping dependency install"
-            )
-            return None
-
-        self.log.verbose(
-            f"[ProjectBuilder] Installing dependencies from requirements.txt"
-        )
+        self.log.verbose(f"[ProjectBuilder] Creating virtual environment at {venv_path}")
 
         try:
-            # Install in current environment (simple approach)
             subprocess.run(
-                ["pip", "install", "-q", "-r", requirements_file],
-                cwd=project_root,
+                ["python3", "-m", "venv", venv_path],
                 capture_output=True,
                 text=True,
                 check=True
             )
-            self.log.verbose("[ProjectBuilder] Dependencies installed successfully")
+            self.log.verbose("[ProjectBuilder] Virtual environment created successfully")
+            return venv_path
         except subprocess.CalledProcessError as e:
-            self.log.debug(
-                f"[ProjectBuilder] Failed to install dependencies: {e.stderr}"
+            self.log.debug(f"[ProjectBuilder] Failed to create venv: {e.stderr}")
+            return None
+
+    def _get_venv_python(self, venv_path: str) -> str:
+        """Get path to Python executable in virtual environment"""
+        if os.name == 'nt':  # Windows
+            return os.path.join(venv_path, "Scripts", "python.exe")
+        else:  # Unix/Linux/Mac
+            return os.path.join(venv_path, "bin", "python")
+
+    def _get_venv_pip(self, venv_path: str) -> str:
+        """Get path to pip executable in virtual environment"""
+        if os.name == 'nt':  # Windows
+            return os.path.join(venv_path, "Scripts", "pip.exe")
+        else:  # Unix/Linux/Mac
+            return os.path.join(venv_path, "bin", "pip")
+
+    def _install_dependencies(self, project_root: str, use_venv: bool = True) -> Optional[str]:
+        """
+        Install project dependencies.
+
+        Strategy:
+        1. Create virtual environment (if use_venv=True)
+        2. Look for requirements.txt
+        3. Look for pyproject.toml
+        4. Install dependencies
+
+        Args:
+            project_root: Root directory of the project
+            use_venv: Whether to create and use virtual environment
+
+        Returns:
+            Path to virtual environment (None if not using venv)
+        """
+        venv_path = None
+        pip_cmd = "pip"
+
+        # Create virtual environment if requested
+        if use_venv:
+            venv_path = self._create_venv(project_root)
+            if venv_path:
+                pip_cmd = self._get_venv_pip(venv_path)
+                self.log.verbose(f"[ProjectBuilder] Using pip from venv: {pip_cmd}")
+
+        requirements_file = os.path.join(project_root, "requirements.txt")
+        pyproject_file = os.path.join(project_root, "pyproject.toml")
+
+        # Try requirements.txt first
+        if os.path.exists(requirements_file):
+            self.log.verbose(
+                f"[ProjectBuilder] Installing dependencies from requirements.txt"
             )
 
-        return None
+            try:
+                subprocess.run(
+                    [pip_cmd, "install", "-q", "-r", requirements_file],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                self.log.verbose("[ProjectBuilder] Dependencies installed successfully")
+            except subprocess.CalledProcessError as e:
+                self.log.debug(
+                    f"[ProjectBuilder] Failed to install dependencies: {e.stderr}"
+                )
+
+            return venv_path
+
+        # Try pyproject.toml
+        if os.path.exists(pyproject_file):
+            self.log.verbose(
+                f"[ProjectBuilder] Installing project from pyproject.toml"
+            )
+
+            try:
+                # Install the project in editable mode to get dependencies
+                subprocess.run(
+                    [pip_cmd, "install", "-q", "-e", "."],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                self.log.verbose("[ProjectBuilder] Project and dependencies installed successfully")
+            except subprocess.CalledProcessError as e:
+                self.log.debug(
+                    f"[ProjectBuilder] Failed to install project: {e.stderr}"
+                )
+
+            return venv_path
+
+        # No dependency file found
+        self.log.verbose(
+            "[ProjectBuilder] No requirements.txt or pyproject.toml found, skipping dependency install"
+        )
+        return venv_path
 
     def build_from_diff_with_repo(
         self,
