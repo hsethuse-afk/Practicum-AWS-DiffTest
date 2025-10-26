@@ -1,6 +1,9 @@
 from .contracts import RunConfig, TargetPair, LoggerMode
 from .diffpairer import DiffPairer
 from .strategy.strategies import StrategySynthesizer
+from .type_inference.type_discovery import TypeDiscoverer
+from .type_inference.type_inference_engine import TypeInferenceEngine
+from .type_inference.righttyper_engine import RightTyperEngine
 from .harness import HarnessBuilder
 from .abrunner import ABRunner
 from .results import ResultCollector
@@ -11,10 +14,24 @@ from . import logger
 
 
 class Orchestrator:
-    def __init__(self, log_mode: LoggerMode = LoggerMode.Normal):
+    def __init__(
+        self,
+        log_mode: LoggerMode = LoggerMode.Normal,
+        inference_engine: TypeInferenceEngine = None,
+    ):
+        """
+        Initialize the orchestrator.
+
+        Args:
+            log_mode: Logging verbosity level
+            inference_engine: Type inference engine to use (default: RightTyperEngine)
+                             Can be swapped for other engines (MonkeyType, Pytype, etc.)
+        """
         logger.set_logger(Logger(log_mode))
         self.log = logger.get_logger()
         self.harness = HarnessBuilder()
+        self.type_discoverer = TypeDiscoverer()
+        self.inference_engine = inference_engine or RightTyperEngine()
         self.strategy = StrategySynthesizer()
         self.runner = ABRunner()
         self.comparator = ABComparator()
@@ -41,13 +58,7 @@ class Orchestrator:
                       (e.g., "test.py") that will be used if annotations are missing
         """
 
-        # Get Target Pairs
-        target = TargetPair(
-            file_a=file_a, file_b=file_b, func_name=func_name
-        )
-        fn_a, fn_b = self.harness.build(target)
-
-        # Validate test file if provided
+        # Step 1: Validate test file
         if test_file:
             import os
 
@@ -61,8 +72,37 @@ class Orchestrator:
                     f"[Orchestrator] Using test file for type inference: {test_file}"
                 )
 
-        # Generate strategy plan (with optional test file for type inference)
-        plan = self.strategy.create_strategy(fn_a, test_file=test_file)
+        # Step 2: Build target pairs (load functions from files)
+        target = TargetPair(
+            file_a=file_a, file_b=file_b, func_name=func_name
+        )
+        fn_a, fn_b = self.harness.build(target)
+
+        # Step 3: Run type inference if needed
+        if test_file and self.inference_engine.needs_inference(
+            fn_a, test_file
+        ):
+            self.log.verbose(
+                f"[Orchestrator] Running {self.inference_engine.get_engine_name()} to infer types"
+            )
+            success = self.inference_engine.run_inference(test_file)
+            if success:
+                self.log.verbose(
+                    f"[Orchestrator] Type inference completed, reloading functions"
+                )
+                # Reload functions via harness to get updated annotations
+                fn_a, fn_b = self.harness.build(target)
+
+        # Step 4: Discover parameter types from (possibly updated) function
+        param_types = self.type_discoverer.discover_param_types(fn_a)
+        self.log.verbose(
+            f"[Orchestrator] Discovered types: {param_types}"
+        )
+
+        # Step 5: Generate strategy plan from discovered types
+        plan = self.strategy.create_strategy(
+            fn_a, param_types=param_types
+        )
         self.log.verbose(
             f"✅ Test Startegies Successfully Generated:\n{plan}"
         )
@@ -105,7 +145,9 @@ class Orchestrator:
         pairs = pairer.pair_from_git_commit(commit, func_name)
 
         if not pairs:
-            self.log.verbose("[Orchestrator] No modified functions found")
+            self.log.verbose(
+                "[Orchestrator] No modified functions found"
+            )
             return []
 
         self.log.verbose(
@@ -157,11 +199,15 @@ class Orchestrator:
         pairer = DiffPairer()
 
         # Get modified functions from diff file
-        self.log.verbose(f"[Orchestrator] Parsing diff file: {diff_file_path}")
+        self.log.verbose(
+            f"[Orchestrator] Parsing diff file: {diff_file_path}"
+        )
         pairs = pairer.pair_from_diff_file(diff_file_path, func_name)
 
         if not pairs:
-            self.log.verbose("[Orchestrator] No modified functions found")
+            self.log.verbose(
+                "[Orchestrator] No modified functions found"
+            )
             return []
 
         self.log.verbose(
@@ -222,13 +268,17 @@ class Orchestrator:
         import os
 
         # Read diff file
-        with open(diff_file_path, 'r') as f:
+        with open(diff_file_path, "r") as f:
             diff_content = f.read()
 
         # Build project environment
-        self.log.verbose(f"[Orchestrator] Building project from {repo_url}")
+        self.log.verbose(
+            f"[Orchestrator] Building project from {repo_url}"
+        )
         if install_deps:
-            env = self.project_builder.build_from_url(repo_url, commit or "HEAD", install_deps=True)
+            env = self.project_builder.build_from_url(
+                repo_url, commit or "HEAD", install_deps=True
+            )
         else:
             env = self.project_builder.build_from_diff_with_repo(
                 diff_content, repo_url, commit
@@ -244,7 +294,9 @@ class Orchestrator:
 
             # Parse diff to find modified functions
             pairer = DiffPairer()
-            self.log.verbose(f"[Orchestrator] Parsing diff file: {diff_file_path}")
+            self.log.verbose(
+                f"[Orchestrator] Parsing diff file: {diff_file_path}"
+            )
 
             # Change to project root for relative paths to work
             original_cwd = os.getcwd()
@@ -252,31 +304,51 @@ class Orchestrator:
 
             try:
                 # Get pairs for testing and extract info about all modified functions
-                pairs = pairer.pair_from_diff_file(diff_file_path, func_name, commit)
+                pairs = pairer.pair_from_diff_file(
+                    diff_file_path, func_name, commit
+                )
 
                 # Also get ALL modified functions (including class methods) for reporting
-                all_modified = pairer.git_parser.parse_diff_from_file(diff_file_path, commit)
+                all_modified = pairer.git_parser.parse_diff_from_file(
+                    diff_file_path, commit
+                )
 
                 # Report all found functions/methods
                 if all_modified:
-                    module_funcs = [m for m in all_modified if not m.is_class_method]
-                    class_methods = [m for m in all_modified if m.is_class_method]
+                    module_funcs = [
+                        m for m in all_modified if not m.is_class_method
+                    ]
+                    class_methods = [
+                        m for m in all_modified if m.is_class_method
+                    ]
 
-                    print(f"\n📋 Found {len(all_modified)} modified function(s)/method(s):")
+                    print(
+                        f"\n📋 Found {len(all_modified)} modified function(s)/method(s):"
+                    )
 
                     if module_funcs:
-                        print(f"\n✅ Module-level functions (can test): {len(module_funcs)}")
+                        print(
+                            f"\n✅ Module-level functions (can test): {len(module_funcs)}"
+                        )
                         for m in module_funcs:
-                            print(f"   - {m.function_name}() at lines {m.line_start}-{m.line_end}")
+                            print(
+                                f"   - {m.function_name}() at lines {m.line_start}-{m.line_end}"
+                            )
 
                     if class_methods:
-                        print(f"\n📦 Class methods (extracted but not tested yet): {len(class_methods)}")
+                        print(
+                            f"\n📦 Class methods (extracted but not tested yet): {len(class_methods)}"
+                        )
                         for m in class_methods:
-                            print(f"   - {m.class_name}.{m.function_name}() at lines {m.line_start}-{m.line_end}")
+                            print(
+                                f"   - {m.class_name}.{m.function_name}() at lines {m.line_start}-{m.line_end}"
+                            )
                     print()
 
                 if not pairs:
-                    self.log.verbose("[Orchestrator] No testable functions found (class methods are not supported yet)")
+                    self.log.verbose(
+                        "[Orchestrator] No testable functions found (class methods are not supported yet)"
+                    )
                     return []
 
                 self.log.verbose(
@@ -285,8 +357,12 @@ class Orchestrator:
 
                 # Update harness with venv_path if available
                 if env.venv_path:
-                    self.log.verbose(f"[Orchestrator] Using virtual environment: {env.venv_path}")
-                    self.harness = HarnessBuilder(venv_path=env.venv_path)
+                    self.log.verbose(
+                        f"[Orchestrator] Using virtual environment: {env.venv_path}"
+                    )
+                    self.harness = HarnessBuilder(
+                        venv_path=env.venv_path
+                    )
 
                 # Run tests on each pair
                 results = []
@@ -338,7 +414,7 @@ class Orchestrator:
         for pattern in patterns:
             matches = glob.glob(
                 os.path.join(project_root, "**", pattern),
-                recursive=True
+                recursive=True,
             )
             if matches:
                 self.log.verbose(

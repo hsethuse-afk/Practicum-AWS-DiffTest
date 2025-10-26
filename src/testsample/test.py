@@ -1,30 +1,32 @@
 
-def split_words(txt):
-    '''
-    Given a string of words, return a list of words split on whitespace, if no whitespaces exists in the text you
-    should split on commas ',' if no commas exists you should return the number of lower-case letters with odd order in the
-    alphabet, ord('a') = 0, ord('b') = 1, ... ord('z') = 25
-    Examples
-    split_words("Hello world!") ➞ ["Hello", "world!"]
-    split_words("Hello,world!") ➞ ["Hello", "world!"]
-    split_words("abcdef") == 3 
-    '''
-    if " " in txt:
-        return txt.split()
-    elif "," in txt:
-        return txt.replace(',',' ').split()
-    else:
-        return len([i for i in txt if i.islower() and ord(i)%2 == 0])
+from typing import Callable
+def make_a_pile(n: int) -> list[int]:
+    """
+    Given a positive integer n, you have to make a pile of n levels of stones.
+    The first level has n stones.
+    The number of stones in the next level is:
+        - the next odd number if n is odd.
+        - the next even number if n is even.
+    Return the number of stones in each level in a list, where element at index
+    i represents the number of stones in the level (i+1).
 
-def check(candidate):
+    Examples:
+    >>> make_a_pile(3)
+    [3, 5, 7]
+    """
+    return [n + 2*i for i in range(n)]
 
-    assert candidate("Hello world!") == ["Hello","world!"]
-    assert candidate("Hello,world!") == ["Hello","world!"]
-    assert candidate("Hello world,!") == ["Hello","world,!"]
-    assert candidate("Hello,Hello,world !") == ["Hello,Hello,world","!"]
-    assert candidate("abcdef") == 3
-    assert candidate("aaabb") == 2
-    assert candidate("aaaBb") == 1
-    assert candidate("") == 0
+def check(candidate: Callable[[int], list[int]]) -> None:
 
-check(split_words)
+    # Check some simple cases
+    assert candidate(3) == [3, 5, 7], "Test 3"
+    assert candidate(4) == [4,6,8,10], "Test 4"
+    assert candidate(5) == [5, 7, 9, 11, 13]
+    assert candidate(6) == [6, 8, 10, 12, 14, 16]
+    assert candidate(8) == [8, 10, 12, 14, 16, 18, 20, 22]
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True, "This prints if this assert fails 2 (also good for debugging!)"
+
+
+check(make_a_pile)
