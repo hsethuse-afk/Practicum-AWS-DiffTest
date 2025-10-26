@@ -1,4 +1,0 @@
-# file: /home/toris/practicum/Practicum-AWS-DiffTest/src/dt/abrunner.py
-# hypothesis_version: 6.138.15
-
-['A', 'B', 'args', 'count', 'exc', 'mismatches', 'ret', 'successes', 'total_examples']

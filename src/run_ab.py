@@ -5,17 +5,40 @@ from dt.orchestrator import Orchestrator
 
 def main():
     p = argparse.ArgumentParser(
-        description="Run A/B differential test on two files for one function."
+        description="Run A/B differential test on two files for one function, or on git diff."
+    )
+
+    # Mode selection: manual files or git diff
+    mode_group = p.add_mutually_exclusive_group(required=True)
+    mode_group.add_argument(
+        "--a",
+        type=str,
+        help="Path to file A (reference) - use with --b and --func"
+    )
+    mode_group.add_argument(
+        "--commit",
+        type=str,
+        help="Git commit to analyze (e.g., HEAD, abc123, HEAD~1)"
+    )
+    mode_group.add_argument(
+        "--diff-file",
+        type=str,
+        help="Path to file containing git diff output"
+    )
+
+    # Required for manual mode
+    p.add_argument(
+        "--b",
+        type=str,
+        help="Path to file B (candidate) - required with --a"
     )
     p.add_argument(
-        "--a", required=True, help="Path to file A (reference)"
+        "--func",
+        type=str,
+        help="Function name (entrypoint) - required with --a, optional with git diff mode"
     )
-    p.add_argument(
-        "--b", required=True, help="Path to file B (candidate)"
-    )
-    p.add_argument(
-        "--func", required=True, help="Function name (entrypoint)"
-    )
+
+    # Common options
     p.add_argument("--max-examples", type=int, default=200)
     p.add_argument("--log", type=str, default="N")
     p.add_argument(
@@ -25,6 +48,15 @@ def main():
         help="Optional path to test file for type inference (e.g., 'test.py')",
     )
     args = p.parse_args()
+
+    # Validate arguments based on mode
+    if args.a:
+        # Manual mode
+        if not args.b or not args.func:
+            p.error("--a requires --b and --func")
+    elif args.commit or args.diff_file:
+        # Git diff mode - func is optional
+        pass
 
     val = args.log.lower()
     log_mode = 2
@@ -37,13 +69,33 @@ def main():
         log_mode = 4
 
     orch = Orchestrator(log_mode=log_mode)
-    orch.run_pair(
-        args.a,
-        args.b,
-        args.func,
-        max_examples=args.max_examples,
-        test_file=args.test_file,
-    )
+
+    # Execute based on mode
+    if args.a:
+        # Manual mode: test specific file pair
+        orch.run_pair(
+            args.a,
+            args.b,
+            args.func,
+            max_examples=args.max_examples,
+            test_file=args.test_file,
+        )
+    elif args.commit:
+        # Git commit mode
+        orch.run_git_diff(
+            commit=args.commit,
+            func_name=args.func,
+            max_examples=args.max_examples,
+            test_file=args.test_file,
+        )
+    elif args.diff_file:
+        # Diff file mode
+        orch.run_diff_file(
+            diff_file_path=args.diff_file,
+            func_name=args.func,
+            max_examples=args.max_examples,
+            test_file=args.test_file,
+        )
 
 
 if __name__ == "__main__":

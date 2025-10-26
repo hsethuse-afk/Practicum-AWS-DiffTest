@@ -1,5 +1,4 @@
 import inspect
-from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
@@ -8,14 +7,12 @@ from typing import (
     Tuple,
     Set,
     Union,
-    Optional,
     get_origin,
     get_args,
 )
 from hypothesis import strategies as st
 from ..contracts import StrategyPlan
 from ..logger import get_logger
-from .type_discovery import TypeDiscoverer
 from .strategy_config import StrategyConfig
 
 
@@ -23,43 +20,35 @@ class StrategySynthesizer:
     """
     Strategy builder that generates Hypothesis strategies from type information.
 
+    This class is responsible ONLY for converting types to Hypothesis strategies.
+    Type discovery is handled separately by TypeDiscoverer in the Orchestrator.
+
     The default strategy values can be customized by passing a config class.
     See strategy_config.py for configuration options.
     """
 
-    def __init__(
-        self,
-        type_discoverer: Optional[TypeDiscoverer] = None,
-        config: type = StrategyConfig,
-    ):
+    def __init__(self, config: type = StrategyConfig):
         self.log = get_logger()
-        self.type_discoverer = type_discoverer or TypeDiscoverer()
         self.config = config
         self.registry = config.get_registry()
 
     def create_strategy(
         self,
         func: Callable,
-        param_hints: Optional[Dict[str, Any]] = None,
-        test_file: Optional[str] = None,
+        param_types: Dict[str, Any],
     ) -> StrategyPlan:
         """
-        Create a strategy plan for a function.
+        Create a strategy plan for a function from discovered parameter types.
 
         Args:
             func: The function to create strategies for
-            param_hints: Optional manual type hints
-            test_file: Optional path to test file for RightTyper inference
+            param_types: Dictionary mapping parameter names to their types
+                        (already discovered by TypeDiscoverer)
 
         Returns:
             StrategyPlan containing the argument strategy
         """
-        # Discover types for all parameters
-        param_types = self.type_discoverer.discover_param_types(
-            func, test_file, param_hints
-        )
-
-        # Generate strategies from the discovered types
+        # Generate strategies from the provided types
         sig = inspect.signature(func)
         strategies = []
         for param in sig.parameters.values():

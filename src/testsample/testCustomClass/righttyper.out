@@ -1,0 +1,30 @@
+/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testCustomClass/a2.py:
+==================================================================================
+
+Point.__eq__
+
+- def __eq__(self, other):
++ def __eq__(self: Self, other: object|Self) -> bool:
+
+Point.__init__
+
+- def __init__(self, x, y) -> None:
++ def __init__(self: Self, x: float, y: float) -> None:
+?                  ++++++   +++++++   +++++++
+
+Point.distance_to
+
+- def distance_to(self, other) -> float:
++ def distance_to(self: Self, other: Self) -> float:
+?                     ++++++       ++++++
+
+calculate_centroid
+
+- def calculate_centroid(points):
++ def calculate_centroid(points: list[Point]) -> Point:
+
+find_closest_points
+
+- def find_closest_points(points, threshold):
++ def find_closest_points(points: list[Point], threshold: float) -> list[tuple[Point, Point]]:
+
