@@ -1,17 +1,16 @@
 """
 Implementation A - Custom class differential testing example
 """
-from typing import Self
 
 
 class Point:
     """A point in 2D space."""
 
-    def __init__(self: Self, x: float, y: float) -> None:
+    def __init__(self, x, y) -> None:
         self.x = x
         self.y = y
 
-    def distance_to(self: Self, other: Self) -> float:
+    def distance_to(self, other) -> float:
         """Calculate Euclidean distance to another point."""
         return (
             (self.x - other.x) ** 2 + (self.y - other.y) ** 2
@@ -20,7 +19,7 @@ class Point:
     def __repr__(self):
         return f"Point({self.x}, {self.y})"
 
-    def __eq__(self: Self, other: object|Self) -> bool:
+    def __eq__(self, other):
         if not isinstance(other, Point):
             return False
         return (
@@ -29,7 +28,7 @@ class Point:
         )
 
 
-def find_closest_points(points: list[Point], threshold: float) -> list[tuple[Point, Point]]:
+def find_closest_points(points, threshold):
     """
     Find all pairs of points that are closer than the threshold distance.
 
@@ -60,7 +59,7 @@ def find_closest_points(points: list[Point], threshold: float) -> list[tuple[Poi
     return close_pairs
 
 
-def calculate_centroid(points: list[Point]) -> Point:
+def calculate_centroid(points):
     """
     Calculate the centroid (center point) of a list of points.
 

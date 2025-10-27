@@ -1,7 +1,7 @@
 # Example Test Output
 
 ## Command
-
+### a1 b1, having a custom defined type Point, both have type annotation
 ```bash
 python run_ab.py \
   --a testsample/testCustomClass/a1.py \
@@ -10,13 +10,32 @@ python run_ab.py \
   --max-examples 50 \
   --log VERBOSE
 ```
-
+### a2 b2, having a custom defined type Point, both DO NOT have type annotation
 ```bash
 python run_ab.py \
   --a testsample/testCustomClass/a2.py \
   --b testsample/testCustomClass/b2.py \
   --func find_closest_points \
   --test testsample/testCustomClass/test_a2.py \
+  --max-examples 50 \
+  --log VERBOSE
+```
+### a3 b3, using numpy as input, both have type annotation
+```bash
+python run_ab.py \
+  --a testsample/testCustomClass/a3.py \
+  --b testsample/testCustomClass/b3.py \
+  --func zscore \
+  --max-examples 50 \
+  --log VERBOSE
+```
+### a4 b4, using numpy as input, both DO NOT have type annotation
+```bash
+python run_ab.py \
+  --a testsample/testCustomClass/a4.py \
+  --b testsample/testCustomClass/b4.py \
+  --func zscore \
+  --test testsample/testCustomClass/test_a4.py \
   --max-examples 50 \
   --log VERBOSE
 ```

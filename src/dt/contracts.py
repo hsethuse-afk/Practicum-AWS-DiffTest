@@ -44,6 +44,7 @@ class TestResult:
     target: TargetPair
     passed: bool
     detail: Dict[str, Any]
+    warnings: List[Dict[str, Any]] | None = None  # captured warnings during execution
 
 
 @dataclass

@@ -1,20 +1,21 @@
 """
-Implementation A - Custom class differential testing example
+Implementation B - Custom class differential testing example
+Non-functional changes from Implementation A
 """
 
 
 class Point:
     """A point in 2D space."""
 
-    def __init__(self, x, y) -> None:
+    def __init__(self, x, y):
         self.x = x
         self.y = y
 
-    def distance_to(self, other) -> float:
+    def distance_to(self, other):
         """Calculate Euclidean distance to another point."""
-        return (
-            (self.x - other.x) ** 2 + (self.y - other.y) ** 2
-        ) ** 0.5
+        dx = self.x - other.x
+        dy = self.y - other.y
+        return (dx * dx + dy * dy) ** 0.5
 
     def __repr__(self):
         return f"Point({self.x}, {self.y})"
@@ -47,16 +48,16 @@ def find_closest_points(points, threshold):
         >>> len(result)
         1
     """
-    close_pairs = []
+    result = []
 
-    # Implementation A: Using nested loops
-    for i in range(len(points)):
-        for j in range(i + 1, len(points)):
-            distance = points[i].distance_to(points[j])
-            if distance < threshold:
-                close_pairs.append((points[i], points[j]))
+    # Implementation B: Using enumerate (non-functional change)
+    for idx, point1 in enumerate(points):
+        for point2 in points[idx + 1 :]:
+            dist = point1.distance_to(point2)
+            if dist < threshold:
+                result.append((point1, point2))
 
-    return close_pairs
+    return result
 
 
 def calculate_centroid(points):
@@ -81,13 +82,12 @@ def calculate_centroid(points):
     if not points:
         return Point(0, 0)
 
-    # Sum all coordinates
-    total_x = 0.0
-    total_y = 0.0
-    for point in points:
-        total_x += point.x
-        total_y += point.y
+    # Different variable names and order (non-functional change)
+    sum_x = sum(p.x for p in points)
+    sum_y = sum(p.y for p in points)
 
-    # Calculate average
-    n = len(points)
-    return Point(total_x / n, total_y / n)
+    count = len(points)
+    avg_x = sum_x / count
+    avg_y = sum_y / count
+
+    return Point(avg_x, avg_y)

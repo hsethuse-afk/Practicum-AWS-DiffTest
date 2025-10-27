@@ -68,137 +68,31 @@ class StrategySynthesizer:
         self, param_type: Any, param_name: str
     ) -> st.SearchStrategy:
         """
-        Create a Hypothesis strategy from a type.
+        Create a Hypothesis strategy from a type object.
+
+        Note: TypeDiscoverer ensures all types are resolved to actual type objects,
+        so this method should NEVER receive strings.
 
         Args:
-            param_type: The type to create a strategy for
+            param_type: The type object to create a strategy for
             param_name: The parameter name (for logging)
 
         Returns:
             A Hypothesis SearchStrategy
         """
-        # Handle string types from RightTyper
+        # Sanity check - strings should be resolved by TypeDiscoverer
         if isinstance(param_type, str):
-            return self._from_type_string(param_type)
+            self.log.debug(
+                f"[StrategySynthesizer] Received unexpected string type '{param_type}' for '{param_name}' - using fallback"
+            )
+            return self._fallback_strategy()
 
         # Handle ready-made strategies
         if isinstance(param_type, st.SearchStrategy):
             return param_type
 
-        # Handle keyword hints
-        if param_type in ["positive_int", "string", "list", "float"]:
-            return self._normalize_hint(param_type)
-
-        # Handle type annotations
+        # Handle type annotations (the main path)
         return self._from_annotation(param_type)
-
-    def _from_type_string(self, type_str: str) -> st.SearchStrategy:
-        """
-        Convert a type string to a Hypothesis strategy.
-
-        Args:
-            type_str: Type as a string (e.g., "str", "int", "list[int]")
-
-        Returns:
-            A Hypothesis SearchStrategy
-        """
-        import re
-
-        # Handle basic types
-        basic_type_map = {
-            "str": str,
-            "int": int,
-            "float": float,
-            "bool": bool,
-        }
-
-        if type_str in basic_type_map:
-            return self._from_annotation(basic_type_map[type_str])
-
-        # Parse list[T] pattern
-        list_match = re.match(r"list\[(.+)\]", type_str)
-        if list_match:
-            elem_type_str = list_match.group(1)
-            elem_strategy = self._from_type_string(elem_type_str)
-            self.log.verbose(
-                f"[StrategySynthesizer] Parsed type string 'list[{elem_type_str}]' -> lists({elem_strategy})"
-            )
-            return st.lists(
-                elem_strategy, max_size=self.config.LIST_MAX_SIZE
-            )
-
-        # Parse set[T] pattern
-        set_match = re.match(r"set\[(.+)\]", type_str)
-        if set_match:
-            elem_type_str = set_match.group(1)
-            elem_strategy = self._from_type_string(elem_type_str)
-            return st.sets(
-                elem_strategy, max_size=self.config.SET_MAX_SIZE
-            )
-
-        # Parse dict[K, V] pattern
-        dict_match = re.match(r"dict\[(.+),\s*(.+)\]", type_str)
-        if dict_match:
-            key_type_str = dict_match.group(1)
-            val_type_str = dict_match.group(2)
-            key_strategy = self._from_type_string(key_type_str)
-            val_strategy = self._from_type_string(val_type_str)
-            return st.dictionaries(
-                key_strategy,
-                val_strategy,
-                max_size=self.config.DICT_MAX_SIZE,
-            )
-
-        # Parse tuple[T1, T2, ...] pattern
-        tuple_match = re.match(r"tuple\[(.+)\]", type_str)
-        if tuple_match:
-            elements_str = tuple_match.group(1)
-            if elements_str.endswith(", ..."):
-                # Variable length tuple: tuple[int, ...]
-                elem_type_str = elements_str[:-5].strip()
-                elem_strategy = self._from_type_string(elem_type_str)
-                return st.lists(
-                    elem_strategy, max_size=self.config.TUPLE_MAX_SIZE
-                ).map(tuple)
-            else:
-                # Fixed length tuple: tuple[int, str, bool]
-                elem_types = [
-                    t.strip() for t in elements_str.split(",")
-                ]
-                elem_strategies = [
-                    self._from_type_string(t) for t in elem_types
-                ]
-                return st.tuples(*elem_strategies)
-
-        # Bare containers without type parameters
-        if type_str == "list":
-            return st.lists(
-                self.registry[int](), max_size=self.config.LIST_MAX_SIZE
-            )
-        if type_str == "dict":
-            return st.dictionaries(
-                self.registry[int](),
-                self.registry[int](),
-                max_size=self.config.DICT_MAX_SIZE,
-            )
-        if type_str == "set":
-            return st.sets(
-                self.registry[int](), max_size=self.config.SET_MAX_SIZE
-            )
-        if type_str == "tuple":
-            return st.tuples()
-
-        # For complex types we can't parse (e.g., "Callable[[str], bool]")
-        self.log.debug(
-            f"[StrategySynthesizer] Complex type string '{type_str}' - using fallback"
-        )
-        return self.registry[Any]()
-
-    def _normalize_hint(self, hint: Any) -> st.SearchStrategy:
-        if isinstance(hint, st.SearchStrategy):
-            return hint
-        # Keyword hints - use config for values
-        return self.config.get_keyword_strategy(hint)
 
     def _from_annotation(self, annotation: Any) -> st.SearchStrategy:
         # Direct hits

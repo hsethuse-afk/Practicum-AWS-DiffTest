@@ -1,30 +1,26 @@
-/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testCustomClass/a2.py:
+/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testCustomClass/a4.py:
 ==================================================================================
 
-Point.__eq__
+zscore
 
-- def __eq__(self, other):
-+ def __eq__(self: Self, other: object|Self) -> bool:
-
-Point.__init__
-
-- def __init__(self, x, y) -> None:
-+ def __init__(self: Self, x: float, y: float) -> None:
-?                  ++++++   +++++++   +++++++
-
-Point.distance_to
-
-- def distance_to(self, other) -> float:
-+ def distance_to(self: Self, other: Self) -> float:
-?                     ++++++       ++++++
-
-calculate_centroid
-
-- def calculate_centroid(points):
-+ def calculate_centroid(points: list[Point]) -> Point:
-
-find_closest_points
-
-- def find_closest_points(points, threshold):
-+ def find_closest_points(points: list[Point], threshold: float) -> list[tuple[Point, Point]]:
+  def zscore(
+-     x,
++     x: "np.ndarray[Any, numpy.dtypes.Float64DType]",
+-     axis=0,
++     axis: int=0,
+?         +++++
+-     ddof=0,
++     ddof: int=0,
+?         +++++
+-     keepdims=False,
++     keepdims: bool=False,
+?             ++++++
+-     return_stats=False,
++     return_stats: bool=False,
+?                 ++++++
+-     eps=1e-12,
++     eps: float=1e-12,
+?        +++++++
+- ):
++ ) -> "tuple[np.ndarray[Any, numpy.dtypes.Float64DType], np.ndarray[Any, numpy.dtypes.Float64DType], np.ndarray[Any, numpy.dtypes.Float64DType]]":
 

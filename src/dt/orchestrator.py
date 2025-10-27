@@ -108,11 +108,11 @@ class Orchestrator:
         )
 
         # Run and Compare
-        a_results, b_results = self.runner.execute(
+        a_results, b_results, warnings = self.runner.execute(
             fn_a, fn_b, plan, RunConfig(max_examples=max_examples)
         )
         cmp = self.comparator.compare(a_results, b_results)
-        out = self.results.collect(target, cmp)
+        out = self.results.collect(target, cmp, warnings)
         self.results.print(out)
 
         return out
