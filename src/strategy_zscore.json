@@ -1,0 +1,32 @@
+{
+  "_comment": "Edit this file to customize test input generation. See Hypothesis documentation for available options.",
+  "parameters": {
+    "x": {
+      "type": "from_type",
+      "target": "numpy.ndarray"
+    },
+    "axis": {
+      "type": "int",
+      "min_value": -50,
+      "max_value": 50
+    },
+    "ddof": {
+      "type": "int",
+      "min_value": 1,
+      "max_value": 50
+    },
+    "keepdims": {
+      "type": "bool"
+    },
+    "return_stats": {
+      "type": "bool"
+    },
+    "eps": {
+      "type": "float",
+      "min_value": -50.0,
+      "max_value": 50.0,
+      "allow_nan": false,
+      "allow_infinity": false
+    }
+  }
+}

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Any, Dict, List, Tuple
 from enum import IntEnum
 
@@ -14,6 +14,18 @@ class TargetPair:
 class StrategyPlan:
     # Hypothesis strategy that yields a tuple of call args
     arg_strategy: Any
+    # Store metadata (optional)
+    param_types: Dict[str, Any] = field(default_factory=dict)
+    func_signature: Dict[str, str] = field(default_factory=dict)
+
+    def pretty_print(self) -> str:
+        """
+        Return a human-readable representation of the strategy plan.
+
+        Returns:
+            Formatted string representation of the strategy
+        """
+        return repr(self.arg_strategy)
 
 
 @dataclass

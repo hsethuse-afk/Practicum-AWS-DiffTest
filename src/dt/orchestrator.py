@@ -99,15 +99,64 @@ class Orchestrator:
             f"[Orchestrator] Discovered types: {param_types}"
         )
 
-        # Step 5: Generate strategy plan from discovered types
-        plan = self.strategy.create_strategy(
-            fn_a, param_types=param_types
-        )
-        self.log.verbose(
-            f"✅ Test Startegies Successfully Generated:\n{plan}"
-        )
+        # Step 5: Generate strategy configuration (without building strategies yet)
+        import os
 
-        # Run and Compare
+        config = self.strategy.create_config_from_types(
+            fn_a, param_types
+        )
+        self.log.verbose(f"✅ Strategy Configuration Generated")
+
+        # Step 6: Save configuration to file
+        strategy_file = f"strategy_{func_name}.json"
+        self.strategy.save_config(config, strategy_file)
+
+        # Print formatted configuration to console
+        self.strategy.print_config(config)
+
+        # Wait for user input
+        print(f"Configuration saved to: {strategy_file}")
+        print("\nReview the configuration above. You can:")
+        print("  - Press Enter to continue with this configuration")
+        print(
+            "  - Edit the JSON file to modify parameters and press Enter to reload"
+        )
+        print("  - Press Ctrl+C to cancel")
+
+        try:
+            input("\nPress Enter to continue...")
+
+            # Reload configuration from file (in case user edited it)
+            if os.path.exists(strategy_file):
+                print("\nReloading configuration from file...")
+                config = self.strategy.load_config(strategy_file)
+                print("✅ Configuration loaded successfully")
+
+                # Print the loaded config
+                print("\nLoaded Configuration:")
+                self.strategy.print_config(config)
+            else:
+                print(
+                    f"\n⚠️ Warning: Configuration file {strategy_file} not found. Using original configuration.\n"
+                )
+        except KeyboardInterrupt:
+            print("\n\n❌ Testing cancelled by user.")
+            if os.path.exists(strategy_file):
+                os.remove(strategy_file)
+            return None
+
+        # Step 7: Build the actual strategy from the (possibly edited) configuration
+        print("\nBuilding test strategy from configuration...")
+        plan = self.strategy.create_strategy_from_config(
+            fn_a, config, param_types
+        )
+        self.log.verbose(f"✅ Test Strategy Successfully Built")
+        print(f"Formated strategy is {repr(plan)}")
+
+        # Print the final strategy
+        self.strategy.print_strategy(plan)
+
+        # Step 8: Run and Compare
         a_results, b_results, warnings = self.runner.execute(
             fn_a, fn_b, plan, RunConfig(max_examples=max_examples)
         )

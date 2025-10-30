@@ -1,0 +1,21 @@
+{
+  "_comment": "Edit this file to customize test input generation. See Hypothesis documentation for available options.",
+  "parameters": {
+    "points": {
+      "type": "list",
+      "element": {
+        "type": "from_type",
+        "target": "a1.Point"
+      },
+      "min_size": 0,
+      "max_size": 10
+    },
+    "threshold": {
+      "type": "float",
+      "min_value": -50.0,
+      "max_value": 50.0,
+      "allow_nan": false,
+      "allow_infinity": false
+    }
+  }
+}

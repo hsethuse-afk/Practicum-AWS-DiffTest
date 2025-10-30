@@ -7,8 +7,9 @@ with only minor, non‑functional refactoring differences between the two.
 """
 
 from typing import TYPE_CHECKING, Any
-
 if TYPE_CHECKING:
+    import numpy.dtypes
+    import numpy.dtypes
     import numpy.dtypes
     import numpy.dtypes
 
@@ -19,13 +20,13 @@ __all__ = ["zscore"]
 
 
 def zscore(
-    x,
-    axis=0,
-    ddof=0,
-    keepdims=False,
-    return_stats=False,
-    eps=1e-12,
-):
+    x: "np.ndarray[Any, numpy.dtypes.Float64DType]",
+    axis: int=0,
+    ddof: int=0,
+    keepdims: bool=False,
+    return_stats: bool=False,
+    eps: float=1e-12,
+) -> "tuple[np.ndarray[Any, numpy.dtypes.Float64DType], np.ndarray[Any, numpy.dtypes.Float64DType], np.ndarray[Any, numpy.dtypes.Float64DType]]":
     """
     Z-score normalize an array along the specified axis.
 

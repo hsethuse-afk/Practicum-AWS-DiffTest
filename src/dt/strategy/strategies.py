@@ -1,19 +1,10 @@
 import inspect
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Tuple,
-    Set,
-    Union,
-    get_origin,
-    get_args,
-)
+from typing import Any, Callable, Dict
 from hypothesis import strategies as st
 from ..contracts import StrategyPlan
 from ..logger import get_logger
 from .strategy_config import StrategyConfig
+from .strategy_templates import get_template_for_type, build_strategy_from_config
 
 
 class StrategySynthesizer:
@@ -32,148 +23,168 @@ class StrategySynthesizer:
         self.config = config
         self.registry = config.get_registry()
 
-    def create_strategy(
+    def create_config_from_types(
         self,
         func: Callable,
         param_types: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Create a configuration dictionary from parameter types (without building strategies).
+
+        Args:
+            func: The function to create configuration for
+            param_types: Dictionary mapping parameter names to their types
+
+        Returns:
+            Dictionary mapping parameter names to their strategy configurations
+        """
+        sig = inspect.signature(func)
+        config_dict = {}
+
+        for param in sig.parameters.values():
+            param_type = param_types.get(param.name, Any)
+            config = self._type_to_config(param_type)
+            config_dict[param.name] = config
+
+        return config_dict
+
+    def create_strategy_from_config(
+        self,
+        func: Callable,
+        strategy_config: Dict[str, Any],
+        param_types: Dict[str, Any] = None,
     ) -> StrategyPlan:
         """
-        Create a strategy plan for a function from discovered parameter types.
+        Create a strategy plan from a configuration dictionary.
 
         Args:
             func: The function to create strategies for
-            param_types: Dictionary mapping parameter names to their types
-                        (already discovered by TypeDiscoverer)
+            strategy_config: Configuration for each parameter
+            param_types: Original parameter types (for metadata)
 
         Returns:
             StrategyPlan containing the argument strategy
         """
-        # Generate strategies from the provided types
         sig = inspect.signature(func)
         strategies = []
+        func_signature = {}
+
         for param in sig.parameters.values():
-            param_type = param_types.get(param.name, Any)
-            strategy = self._create_strategy_from_type(
-                param_type, param.name
-            )
-            strategies.append(strategy)
+            if param.name in strategy_config:
+                config = strategy_config[param.name]
+                strategy = self._build_strategy_from_config(config, param.name)
+                strategies.append(strategy)
+                func_signature[param.name] = str(param)
+            else:
+                self.log.debug(f"[StrategySynthesizer] No config for parameter '{param.name}', using Any")
+                strategies.append(self.registry[Any]())
+                func_signature[param.name] = str(param)
 
         return StrategyPlan(
             arg_strategy=(
                 st.tuples(*strategies) if strategies else st.tuples()
-            )
+            ),
+            param_types=param_types or {},
+            func_signature=func_signature
         )
 
-    def _create_strategy_from_type(
-        self, param_type: Any, param_name: str
-    ) -> st.SearchStrategy:
-        """
-        Create a Hypothesis strategy from a type object.
 
-        Note: TypeDiscoverer ensures all types are resolved to actual type objects,
-        so this method should NEVER receive strings.
+    def _type_to_config(self, param_type: Any) -> Dict[str, Any]:
+        """
+        Convert a type annotation to a configuration dictionary using templates.
 
         Args:
-            param_type: The type object to create a strategy for
-            param_name: The parameter name (for logging)
+            param_type: The type annotation
 
         Returns:
-            A Hypothesis SearchStrategy
+            Configuration dictionary with type and default options from templates
         """
-        # Sanity check - strings should be resolved by TypeDiscoverer
-        if isinstance(param_type, str):
-            self.log.debug(
-                f"[StrategySynthesizer] Received unexpected string type '{param_type}' for '{param_name}' - using fallback"
-            )
-            return self._fallback_strategy()
+        return get_template_for_type(param_type)
 
-        # Handle ready-made strategies
-        if isinstance(param_type, st.SearchStrategy):
-            return param_type
+    def _build_strategy_from_config(
+        self, config: Dict[str, Any], param_name: str
+    ) -> st.SearchStrategy:
+        """
+        Build a Hypothesis strategy from a configuration dictionary.
 
-        # Handle type annotations (the main path)
-        return self._from_annotation(param_type)
+        Args:
+            config: Configuration dictionary
+            param_name: Name of the parameter (for logging)
 
-    def _from_annotation(self, annotation: Any) -> st.SearchStrategy:
-        # Direct hits
-        if annotation in self.registry:
-            return self.registry[annotation]()
+        Returns:
+            Hypothesis SearchStrategy
+        """
+        return build_strategy_from_config(config, param_name)
 
-        # Handle typing.Any explicitly BEFORE from_type()
-        if annotation is Any:
-            return self.registry[Any]()
+    def save_config(self, config: Dict[str, Any], filepath: str) -> None:
+        """
+        Save a strategy configuration to a JSON file.
 
-        origin = get_origin(annotation)
-        args = get_args(annotation)
+        Args:
+            config: Configuration dictionary
+            filepath: Path to save the configuration
+        """
+        import json
 
-        # Normalize bare builtins: list, dict, set, tuple
-        if origin is None and annotation in (list, dict, set, tuple):
-            origin, args = annotation, ()
+        # Ensure .json extension
+        if not filepath.endswith('.json'):
+            filepath = filepath.rsplit('.', 1)[0] + '.json'
 
-        # Containers
-        if origin in (list, List):
-            # Use a concrete default element type if missing
-            elem_ann = args[0] if args else Any
-            elem = self._from_annotation(
-                elem_ann if elem_ann is not Any else int
-            )
-            return st.lists(elem, max_size=self.config.LIST_MAX_SIZE)
+        data = {
+            '_comment': 'Edit this file to customize test input generation. See Hypothesis documentation for available options.',
+            'parameters': config
+        }
 
-        if origin in (set, Set):
-            elem_ann = args[0] if args else Any
-            elem = self._from_annotation(
-                elem_ann if elem_ann is not Any else int
-            )
-            return st.sets(elem, max_size=self.config.SET_MAX_SIZE)
+        with open(filepath, 'w') as f:
+            json.dump(data, f, indent=2)
 
-        if origin in (tuple, Tuple):
-            if args and args[-1] is ...:  # Tuple[T, ...]
-                base_ann = args[0] if args else int
-                base = self._from_annotation(
-                    base_ann if base_ann is not Any else int
-                )
-                return st.lists(
-                    base, max_size=self.config.TUPLE_MAX_SIZE
-                ).map(tuple)
-            if args:  # Tuple[T1, T2, ...]
-                return st.tuples(
-                    *(
-                        self._from_annotation(
-                            a if a is not Any else int
-                        )
-                        for a in args
-                    )
-                )
-            return st.tuples()
+        self.log.verbose(f"[StrategySynthesizer] Configuration saved to {filepath}")
 
-        if origin in (dict, Dict):
-            # Safe defaults: int keys, int values if unspecified/Any
-            k_ann = args[0] if args else int
-            v_ann = args[1] if len(args) > 1 else int
-            k = self._from_annotation(
-                k_ann if k_ann is not Any else int
-            )
-            v = self._from_annotation(
-                v_ann if v_ann is not Any else int
-            )
-            return st.dictionaries(
-                k, v, max_size=self.config.DICT_MAX_SIZE
-            )
+    def load_config(self, filepath: str) -> Dict[str, Any]:
+        """
+        Load a strategy configuration from a JSON file.
 
-        # Unions / Optional
-        if origin is Union:
-            non_none = [a for a in args if a is not type(None)]
-            if len(non_none) == 1 and len(args) == 2:
-                return st.none() | self._from_annotation(non_none[0])
-            return st.one_of(*(self._from_annotation(a) for a in args))
+        Args:
+            filepath: Path to load the configuration from
 
-        # Last-ditch: try Hypothesis’ type-based strategy
-        try:
-            return st.from_type(annotation)
-        except Exception:
-            # Conservative fallback that never touches `Any`
-            return st.one_of(
-                self.registry[int](),
-                self.registry[float](),
-                self.registry[str](),
-            )
+        Returns:
+            Configuration dictionary
+        """
+        import json
+
+        # Ensure .json extension
+        if not filepath.endswith('.json'):
+            filepath = filepath.rsplit('.', 1)[0] + '.json'
+
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+
+        self.log.verbose(f"[StrategySynthesizer] Configuration loaded from {filepath}")
+        return data.get('parameters', {})
+
+    def print_config(self, config: Dict[str, Any]) -> None:
+        """
+        Print a formatted representation of a strategy configuration.
+
+        Args:
+            config: Configuration dictionary
+        """
+        import json
+        print("\n" + "="*60)
+        print("GENERATED STRATEGY CONFIGURATION")
+        print("="*60)
+        print(json.dumps(config, indent=2))
+        print("="*60 + "\n")
+
+    def print_strategy(self, plan: StrategyPlan) -> None:
+        """
+        Print a formatted representation of the strategy plan.
+
+        Args:
+            plan: The StrategyPlan to print
+        """
+        print("\n" + "="*60)
+        print("GENERATED TEST STRATEGY")
+        print("="*60)
+        print(plan.pretty_print())
+        print("="*60 + "\n")
