@@ -9,6 +9,7 @@ from utilities.extractor import (
     extract_entry,
     extract_test,
 )
+from utilities.coverage_runner import handle_coverage
 
 
 def main():
@@ -62,30 +63,9 @@ def main():
             f"Canonical Solution saved to: {canonical_path}, GPT Solution saved to {completion_path}"
         )
 
-    # If coverage is requested, re-run the script under slipcover and exit.
-    # This is done *after* the source files are created.
-    if args.coverage:
-        if "SLIPCOVER_RUNNING" in os.environ:
-            # We are in the child process, proceed with the test run.
-            pass
-        else:
-            print(
-                "Running with Slipcover for code coverage on target files..."
-            )
-            source_dir = os.path.dirname(canonical_path) or "."
-            cmd = [
-                sys.executable,
-                "-m",
-                "slipcover",
-                "--source",
-                source_dir,
-                *sys.argv,
-            ]
-            env = os.environ.copy()
-            env["SLIPCOVER_RUNNING"] = "1"
-            result = subprocess.run(cmd, env=env)
-            # After the coverage run, the parent process can exit.
-            sys.exit(result.returncode)
+    # If coverage is requested, re-run the script under slipcover
+    source_dir = os.path.dirname(canonical_path) or "."
+    handle_coverage(source_dir)
 
     function_name = extract_entry(ORIGINAL_JSON, args.t)
     orch = Orchestrator(log_mode=log_mode)
