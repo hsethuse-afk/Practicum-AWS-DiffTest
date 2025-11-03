@@ -15,6 +15,7 @@ The tool will:
 
 import argparse
 from dt.orchestrator import Orchestrator
+from utilities.coverage_runner import handle_coverage
 
 
 def main():
@@ -66,8 +67,16 @@ def main():
         default="N",
         help="Logging mode: (s)ilent, (n)ormal, (v)erbose, (d)ebug"
     )
+    p.add_argument(
+        "--coverage",
+        action="store_true",
+        help="Generate coverage report.",
+    )
 
     args = p.parse_args()
+
+    # Handle coverage
+    handle_coverage()
 
     # Parse log mode
     val = args.log.lower()

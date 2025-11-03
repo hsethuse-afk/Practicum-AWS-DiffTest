@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
+import os
 from dt.orchestrator import Orchestrator
+from utilities.coverage_runner import handle_coverage
 
 
 def main():
@@ -47,8 +49,18 @@ def main():
         default=None,
         help="Optional path to test file for type inference (e.g., 'test.py')",
     )
+    p.add_argument(
+        "--coverage",
+        action="store_true",
+        help="Generate coverage report.",
+    )
     p.add_argument("--auto-approve", action="store_true", default=False)
     args = p.parse_args()
+
+    # Handle coverage
+    if args.a:
+        source_dir = os.path.dirname(args.a) or "."
+        handle_coverage(source_dir)
 
     # Validate arguments based on mode
     if args.a:

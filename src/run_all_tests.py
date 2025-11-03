@@ -23,6 +23,7 @@ from pathlib import Path
 # Import the differential testing framework
 from dt.orchestrator import Orchestrator
 from dt.test_runner import TestRunner
+from utilities.coverage_runner import handle_coverage
 
 
 class ComprehensiveTestRunner:
@@ -137,8 +138,16 @@ def main():
                        help="Skip pytest tests")
     parser.add_argument("--jsonl-results", type=str,
                        help="Path to JSONL results file for batch differential testing")
+    parser.add_argument(
+        "--coverage",
+        action="store_true",
+        help="Generate coverage report.",
+    )
 
     args = parser.parse_args()
+
+    # Handle coverage
+    handle_coverage("src")
 
     print("Starting comprehensive test suite...")
     print("=" * 50)
