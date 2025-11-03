@@ -24,8 +24,11 @@ build/
 # Logs
 *.log
 
-# do not include test samples
+# do not include test samples, htmlcov, and slipcover info
+/src/htmlcov/
 /src/testsample/
+slipcover.json
+*.coverage
 
 # OS-specific junk
 .DS_Store
