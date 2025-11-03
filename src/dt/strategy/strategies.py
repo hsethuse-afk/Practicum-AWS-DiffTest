@@ -46,22 +46,26 @@ class StrategySynthesizer:
                         (already discovered by TypeDiscoverer)
 
         Returns:
-            StrategyPlan containing the argument strategy
+            StrategyPlan containing the argument strategy and individual param strategies
         """
         # Generate strategies from the provided types
         sig = inspect.signature(func)
         strategies = []
+        param_strategies = {}
+
         for param in sig.parameters.values():
             param_type = param_types.get(param.name, Any)
             strategy = self._create_strategy_from_type(
                 param_type, param.name
             )
             strategies.append(strategy)
+            param_strategies[param.name] = strategy
 
         return StrategyPlan(
             arg_strategy=(
                 st.tuples(*strategies) if strategies else st.tuples()
-            )
+            ),
+            param_strategies=param_strategies
         )
 
     def _create_strategy_from_type(

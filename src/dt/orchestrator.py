@@ -1,6 +1,7 @@
 from .contracts import RunConfig, TargetPair, LoggerMode
 from .diffpairer import DiffPairer
 from .strategy.strategies import StrategySynthesizer
+from .strategy.strategy_serializer import StrategySerializer
 from .type_inference.type_discovery import TypeDiscoverer
 from .type_inference.type_inference_engine import TypeInferenceEngine
 from .type_inference.righttyper_engine import RightTyperEngine
@@ -18,6 +19,7 @@ class Orchestrator:
         self,
         log_mode: LoggerMode = LoggerMode.Normal,
         inference_engine: TypeInferenceEngine = None,
+        enable_strategy_extras: list = None,
     ):
         """
         Initialize the orchestrator.
@@ -26,6 +28,8 @@ class Orchestrator:
             log_mode: Logging verbosity level
             inference_engine: Type inference engine to use (default: RightTyperEngine)
                              Can be swapped for other engines (MonkeyType, Pytype, etc.)
+            enable_strategy_extras: List of extra Hypothesis strategy modules to enable
+                                   (e.g., ['numpy', 'pandas']). If None, enables all available.
         """
         logger.set_logger(Logger(log_mode))
         self.log = logger.get_logger()
@@ -33,6 +37,7 @@ class Orchestrator:
         self.type_discoverer = TypeDiscoverer()
         self.inference_engine = inference_engine or RightTyperEngine()
         self.strategy = StrategySynthesizer()
+        self.serializer = StrategySerializer(enable_extras=enable_strategy_extras)
         self.runner = ABRunner()
         self.comparator = ABComparator()
         self.results = ResultCollector()
@@ -45,6 +50,7 @@ class Orchestrator:
         func_name: str,
         max_examples: int = 200,
         test_file: str = None,
+        auto_approve: bool = False,
     ):
         """
         Run differential testing on a pair of functions.
@@ -56,7 +62,12 @@ class Orchestrator:
             max_examples: Maximum number of test examples
             test_file: Optional path to test file for RightTyper type inference
                       (e.g., "test.py") that will be used if annotations are missing
+            strategy_file: Optional path to save/load strategy JSON file
+                          If provided, will save strategy and wait for user confirmation
+            auto_approve: If True, skip user confirmation and use saved strategy immediately
         """
+
+        # TODO if strategy file exits, skip the type inference
 
         # Step 1: Validate test file
         if test_file:
@@ -99,13 +110,64 @@ class Orchestrator:
             f"[Orchestrator] Discovered types: {param_types}"
         )
 
-        # Step 5: Generate strategy plan from discovered types
+        # Step 5: Generate new strategy from discovered types
         plan = self.strategy.create_strategy(
             fn_a, param_types=param_types
         )
         self.log.verbose(
-            f"✅ Test Startegies Successfully Generated:\n{plan}"
+            f"✅ Test Strategies Successfully Generated:\n{plan}"
         )
+
+        # Step 6: Save strategy and wait for user confirmation if requested
+        if not auto_approve:
+            strategy_file = f"strategy_{func_name}.json"
+            self.serializer.save_to_file(plan, strategy_file, fn_a)
+
+            # Print formatted configuration to console
+            self.log.verbose(
+                f"[Orchestrator] Strategy saved to: {strategy_file}"
+            )
+
+            # Wait for user input
+            print(f"Configuration saved to: {strategy_file}")
+            print("\nReview the configuration above. You can:")
+            print("  - Press Enter to continue with this configuration")
+            print(
+                "  - Edit the JSON file to modify parameters and press Enter to reload"
+            )
+            print("  - Press Ctrl+C to cancel")
+
+            import os
+            import inspect
+
+            # Get function's module globals for user-defined types
+            fn_globals = {}
+            try:
+                fn_module = inspect.getmodule(fn_a)
+                if fn_module:
+                    fn_globals = vars(fn_module)
+            except Exception:
+                pass
+
+            try:
+                input("\nPress Enter to continue...")
+
+                # Reload configuration from file (in case user edited it)
+                if os.path.exists(strategy_file):
+                    print("\nReloading configuration from file...")
+                    plan = self.serializer.load_from_file(
+                        strategy_file, fn_globals
+                    )
+                    print("✅ Configuration loaded successfully")
+                else:
+                    print(
+                        f"\n⚠️ Warning: Configuration file {strategy_file} not found. Using original configuration.\n"
+                    )
+            except KeyboardInterrupt:
+                print("\n\n❌ Testing cancelled by user.")
+                return None
+
+            self.log.verbose(f"✅ Test Strategies Loaded:\n{plan}")
 
         # Run and Compare
         a_results, b_results, warnings = self.runner.execute(
@@ -123,6 +185,8 @@ class Orchestrator:
         func_name: str = None,
         max_examples: int = 200,
         test_file: str = None,
+        strategy_file: str = None,
+        auto_approve: bool = False,
     ):
         """
         Run differential testing on modified functions from a git commit.
@@ -132,6 +196,8 @@ class Orchestrator:
             func_name: Optional filter for specific function name
             max_examples: Maximum number of test examples per function
             test_file: Optional path to test file for type inference
+            strategy_file: Optional path to save/load strategy JSON file
+            auto_approve: If True, skip user confirmation for strategies
 
         Returns:
             List of test results for each modified function
@@ -162,12 +228,21 @@ class Orchestrator:
             )
 
             try:
+                # Generate strategy file name for each function if base path provided
+                func_strategy_file = None
+                if strategy_file:
+                    func_strategy_file = strategy_file.replace(
+                        ".json", f"_{target.func_name}.json"
+                    )
+
                 result = self.run_pair(
                     file_a=target.file_a,
                     file_b=target.file_b,
                     func_name=target.func_name,
                     max_examples=max_examples,
                     test_file=test_file,
+                    strategy_file=func_strategy_file,
+                    auto_approve=auto_approve,
                 )
                 results.append(result)
             finally:
@@ -181,6 +256,8 @@ class Orchestrator:
         func_name: str = None,
         max_examples: int = 200,
         test_file: str = None,
+        strategy_file: str = None,
+        auto_approve: bool = False,
     ):
         """
         Run differential testing on modified functions from a diff file.
@@ -190,6 +267,8 @@ class Orchestrator:
             func_name: Optional filter for specific function name
             max_examples: Maximum number of test examples per function
             test_file: Optional path to test file for type inference
+            strategy_file: Optional path to save/load strategy JSON file
+            auto_approve: If True, skip user confirmation for strategies
 
         Returns:
             List of test results for each modified function
@@ -222,12 +301,21 @@ class Orchestrator:
             )
 
             try:
+                # Generate strategy file name for each function if base path provided
+                func_strategy_file = None
+                if strategy_file:
+                    func_strategy_file = strategy_file.replace(
+                        ".json", f"_{target.func_name}.json"
+                    )
+
                 result = self.run_pair(
                     file_a=target.file_a,
                     file_b=target.file_b,
                     func_name=target.func_name,
                     max_examples=max_examples,
                     test_file=test_file,
+                    strategy_file=func_strategy_file,
+                    auto_approve=auto_approve,
                 )
                 results.append(result)
             finally:
@@ -243,6 +331,8 @@ class Orchestrator:
         func_name: str = None,
         max_examples: int = 200,
         install_deps: bool = True,
+        strategy_file: str = None,
+        auto_approve: bool = False,
     ):
         """
         Run differential testing from a diff file with repository context.
@@ -261,6 +351,8 @@ class Orchestrator:
             func_name: Optional filter for specific function name
             max_examples: Maximum number of test examples per function
             install_deps: Whether to install dependencies from requirements.txt
+            strategy_file: Optional path to save/load strategy JSON file
+            auto_approve: If True, skip user confirmation for strategies
 
         Returns:
             List of test results for each modified function
@@ -372,12 +464,21 @@ class Orchestrator:
                     )
 
                     try:
+                        # Generate strategy file name for each function if base path provided
+                        func_strategy_file = None
+                        if strategy_file:
+                            func_strategy_file = strategy_file.replace(
+                                ".json", f"_{target.func_name}.json"
+                            )
+
                         result = self.run_pair(
                             file_a=target.file_a,
                             file_b=target.file_b,
                             func_name=target.func_name,
                             max_examples=max_examples,
                             test_file=test_file,
+                            strategy_file=func_strategy_file,
+                            auto_approve=auto_approve,
                         )
                         results.append(result)
                     finally:

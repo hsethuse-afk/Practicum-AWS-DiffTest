@@ -24,6 +24,9 @@ build/
 # Logs
 *.log
 
+# do not include test samples
+/src/testsample/
+
 # OS-specific junk
 .DS_Store
 Thumbs.db
