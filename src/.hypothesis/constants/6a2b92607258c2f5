@@ -1,4 +1,0 @@
-# file: /home/toris/practicum/Practicum-AWS-DiffTest/src/run_he_taskid.py
-# hypothesis_version: 6.138.15
-
-[200, '--log', '--max-examples', '--t', './testsample/', 'D', 'Debug', 'Human-eval task id', 'N', 'S', 'Silent', 'V', 'Verbose', '__main__', 'a.py', 'b.py', 'd', 's', 'v']

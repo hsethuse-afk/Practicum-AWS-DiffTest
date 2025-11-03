@@ -14,6 +14,8 @@ class TargetPair:
 class StrategyPlan:
     # Hypothesis strategy that yields a tuple of call args
     arg_strategy: Any
+    # Individual parameter strategies for serialization (param_name -> strategy)
+    param_strategies: Dict[str, Any] = None
 
 
 @dataclass
@@ -44,6 +46,7 @@ class TestResult:
     target: TargetPair
     passed: bool
     detail: Dict[str, Any]
+    warnings: List[Dict[str, Any]] | None = None  # captured warnings during execution
 
 
 @dataclass

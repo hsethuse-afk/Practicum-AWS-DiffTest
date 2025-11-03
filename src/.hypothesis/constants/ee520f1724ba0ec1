@@ -1,4 +1,0 @@
-# file: /home/toris/practicum/diff-test-tool/src/dt/strategies.py
-# hypothesis_version: 6.138.15
-
-[-100, 100, 'float', 'list', 'positive_int', 'string']

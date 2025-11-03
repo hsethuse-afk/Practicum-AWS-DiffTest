@@ -13,7 +13,7 @@ def _get_venv_site_packages(venv_path: str) -> Optional[str]:
         return None
 
     # Try to find site-packages in the venv
-    if os.name == 'nt':  # Windows
+    if os.name == "nt":  # Windows
         site_packages = os.path.join(venv_path, "Lib", "site-packages")
     else:  # Unix/Linux/Mac
         # Find Python version directory
@@ -21,7 +21,9 @@ def _get_venv_site_packages(venv_path: str) -> Optional[str]:
         if os.path.exists(lib_dir):
             for item in os.listdir(lib_dir):
                 if item.startswith("python"):
-                    site_packages = os.path.join(lib_dir, item, "site-packages")
+                    site_packages = os.path.join(
+                        lib_dir, item, "site-packages"
+                    )
                     if os.path.exists(site_packages):
                         return site_packages
 
@@ -30,10 +32,12 @@ def _get_venv_site_packages(venv_path: str) -> Optional[str]:
     return None
 
 
-def _load_function_from_file(path: str, func_name: str, venv_path: Optional[str] = None) -> Callable:
+def _load_function_from_file(
+    path: str, func_name: str, venv_path: Optional[str] = None
+) -> Callable:
     """
     Loads a function from a Python file using a standard import mechanism
-    that is compatible with coverage tools.
+    that is compatible with coverage tools. Handles package detection for relative imports.
 
     Args:
         path: Path to the Python file
@@ -41,8 +45,31 @@ def _load_function_from_file(path: str, func_name: str, venv_path: Optional[str]
         venv_path: Optional path to virtual environment (for isolated dependencies)
     """
     path_obj = os.path.abspath(path)
-    dir_name = os.path.dirname(path_obj)
-    mod_name = os.path.splitext(os.path.basename(path_obj))[0]
+    module_dir = os.path.dirname(path_obj)
+    base_name = os.path.splitext(os.path.basename(path_obj))[0]
+
+    # Detect package hierarchy by checking for __init__.py up the directory chain
+    parts = [base_name]
+    current_dir = module_dir
+    while current_dir and current_dir != os.path.dirname(
+        current_dir
+    ):  # Stop at root
+        init_path = os.path.join(current_dir, "__init__.py")
+        if os.path.exists(init_path):
+            parts.append(os.path.basename(current_dir))
+            current_dir = os.path.dirname(current_dir)
+        else:
+            break
+
+    # The package_root is now the directory just above the top-level package
+    package_root = current_dir
+
+    # Build the full module name
+    if len(parts) > 1:
+        mod_name = ".".join(reversed(parts))
+    else:
+        mod_name = parts[0]
+        package_root = module_dir  # For non-package modules, root is the module's dir
 
     # Track what we added to sys.path so we can clean it up
     added_paths = []
@@ -60,10 +87,10 @@ def _load_function_from_file(path: str, func_name: str, venv_path: Optional[str]
         sys.path.insert(0, cwd)
         added_paths.append(cwd)
 
-    # Add the file's directory to the system path
-    if dir_name not in sys.path:
-        sys.path.insert(0, dir_name)
-        added_paths.append(dir_name)
+    # Add the package root to the system path if not already present
+    if package_root and package_root not in sys.path:
+        sys.path.insert(0, package_root)
+        added_paths.append(package_root)
 
     try:
         # Import the module
@@ -72,7 +99,7 @@ def _load_function_from_file(path: str, func_name: str, venv_path: Optional[str]
         importlib.reload(module)
     finally:
         # Clean up sys.path in reverse order
-        for path_to_remove in added_paths:
+        for path_to_remove in reversed(added_paths):
             if path_to_remove in sys.path:
                 sys.path.remove(path_to_remove)
 
@@ -98,6 +125,10 @@ class HarnessBuilder:
         self.venv_path = venv_path
 
     def build(self, target: TargetPair) -> tuple[Callable, Callable]:
-        f_a = _load_function_from_file(target.file_a, target.func_name, self.venv_path)
-        f_b = _load_function_from_file(target.file_b, target.func_name, self.venv_path)
+        f_a = _load_function_from_file(
+            target.file_a, target.func_name, self.venv_path
+        )
+        f_b = _load_function_from_file(
+            target.file_b, target.func_name, self.venv_path
+        )
         return f_a, f_b

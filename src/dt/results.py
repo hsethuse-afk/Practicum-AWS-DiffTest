@@ -1,3 +1,4 @@
+from typing import List, Dict, Any
 from .contracts import TargetPair, CompareResult, TestResult
 from .logger import get_logger
 
@@ -5,7 +6,10 @@ from .logger import get_logger
 class ResultCollector:
 
     def collect(
-        self, target: TargetPair, cmp: CompareResult
+        self,
+        target: TargetPair,
+        cmp: CompareResult,
+        warnings: List[Dict[str, Any]] | None = None,
     ) -> TestResult:
         return TestResult(
             target=target,
@@ -16,6 +20,7 @@ class ResultCollector:
                 "stats": cmp.stats,
                 "mismatches": cmp.mismatches,
             },
+            warnings=warnings,
         )
 
     @staticmethod
@@ -44,3 +49,28 @@ class ResultCollector:
                 f"successes={stats.get('successes',0)}, "
                 f"mismatches={stats.get('mismatches',0)}"
             )
+
+        # Display captured warnings if any
+        if run.warnings:
+            # Deduplicate warnings by (message, category, filename, lineno)
+            unique_warnings = []
+            seen = set()
+            for w in run.warnings:
+                key = (
+                    w["message"],
+                    w["category"],
+                    w["filename"],
+                    w["lineno"],
+                )
+                if key not in seen:
+                    seen.add(key)
+                    unique_warnings.append(w)
+
+            if unique_warnings:
+                log.normal(
+                    f"\n⚠️  Warnings captured during execution ({len(unique_warnings)} unique):"
+                )
+                for w in unique_warnings:
+                    log.normal(
+                        f"  {w['filename']}:{w['lineno']}: {w['category']}: {w['message']}"
+                    )

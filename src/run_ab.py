@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
+import os
 from dt.orchestrator import Orchestrator
+from utilities.coverage_runner import handle_coverage
 
 
 def main():
@@ -13,29 +15,29 @@ def main():
     mode_group.add_argument(
         "--a",
         type=str,
-        help="Path to file A (reference) - use with --b and --func"
+        help="Path to file A (reference) - use with --b and --func",
     )
     mode_group.add_argument(
         "--commit",
         type=str,
-        help="Git commit to analyze (e.g., HEAD, abc123, HEAD~1)"
+        help="Git commit to analyze (e.g., HEAD, abc123, HEAD~1)",
     )
     mode_group.add_argument(
         "--diff-file",
         type=str,
-        help="Path to file containing git diff output"
+        help="Path to file containing git diff output",
     )
 
     # Required for manual mode
     p.add_argument(
         "--b",
         type=str,
-        help="Path to file B (candidate) - required with --a"
+        help="Path to file B (candidate) - required with --a",
     )
     p.add_argument(
         "--func",
         type=str,
-        help="Function name (entrypoint) - required with --a, optional with git diff mode"
+        help="Function name (entrypoint) - required with --a, optional with git diff mode",
     )
 
     # Common options
@@ -47,7 +49,18 @@ def main():
         default=None,
         help="Optional path to test file for type inference (e.g., 'test.py')",
     )
+    p.add_argument(
+        "--coverage",
+        action="store_true",
+        help="Generate coverage report.",
+    )
+    p.add_argument("--auto-approve", action="store_true", default=False)
     args = p.parse_args()
+
+    # Handle coverage
+    if args.a:
+        source_dir = os.path.dirname(args.a) or "."
+        handle_coverage(source_dir)
 
     # Validate arguments based on mode
     if args.a:
@@ -79,6 +92,7 @@ def main():
             args.func,
             max_examples=args.max_examples,
             test_file=args.test_file,
+            auto_approve=args.auto_approve,
         )
     elif args.commit:
         # Git commit mode
