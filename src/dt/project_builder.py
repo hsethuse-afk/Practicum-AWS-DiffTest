@@ -97,8 +97,12 @@ class ProjectBuilder:
         Returns:
             ProjectEnvironment with cloned repository
         """
-        # Create temporary directory
-        temp_dir = tempfile.mkdtemp(prefix="difftest_project_")
+        # Create temporary directory in project root
+        project_base = os.path.join(os.path.dirname(__file__), "..", "..")
+        project_base = os.path.abspath(project_base)
+        temp_parent = os.path.join(project_base, ".difftest_temp")
+        os.makedirs(temp_parent, exist_ok=True)
+        temp_dir = tempfile.mkdtemp(prefix="difftest_project_", dir=temp_parent)
 
         try:
             # Clone repository
@@ -135,17 +139,21 @@ class ProjectBuilder:
             if install_deps:
                 venv_path = self._install_dependencies(temp_dir)
 
-            # Cleanup function
+            # Cleanup function (disabled to keep temp directories for inspection)
             def cleanup():
-                try:
-                    shutil.rmtree(temp_dir)
-                    self.log.debug(
-                        f"[ProjectBuilder] Cleaned up project directory: {temp_dir}"
-                    )
-                except Exception as e:
-                    self.log.debug(
-                        f"[ProjectBuilder] Failed to cleanup: {e}"
-                    )
+                self.log.debug(
+                    f"[ProjectBuilder] Keeping project directory for inspection: {temp_dir}"
+                )
+                # Uncomment below to enable auto-cleanup:
+                # try:
+                #     shutil.rmtree(temp_dir)
+                #     self.log.debug(
+                #         f"[ProjectBuilder] Cleaned up project directory: {temp_dir}"
+                #     )
+                # except Exception as e:
+                #     self.log.debug(
+                #         f"[ProjectBuilder] Failed to cleanup: {e}"
+                #     )
 
             return ProjectEnvironment(
                 project_root=temp_dir,
