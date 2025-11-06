@@ -87,6 +87,12 @@ def _load_function_from_file(
         sys.path.insert(0, cwd)
         added_paths.append(cwd)
 
+    # Add utils directory if it exists (common pattern in many projects)
+    utils_dir = os.path.join(cwd, 'utils')
+    if os.path.isdir(utils_dir) and utils_dir not in sys.path:
+        sys.path.insert(0, utils_dir)
+        added_paths.append(utils_dir)
+
     # Add the package root to the system path if not already present
     if package_root and package_root not in sys.path:
         sys.path.insert(0, package_root)

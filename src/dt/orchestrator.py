@@ -323,6 +323,193 @@ class Orchestrator:
 
         return results
 
+    def run_commit_from_repo(
+        self,
+        repo_url: str,
+        commit: str,
+        func_name: str = None,
+        max_examples: int = 200,
+        install_deps: bool = True,
+        auto_approve: bool = False,
+        interactive_select: bool = True,
+        selected_functions: str = None,
+    ):
+        """
+        Run differential testing directly from a commit in a remote repository.
+
+        This is simpler than run_diff_with_repo - just provide repo URL and commit!
+        It will:
+        1. Clone the repository
+        2. Install dependencies
+        3. Extract diff from the commit
+        4. Parse the diff to find modified functions
+        5. Run differential tests with full type inference support
+
+        Args:
+            repo_url: Repository URL to clone (e.g., "https://github.com/user/repo.git")
+            commit: Commit hash to test (e.g., "ed7facc1b108ceff12bcb412d7a98471509f41b0")
+            func_name: Optional filter for specific function name
+            max_examples: Maximum number of test examples per function
+            install_deps: Whether to install dependencies from requirements.txt
+            auto_approve: If True, skip user confirmation for strategies
+            interactive_select: If True, prompt user to select functions interactively
+            selected_functions: Pre-selected function indices (e.g., "1,2,3" or "1-3")
+
+        Returns:
+            List of test results for each modified function
+        """
+        import os
+        import subprocess
+
+        # Build project environment
+        self.log.verbose(
+            f"[Orchestrator] Building project from {repo_url}"
+        )
+        env = self.project_builder.build_from_url(
+            repo_url, commit, install_deps=install_deps
+        )
+
+        try:
+            self.log.verbose(
+                f"[Orchestrator] Project cloned to: {env.project_root}"
+            )
+
+            # Find test file if exists (for type inference)
+            test_file = self._find_test_file(env.project_root)
+
+            # Change to project root for git commands
+            original_cwd = os.getcwd()
+            os.chdir(env.project_root)
+
+            try:
+                # Get diff from commit
+                self.log.verbose(
+                    f"[Orchestrator] Extracting diff from commit: {commit}"
+                )
+                cmd = ["git", "diff", f"{commit}^", commit]
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                diff_content = result.stdout
+
+                # Save diff to temporary file for parsing
+                import tempfile
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.diff', delete=False) as tmp:
+                    tmp.write(diff_content)
+                    tmp_diff_path = tmp.name
+
+                try:
+                    # Parse diff to find modified functions
+                    pairer = DiffPairer()
+                    self.log.verbose(
+                        f"[Orchestrator] Parsing diff from commit"
+                    )
+
+                    # Get pairs for testing and extract info about all modified functions
+                    pairs = pairer.pair_from_diff_file(
+                        tmp_diff_path, func_name, commit
+                    )
+
+                    # Also get ALL modified functions (including class methods) for reporting
+                    all_modified = pairer.git_parser.parse_diff_from_file(
+                        tmp_diff_path, commit
+                    )
+
+                    # Report all found functions/methods
+                    if all_modified:
+                        module_funcs = [
+                            m for m in all_modified if not m.is_class_method
+                        ]
+                        class_methods = [
+                            m for m in all_modified if m.is_class_method
+                        ]
+
+                        print(
+                            f"\n📋 Found {len(all_modified)} modified function(s)/method(s):"
+                        )
+
+                        if module_funcs:
+                            print(
+                                f"\n✅ Module-level functions (can test): {len(module_funcs)}"
+                            )
+                            for i, m in enumerate(module_funcs, 1):
+                                print(
+                                    f"   {i}. {m.function_name}() at lines {m.line_start}-{m.line_end}"
+                                )
+
+                        if class_methods:
+                            print(
+                                f"\n📦 Class methods (extracted but not tested yet): {len(class_methods)}"
+                            )
+                            for m in class_methods:
+                                print(
+                                    f"   - {m.class_name}.{m.function_name}() at lines {m.line_start}-{m.line_end}"
+                                )
+                        print()
+
+                    if not pairs:
+                        self.log.verbose(
+                            "[Orchestrator] No testable functions found (class methods are not supported yet)"
+                        )
+                        return []
+                finally:
+                    # Clean up temp diff file
+                    os.unlink(tmp_diff_path)
+
+                # Let user select which functions to test
+                selected_pairs = self._select_functions_to_test(
+                    pairs,
+                    interactive=interactive_select,
+                    preselected=selected_functions
+                )
+
+                if not selected_pairs:
+                    print("\n❌ No functions selected for testing.")
+                    return []
+
+                self.log.verbose(
+                    f"[Orchestrator] Testing {len(selected_pairs)} selected function(s)"
+                )
+
+                # Update harness with venv_path if available
+                if env.venv_path:
+                    self.log.verbose(
+                        f"[Orchestrator] Using virtual environment: {env.venv_path}"
+                    )
+                    self.harness = HarnessBuilder(
+                        venv_path=env.venv_path
+                    )
+
+                # Run tests on each pair
+                results = []
+                for i, (target, cleanup_pair) in enumerate(selected_pairs, 1):
+                    self.log.verbose(
+                        f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
+                    )
+
+                    try:
+                        result = self.run_pair(
+                            file_a=target.file_a,
+                            file_b=target.file_b,
+                            func_name=target.func_name,
+                            max_examples=max_examples,
+                            test_file=test_file,
+                            auto_approve=auto_approve,
+                        )
+                        results.append(result)
+                    finally:
+                        cleanup_pair()
+
+                return results
+            finally:
+                os.chdir(original_cwd)
+
+        finally:
+            env.cleanup()
+
     def run_diff_with_repo(
         self,
         diff_file_path: str,
@@ -331,8 +518,9 @@ class Orchestrator:
         func_name: str = None,
         max_examples: int = 200,
         install_deps: bool = True,
-        strategy_file: str = None,
         auto_approve: bool = False,
+        interactive_select: bool = True,
+        selected_functions: str = None,
     ):
         """
         Run differential testing from a diff file with repository context.
@@ -351,13 +539,17 @@ class Orchestrator:
             func_name: Optional filter for specific function name
             max_examples: Maximum number of test examples per function
             install_deps: Whether to install dependencies from requirements.txt
-            strategy_file: Optional path to save/load strategy JSON file
             auto_approve: If True, skip user confirmation for strategies
+            interactive_select: If True, prompt user to select functions interactively
+            selected_functions: Pre-selected function indices (e.g., "1,2,3" or "1-3")
 
         Returns:
             List of test results for each modified function
         """
         import os
+
+        # Convert diff_file_path to absolute path before changing directories
+        diff_file_path = os.path.abspath(diff_file_path)
 
         # Read diff file
         with open(diff_file_path, "r") as f:
@@ -422,9 +614,9 @@ class Orchestrator:
                         print(
                             f"\n✅ Module-level functions (can test): {len(module_funcs)}"
                         )
-                        for m in module_funcs:
+                        for i, m in enumerate(module_funcs, 1):
                             print(
-                                f"   - {m.function_name}() at lines {m.line_start}-{m.line_end}"
+                                f"   {i}. {m.function_name}() at lines {m.line_start}-{m.line_end}"
                             )
 
                     if class_methods:
@@ -443,8 +635,19 @@ class Orchestrator:
                     )
                     return []
 
+                # Let user select which functions to test
+                selected_pairs = self._select_functions_to_test(
+                    pairs,
+                    interactive=interactive_select,
+                    preselected=selected_functions
+                )
+
+                if not selected_pairs:
+                    print("\n❌ No functions selected for testing.")
+                    return []
+
                 self.log.verbose(
-                    f"[Orchestrator] Testing {len(pairs)} module-level function(s)"
+                    f"[Orchestrator] Testing {len(selected_pairs)} selected function(s)"
                 )
 
                 # Update harness with venv_path if available
@@ -458,26 +661,21 @@ class Orchestrator:
 
                 # Run tests on each pair
                 results = []
-                for i, (target, cleanup_pair) in enumerate(pairs, 1):
+                for i, (target, cleanup_pair) in enumerate(selected_pairs, 1):
                     self.log.verbose(
-                        f"[Orchestrator] Testing {i}/{len(pairs)}: {target.func_name}"
+                        f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
                     )
 
-                    try:
-                        # Generate strategy file name for each function if base path provided
-                        func_strategy_file = None
-                        if strategy_file:
-                            func_strategy_file = strategy_file.replace(
-                                ".json", f"_{target.func_name}.json"
-                            )
+                    print(target.file_a)
+                    print(target.file_b)
 
+                    try:
                         result = self.run_pair(
                             file_a=target.file_a,
                             file_b=target.file_b,
                             func_name=target.func_name,
                             max_examples=max_examples,
                             test_file=test_file,
-                            strategy_file=func_strategy_file,
                             auto_approve=auto_approve,
                         )
                         results.append(result)
@@ -525,3 +723,157 @@ class Orchestrator:
 
         self.log.verbose("[Orchestrator] No test file found")
         return None
+
+    def _select_functions_to_test(
+        self,
+        pairs: list,
+        interactive: bool = True,
+        preselected: str = None
+    ) -> list:
+        """
+        Let user select which functions to test.
+
+        Args:
+            pairs: List of (TargetPair, cleanup_function) tuples
+            interactive: If True, prompt user for selection; otherwise use preselected or all
+            preselected: Pre-selected function indices (e.g., "1,2,3" or "1-3")
+
+        Returns:
+            List of selected (TargetPair, cleanup_function) tuples
+        """
+        if not pairs:
+            return []
+
+        # Non-interactive mode with preselected functions
+        if not interactive and preselected:
+            selected_indices = self._parse_function_selection(preselected, len(pairs))
+            if selected_indices is None:
+                print("⚠️  Invalid function selection. Testing all functions.")
+                return pairs
+
+            selected_pairs = [pairs[idx - 1] for idx in selected_indices]
+            print(f"\n✅ Selected {len(selected_pairs)} function(s):")
+            for idx in selected_indices:
+                target, _ = pairs[idx - 1]
+                print(f"   {idx}. {target.func_name}")
+            return selected_pairs
+
+        # Non-interactive mode without preselected functions - test all
+        if not interactive:
+            print(f"\n✅ Testing all {len(pairs)} function(s)")
+            return pairs
+
+        # Interactive mode
+        print("\n" + "=" * 60)
+        print("SELECT FUNCTIONS TO TEST")
+        print("=" * 60)
+        print("\nAvailable functions:")
+
+        # Display numbered list of functions
+        for i, (target, _) in enumerate(pairs, 1):
+            print(f"  {i}. {target.func_name}")
+
+        print(f"\n  0. Test all functions")
+        print("\nOptions:")
+        print("  - Enter numbers separated by commas (e.g., '1,3,5')")
+        print("  - Enter ranges with dash (e.g., '1-3')")
+        print("  - Enter '0' or 'all' to test all functions")
+        print("  - Press Enter to test all functions")
+        print("  - Enter 'q' or 'quit' to cancel")
+
+        while True:
+            try:
+                user_input = input("\nYour selection: ").strip()
+
+                # Handle empty input (test all)
+                if not user_input or user_input in ["0", "all"]:
+                    print(f"\n✅ Selected all {len(pairs)} function(s)")
+                    return pairs
+
+                # Handle quit
+                if user_input.lower() in ["q", "quit"]:
+                    print("\n❌ Testing cancelled by user.")
+                    return []
+
+                # Parse input
+                selected_indices = self._parse_function_selection(user_input, len(pairs))
+
+                if selected_indices is None:
+                    print("⚠️  No valid functions selected. Please try again.")
+                    continue
+
+                # Get selected pairs
+                selected_pairs = [pairs[idx - 1] for idx in selected_indices]
+
+                # Show selection
+                print(f"\n✅ Selected {len(selected_pairs)} function(s):")
+                for idx in selected_indices:
+                    target, _ = pairs[idx - 1]
+                    print(f"   {idx}. {target.func_name}")
+
+                return selected_pairs
+
+            except KeyboardInterrupt:
+                print("\n\n❌ Testing cancelled by user.")
+                return []
+            except Exception as e:
+                print(f"⚠️  Error: {e}. Please try again.")
+                continue
+
+    def _parse_function_selection(self, selection: str, max_index: int) -> list:
+        """
+        Parse function selection string into list of indices.
+
+        Args:
+            selection: Selection string (e.g., "1,2,3" or "1-3" or "all")
+            max_index: Maximum valid index
+
+        Returns:
+            Sorted list of selected indices (1-based), or None if invalid
+        """
+        if not selection:
+            return None
+
+        # Handle "all" or "0"
+        if selection.lower() in ["all", "0"]:
+            return list(range(1, max_index + 1))
+
+        selected_indices = set()
+
+        for part in selection.split(","):
+            part = part.strip()
+
+            # Handle ranges (e.g., "1-3")
+            if "-" in part:
+                try:
+                    start, end = part.split("-", 1)
+                    start_idx = int(start.strip())
+                    end_idx = int(end.strip())
+
+                    if start_idx < 1 or end_idx > max_index:
+                        print(
+                            f"⚠️  Range {start_idx}-{end_idx} is out of bounds (1-{max_index})"
+                        )
+                        continue
+
+                    selected_indices.update(range(start_idx, end_idx + 1))
+                except ValueError:
+                    print(f"⚠️  Invalid range format: '{part}'")
+                    continue
+
+            # Handle single numbers
+            else:
+                try:
+                    idx = int(part)
+                    if idx == 0:
+                        # User selected "0" (all)
+                        return list(range(1, max_index + 1))
+                    elif 1 <= idx <= max_index:
+                        selected_indices.add(idx)
+                    else:
+                        print(f"⚠️  Number {idx} is out of bounds (1-{max_index})")
+                except ValueError:
+                    print(f"⚠️  Invalid number: '{part}'")
+                    continue
+
+        return sorted(selected_indices) if selected_indices else None

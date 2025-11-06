@@ -160,6 +160,7 @@ class GitDiffParser:
         file_diffs = []
         current_file = None
         changed_lines = []
+        current_line_num = 0  # Track current line number in new file
 
         for line in diff_output.split('\n'):
             # New file marker
@@ -173,15 +174,29 @@ class GitDiffParser:
                 match = re.search(r' b/(.+)$', line)
                 current_file = match.group(1) if match else None
                 changed_lines = []
+                current_line_num = 0
 
             # Track changed line numbers
             elif line.startswith('@@'):
                 # Parse hunk header: @@ -old_start,old_count +new_start,new_count @@
                 match = re.search(r'\+(\d+),?(\d+)?', line)
                 if match:
-                    start = int(match.group(1))
-                    count = int(match.group(2)) if match.group(2) else 1
-                    changed_lines.extend(range(start, start + count))
+                    current_line_num = int(match.group(1))
+
+            # Track actual changes (not context lines)
+            elif current_line_num > 0:
+                if line.startswith('+') and not line.startswith('+++'):
+                    # Added line - this is a real change in the new file
+                    changed_lines.append(current_line_num)
+                    current_line_num += 1
+                elif line.startswith('-') and not line.startswith('---'):
+                    # Removed line - doesn't exist in new file, but marks this area as changed
+                    # We track the current position as changed (where the deletion happened)
+                    changed_lines.append(current_line_num)
+                    # Don't increment line number (deleted line doesn't exist in new file)
+                elif not line.startswith('\\'):  # Ignore "\ No newline at end of file"
+                    # Context line - increment but don't mark as changed
+                    current_line_num += 1
 
         # Add last file
         if current_file:
@@ -247,7 +262,12 @@ class GitDiffParser:
         """
         Use AST to find which functions were modified.
 
-        Now identifies both module-level functions AND class methods.
+        Now identifies:
+        - Module-level functions
+        - Class methods
+        - Nested functions (functions defined inside other functions)
+
+        Strategy: Find the MOST SPECIFIC (innermost/smallest) function that contains the changes.
 
         Args:
             old_content: File content before change
@@ -263,47 +283,93 @@ class GitDiffParser:
             # Parse new version to get function definitions
             new_tree = ast.parse(new_content)
 
-            # Find MODULE-LEVEL functions
+            # Collect all functions (including nested ones) with their ranges
+            all_functions = []
+
+            def visit_function(node, parent_class=None, depth=0):
+                """Recursively visit all function definitions"""
+                func_start = node.lineno
+                func_end = node.end_lineno or func_start
+
+                # Check if any changed line is within this function
+                if any(func_start <= line <= func_end for line in changed_lines):
+                    is_class_method = parent_class is not None
+                    func_range = func_end - func_start
+
+                    all_functions.append({
+                        'name': node.name,
+                        'start': func_start,
+                        'end': func_end,
+                        'class_name': parent_class,
+                        'is_class_method': is_class_method,
+                        'range': func_range,
+                        'depth': depth
+                    })
+
+                # Recursively check nested functions (direct children only)
+                for item in node.body:
+                    if isinstance(item, ast.FunctionDef):
+                        visit_function(item, parent_class, depth + 1)
+
+            # Visit module-level functions
             for node in new_tree.body:
                 if isinstance(node, ast.FunctionDef):
-                    func_start = node.lineno
-                    func_end = node.end_lineno or func_start
+                    visit_function(node, None, 0)
 
-                    # Check if any changed line is within this function
-                    if any(func_start <= line <= func_end for line in changed_lines):
-                        modified_functions.append((
-                            node.name,
-                            func_start,
-                            func_end,
-                            None,  # No class name
-                            False  # Not a class method
-                        ))
-                        self.log.debug(
-                            f"[GitDiffParser] Found modified module-level function: {node.name}"
-                        )
-
-            # Find CLASS METHODS
+            # Visit class methods
             for node in new_tree.body:
                 if isinstance(node, ast.ClassDef):
                     class_name = node.name
-
                     for item in node.body:
                         if isinstance(item, ast.FunctionDef):
-                            func_start = item.lineno
-                            func_end = item.end_lineno or func_start
+                            visit_function(item, class_name, 0)
 
-                            # Check if any changed line is within this method
-                            if any(func_start <= line <= func_end for line in changed_lines):
-                                modified_functions.append((
-                                    item.name,
-                                    func_start,
-                                    func_end,
-                                    class_name,  # Class name
-                                    True  # Is a class method
-                                ))
-                                self.log.verbose(
-                                    f"[GitDiffParser] Found modified class method: {class_name}.{item.name} (lines {func_start}-{func_end})"
-                                )
+            # Find the MOST SPECIFIC (smallest range) function for each changed line
+            # This ensures we get nested functions rather than their parents
+            functions_by_specificity = {}
+
+            for func in all_functions:
+                # For each changed line this function contains
+                for line in changed_lines:
+                    if func['start'] <= line <= func['end']:
+                        # If we haven't seen this line, or this function is more specific (smaller)
+                        if line not in functions_by_specificity or \
+                           func['range'] < functions_by_specificity[line]['range']:
+                            functions_by_specificity[line] = func
+
+            # Collect unique functions (same function might be most specific for multiple lines)
+            # BUT filter out nested functions (depth > 0 and not a class method)
+            seen = set()
+            for func in functions_by_specificity.values():
+                # Skip nested functions (functions defined inside other functions)
+                # We only want:
+                # - Module-level functions (depth == 0, no class)
+                # - Class methods (depth == 0, has class)
+                if func['depth'] > 0:
+                    self.log.verbose(
+                        f"[GitDiffParser] Skipping nested function: {func['name']} (lines {func['start']}-{func['end']}) - not callable at module level"
+                    )
+                    continue
+
+                key = (func['name'], func['start'], func['end'], func['class_name'])
+                if key not in seen:
+                    seen.add(key)
+                    modified_functions.append((
+                        func['name'],
+                        func['start'],
+                        func['end'],
+                        func['class_name'],
+                        func['is_class_method']
+                    ))
+
+                    if func['class_name']:
+                        self.log.verbose(
+                            f"[GitDiffParser] Found modified class method: {func['class_name']}.{func['name']} (lines {func['start']}-{func['end']})"
+                        )
+                    else:
+                        self.log.verbose(
+                            f"[GitDiffParser] Found modified function: {func['name']} (lines {func['start']}-{func['end']})"
+                        )
 
         except SyntaxError as e:
             self.log.debug(f"[GitDiffParser] Failed to parse Python file: {e}")
