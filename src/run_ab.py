@@ -55,6 +55,18 @@ def main():
         help="Generate coverage report.",
     )
     p.add_argument("--auto-approve", action="store_true", default=False)
+    p.add_argument(
+        "--report",
+        type=str,
+        default=None,
+        help="Generate HTML report and save to specified path (e.g., 'report.html')",
+    )
+    p.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed for reproducible test generation (e.g., 12345)",
+    )
     args = p.parse_args()
 
     # Handle coverage
@@ -93,6 +105,8 @@ def main():
             max_examples=args.max_examples,
             test_file=args.test_file,
             auto_approve=args.auto_approve,
+            report_path=args.report,
+            seed=args.seed,
         )
     elif args.commit:
         # Git commit mode

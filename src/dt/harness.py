@@ -32,17 +32,51 @@ def _get_venv_site_packages(venv_path: str) -> Optional[str]:
     return None
 
 
+def _find_method_in_module(module: types.ModuleType, method_name: str):
+    """
+    Search for a method within all classes in a module.
+
+    Args:
+        module: The imported module
+        method_name: Name of the method to find
+
+    Returns:
+        Tuple of (class, method) if found, None otherwise
+    """
+    import inspect
+
+    # Iterate through all members of the module
+    for name, obj in inspect.getmembers(module):
+        # Check if it's a class defined in this module
+        if inspect.isclass(obj) and obj.__module__ == module.__name__:
+            # Check if the class has the method
+            if hasattr(obj, method_name):
+                method = getattr(obj, method_name)
+                if callable(method):
+                    return obj, method
+
+    return None
+
+
 def _load_function_from_file(
-    path: str, func_name: str, venv_path: Optional[str] = None
+    path: str, func_name: str, venv_path: Optional[str] = None, class_name: Optional[str] = None
 ) -> Callable:
     """
-    Loads a function from a Python file using a standard import mechanism
+    Loads a function or class method from a Python file using a standard import mechanism
     that is compatible with coverage tools. Handles package detection for relative imports.
+
+    Automatically detects whether the target is a module-level function or class method.
+    If class_name is not provided, will search for the function at module level first,
+    then search within all classes in the module.
 
     Args:
         path: Path to the Python file
-        func_name: Name of the function to load
+        func_name: Name of the function or method to load
         venv_path: Optional path to virtual environment (for isolated dependencies)
+        class_name: Optional class name (if loading a method). If None, auto-detects.
+
+    Returns:
+        Function object (for module-level functions), or tuple of (class, method) for class methods
     """
     path_obj = os.path.abspath(path)
     module_dir = os.path.dirname(path_obj)
@@ -103,15 +137,46 @@ def _load_function_from_file(
             if path_to_remove in sys.path:
                 sys.path.remove(path_to_remove)
 
+    # If class_name is explicitly provided, load from that class
+    if class_name:
+        cls = getattr(module, class_name, None)
+        if cls is None:
+            raise AttributeError(f"{path} has no class '{class_name}'")
+        if not isinstance(cls, type):
+            raise TypeError(f"'{class_name}' in {path} is not a class")
+
+        method = getattr(cls, func_name, None)
+        if method is None:
+            raise AttributeError(f"Class '{class_name}' has no method '{func_name}'")
+        if not callable(method):
+            raise TypeError(f"'{func_name}' in class '{class_name}' is not callable")
+
+        # Return both class and method
+        return cls, method
+
+    # Auto-detection: Try module-level function first
     func = getattr(module, func_name, None)
-    if not callable(func):
-        raise AttributeError(f"{path} has no callable '{func_name}'")
-    # Ensure it's a plain function (early-stage guard)
-    if not isinstance(func, types.FunctionType):
+
+    # If found at module level and it's a plain function, return it
+    if func is not None and isinstance(func, types.FunctionType):
+        return func
+
+    # Not found at module level or not a function, search in classes
+    result = _find_method_in_module(module, func_name)
+    if result:
+        return result  # Returns (class, method) tuple
+
+    # Not found anywhere
+    if func is not None:
+        # Found something but it's not a function or method
         raise TypeError(
-            f"'{func_name}' in {path} is not a plain function"
+            f"'{func_name}' in {path} exists but is not a function or method"
         )
-    return func
+    else:
+        # Not found at all
+        raise AttributeError(
+            f"{path} has no function or method named '{func_name}'"
+        )
 
 
 class HarnessBuilder:
@@ -124,11 +189,33 @@ class HarnessBuilder:
         """
         self.venv_path = venv_path
 
-    def build(self, target: TargetPair) -> tuple[Callable, Callable]:
-        f_a = _load_function_from_file(
-            target.file_a, target.func_name, self.venv_path
+    def build(self, target: TargetPair):
+        """
+        Build function/method references from target pair.
+
+        For regular functions: Returns (func_a, func_b)
+        For class methods: Returns ((cls_a, method_a), (cls_b, method_b))
+
+        Args:
+            target: TargetPair with file paths and function/class names
+
+        Returns:
+            Tuple of loaded functions/methods
+        """
+        result_a = _load_function_from_file(
+            target.file_a, target.func_name, self.venv_path, target.class_name
         )
-        f_b = _load_function_from_file(
-            target.file_b, target.func_name, self.venv_path
+        result_b = _load_function_from_file(
+            target.file_b, target.func_name, self.venv_path, target.class_name
         )
-        return f_a, f_b
+
+        # Update target metadata if we detected a class method
+        if isinstance(result_a, tuple) and len(result_a) == 2:
+            cls_a, method_a = result_a
+            target.is_class_method = True
+            if not target.class_name:  # Only set if not already set
+                target.class_name = cls_a.__name__
+
+        # For class methods, result is (cls, method) tuple
+        # For functions, result is just the function
+        return result_a, result_b

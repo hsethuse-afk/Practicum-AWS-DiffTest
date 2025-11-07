@@ -100,19 +100,16 @@ class DiffPairer:
                 if f.function_name == func_name
             ]
 
-        # Filter out class methods (not supported yet)
-        module_level_funcs = [
-            f for f in modified_funcs
-            if not f.is_class_method
-        ]
-
+        # Now supporting both module-level functions AND class methods
         pairs = []
-        for mod_func in module_level_funcs:
+        for mod_func in modified_funcs:
             temp_files = self.temp_builder.build_temp_files(mod_func)
             target = TargetPair(
                 file_a=temp_files.old_file,
                 file_b=temp_files.new_file,
-                func_name=mod_func.function_name
+                func_name=mod_func.function_name,
+                class_name=mod_func.class_name,
+                is_class_method=mod_func.is_class_method,
             )
             pairs.append((target, temp_files.cleanup))
 

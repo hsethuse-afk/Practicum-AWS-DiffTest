@@ -1,3 +1,4 @@
+import os
 from .contracts import RunConfig, TargetPair, LoggerMode
 from .diffpairer import DiffPairer
 from .strategy.strategies import StrategySynthesizer
@@ -37,7 +38,9 @@ class Orchestrator:
         self.type_discoverer = TypeDiscoverer()
         self.inference_engine = inference_engine or RightTyperEngine()
         self.strategy = StrategySynthesizer()
-        self.serializer = StrategySerializer(enable_extras=enable_strategy_extras)
+        self.serializer = StrategySerializer(
+            enable_extras=enable_strategy_extras
+        )
         self.runner = ABRunner()
         self.comparator = ABComparator()
         self.results = ResultCollector()
@@ -51,6 +54,8 @@ class Orchestrator:
         max_examples: int = 200,
         test_file: str = None,
         auto_approve: bool = False,
+        report_path: str = None,
+        seed: int = None,
     ):
         """
         Run differential testing on a pair of functions.
@@ -62,9 +67,9 @@ class Orchestrator:
             max_examples: Maximum number of test examples
             test_file: Optional path to test file for RightTyper type inference
                       (e.g., "test.py") that will be used if annotations are missing
-            strategy_file: Optional path to save/load strategy JSON file
-                          If provided, will save strategy and wait for user confirmation
             auto_approve: If True, skip user confirmation and use saved strategy immediately
+            report_path: Optional path to save HTML report
+            seed: Optional random seed for reproducible test generation
         """
 
         # TODO if strategy file exits, skip the type inference
@@ -83,11 +88,29 @@ class Orchestrator:
                     f"[Orchestrator] Using test file for type inference: {test_file}"
                 )
 
-        # Step 2: Build target pairs (load functions from files)
+        # Step 2: Build target pairs (load functions or class methods from files)
         target = TargetPair(
             file_a=file_a, file_b=file_b, func_name=func_name
         )
-        fn_a, fn_b = self.harness.build(target)
+        result_a, result_b = self.harness.build(target)
+
+        # Check if we're testing class methods or regular functions
+        is_class_method = (
+            isinstance(result_a, tuple) and len(result_a) == 2
+        )
+
+        if is_class_method:
+            cls_a, fn_a = result_a
+            cls_b, fn_b = result_b
+            self.log.verbose(
+                f"[Orchestrator] Testing class method: {cls_a.__name__}.{func_name}"
+            )
+        else:
+            fn_a, fn_b = result_a, result_b
+            cls_a, cls_b = None, None
+            self.log.verbose(
+                f"[Orchestrator] Testing function: {func_name}"
+            )
 
         # Step 3: Run type inference if needed
         if test_file and self.inference_engine.needs_inference(
@@ -101,18 +124,37 @@ class Orchestrator:
                 self.log.verbose(
                     f"[Orchestrator] Type inference completed, reloading functions"
                 )
-                # Reload functions via harness to get updated annotations
-                fn_a, fn_b = self.harness.build(target)
+                # Reload functions/methods via harness to get updated annotations
+                result_a, result_b = self.harness.build(target)
+                if is_class_method:
+                    cls_a, fn_a = result_a
+                    cls_b, fn_b = result_b
+                else:
+                    fn_a, fn_b = result_a, result_b
 
         # Step 4: Discover parameter types from (possibly updated) function
         param_types = self.type_discoverer.discover_param_types(fn_a)
         self.log.verbose(
-            f"[Orchestrator] Discovered types: {param_types}"
+            f"[Orchestrator] Discovered method/function parameter types: {param_types}"
         )
+
+        # Step 4b: For class methods, discover constructor types
+        constructor_types = None
+        if is_class_method:
+            constructor_types = (
+                self.type_discoverer.discover_constructor_types(cls_a)
+            )
+            self.log.verbose(
+                f"[Orchestrator] Discovered constructor types for {cls_a.__name__}: {constructor_types}"
+            )
 
         # Step 5: Generate new strategy from discovered types
         plan = self.strategy.create_strategy(
-            fn_a, param_types=param_types
+            fn_a,
+            param_types=param_types,
+            cls=cls_a,
+            constructor_types=constructor_types,
+            max_examples=max_examples,
         )
         self.log.verbose(
             f"✅ Test Strategies Successfully Generated:\n{plan}"
@@ -170,12 +212,45 @@ class Orchestrator:
             self.log.verbose(f"✅ Test Strategies Loaded:\n{plan}")
 
         # Run and Compare
+        import time
+        import random
+
+        start_time = time.time()
+
+        # Generate seed if not provided
+        if seed is None:
+            seed = random.randint(0, 2**32 - 1)
+            self.log.normal(f"\n🎲 Generated random seed: {seed}")
+        else:
+            self.log.normal(f"\n🎲 Using provided seed: {seed}")
+
+        self.log.normal(f"   To reproduce: --seed {seed}\n")
+
+        run_config = RunConfig(max_examples=max_examples, seed=seed)
         a_results, b_results, warnings = self.runner.execute(
-            fn_a, fn_b, plan, RunConfig(max_examples=max_examples)
+            fn_a, fn_b, plan, run_config
         )
+
+        duration = time.time() - start_time
+
         cmp = self.comparator.compare(a_results, b_results)
         out = self.results.collect(target, cmp, warnings)
         self.results.print(out)
+
+        # Generate HTML report if requested
+        if report_path:
+            self._generate_html_report(
+                test_result=out,
+                a_results=a_results,
+                b_results=b_results,
+                strategy=plan,
+                config=run_config,
+                command=self._build_command_string(
+                    file_a, file_b, func_name, max_examples, seed
+                ),
+                duration=duration,
+                output_path=report_path,
+            )
 
         return out
 
@@ -420,7 +495,7 @@ class Orchestrator:
 
                     if module_funcs:
                         print(
-                            f"\n✅ Module-level functions (can test): {len(module_funcs)}"
+                            f"\n✅ Module-level functions: {len(module_funcs)}"
                         )
                         for m in module_funcs:
                             print(
@@ -429,7 +504,7 @@ class Orchestrator:
 
                     if class_methods:
                         print(
-                            f"\n📦 Class methods (extracted but not tested yet): {len(class_methods)}"
+                            f"\n✅ Class methods: {len(class_methods)}"
                         )
                         for m in class_methods:
                             print(
@@ -439,13 +514,34 @@ class Orchestrator:
 
                 if not pairs:
                     self.log.verbose(
-                        "[Orchestrator] No testable functions found (class methods are not supported yet)"
+                        "[Orchestrator] No modified functions/methods found"
                     )
                     return []
 
-                self.log.verbose(
-                    f"[Orchestrator] Testing {len(pairs)} module-level function(s)"
+                # Count module functions vs class methods
+                num_funcs = sum(
+                    1
+                    for target, cleanup in pairs
+                    if not target.is_class_method
                 )
+                num_methods = sum(
+                    1
+                    for target, cleanup in pairs
+                    if target.is_class_method
+                )
+
+                if num_funcs > 0 and num_methods > 0:
+                    self.log.verbose(
+                        f"[Orchestrator] Testing {num_funcs} function(s) and {num_methods} method(s)"
+                    )
+                elif num_funcs > 0:
+                    self.log.verbose(
+                        f"[Orchestrator] Testing {num_funcs} function(s)"
+                    )
+                else:
+                    self.log.verbose(
+                        f"[Orchestrator] Testing {num_methods} method(s)"
+                    )
 
                 # Update harness with venv_path if available
                 if env.venv_path:
@@ -525,3 +621,54 @@ class Orchestrator:
 
         self.log.verbose("[Orchestrator] No test file found")
         return None
+
+    def _generate_html_report(
+        self,
+        test_result,
+        a_results,
+        b_results,
+        strategy,
+        config,
+        command,
+        duration,
+        output_path,
+    ):
+        """Generate HTML report for test results."""
+        try:
+            from .reporting import HTMLReporter
+
+            reporter = HTMLReporter()
+            report_path = reporter.generate_report(
+                test_result=test_result,
+                a_results=a_results,
+                b_results=b_results,
+                strategy=strategy,
+                config=config,
+                command=command,
+                duration=duration,
+                output_path=output_path,
+            )
+
+            self.log.normal(
+                f"\n📊 HTML Report generated: {report_path}"
+            )
+            self.log.normal(
+                f"   Open in browser: file://{os.path.abspath(report_path)}"
+            )
+
+        except Exception as e:
+            self.log.normal(f"\n⚠️  Failed to generate HTML report: {e}")
+            import traceback
+
+            self.log.debug(
+                f"Report generation error: {traceback.format_exc()}"
+            )
+
+    def _build_command_string(
+        self, file_a, file_b, func_name, max_examples, seed=None
+    ):
+        """Build command string for reproduction."""
+        cmd = f"python src/run_ab.py --a {file_a} --b {file_b} --func {func_name} --max-examples {max_examples}"
+        if seed is not None:
+            cmd += f" --seed {seed}"
+        return cmd
