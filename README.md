@@ -46,8 +46,6 @@ The framework automatically:
 - Distributes test cases across multiple instances using smart heuristics
 - Shows per-instance statistics in reports
 
-See [CLASS_METHOD_SUPPORT.md](CLASS_METHOD_SUPPORT.md) for detailed documentation.
-
 ### Generating HTML Reports
 
 Add `--report` flag to generate interactive HTML reports:
@@ -69,26 +67,6 @@ python run_ab.py \
 - 📋 Collapsible, scrollable sections
 - 🌓 Dark mode support
 - 💾 Self-contained single HTML file
-
-See [HTML_REPORT_GUIDE.md](HTML_REPORT_GUIDE.md) for detailed usage guide.
-
-### Coverage Tracking
-
-Enable code coverage reporting with `--coverage`:
-
-```bash
-python run_by_taskid.py --t HumanEval/10 --coverage
-```
-
-Generates coverage reports showing which lines were executed during differential testing.
-
-### Git Diff Mode
-
-Compare functions across git commits:
-
-```bash
-python run_ab.py --commit HEAD --max-examples 200 --report diff_report.html
-```
 
 ### Run HumanEval Task by ID
 
@@ -113,21 +91,13 @@ python run_all_tests.py --jsonl-results testsample/samples.jsonl_results.jsonl
 - `--a PATH` - Path to first version of the code
 - `--b PATH` - Path to second version of the code
 - `--func NAME` - Function name to test
-- `--class NAME` - Optional, Class name (for testing class methods)
 - `--max-examples N` - Number of test cases to generate (default: 200)
 - `--seed N` - Random seed for reproducibility
 - `--test-file PATH` - Test file for type inference
 - `--report PATH` - Generate HTML report at specified path
 - `--auto-approve` - Skip strategy confirmation prompt
-- `--commit HASH` - Git commit for diff mode
 - `--log MODE` - Logging: `s`ilent, `n`ormal, `v`erbose, `d`ebug (default: normal)
-
-### run_by_taskid.py
-
-- `--t TASK_ID` - HumanEval task ID (e.g., HumanEval/10)
-- `--max-examples N` - Number of test cases to generate (default: 200)
 - `--coverage` - Generate coverage report
-- `--log MODE` - Logging mode
 
 ## Configuration & Customization
 
@@ -206,14 +176,6 @@ The framework will:
 - Prompt you to review and approve the strategy
 - Allow you to edit the JSON file to customize parameters
 - Reload the strategy after you make changes
-
-## Documentation
-
-- **[CLASS_METHOD_SUPPORT.md](CLASS_METHOD_SUPPORT.md)** - Comprehensive guide to testing class methods
-- **[HTML_REPORT_GUIDE.md](HTML_REPORT_GUIDE.md)** - HTML report features and usage
-- **[REPORT_DESIGN.md](REPORT_DESIGN.md)** - Technical design of HTML reporting system
-- **[NUMPY_DTYPE_CUSTOMIZATION_GUIDE.md](NUMPY_DTYPE_CUSTOMIZATION_GUIDE.md)** - NumPy dtype configuration
-- **[src/dt/strategy/STRATEGY_CONFIG.md](src/dt/STRATEGY_CONFIG.md)** - Strategy parameter customization
 
 ## Advanced Features
 
