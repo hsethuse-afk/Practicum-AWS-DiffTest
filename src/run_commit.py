@@ -55,6 +55,18 @@ def main():
         help="Number of test cases to generate (default: 200)"
     )
     p.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed for reproducible test generation (optional)"
+    )
+    p.add_argument(
+        "--report",
+        type=str,
+        default=None,
+        help="Generate HTML report at specified path (optional)"
+    )
+    p.add_argument(
         "--no-install-deps",
         action="store_true",
         help="Skip installing dependencies from requirements.txt"
@@ -111,6 +123,8 @@ def main():
         interactive_select=not args.no_interactive,
         selected_functions=args.functions,
         auto_approve=args.auto_approve,
+        report_path=args.report,
+        seed=args.seed,
     )
 
     # Summary

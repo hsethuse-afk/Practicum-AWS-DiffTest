@@ -408,6 +408,8 @@ class Orchestrator:
         auto_approve: bool = False,
         interactive_select: bool = True,
         selected_functions: str = None,
+        report_path: str = None,
+        seed: int = None,
     ):
         """
         Run differential testing directly from a commit in a remote repository.
@@ -429,6 +431,8 @@ class Orchestrator:
             auto_approve: If True, skip user confirmation for strategies
             interactive_select: If True, prompt user to select functions interactively
             selected_functions: Pre-selected function indices (e.g., "1,2,3" or "1-3")
+            report_path: Optional path to save HTML report
+            seed: Optional random seed for reproducible test generation
 
         Returns:
             List of test results for each modified function
@@ -565,184 +569,17 @@ class Orchestrator:
                         f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
                     )
 
-                    try:
-                        result = self.run_pair(
-                            file_a=target.file_a,
-                            file_b=target.file_b,
-                            func_name=target.func_name,
-                            max_examples=max_examples,
-                            test_file=test_file,
-                            auto_approve=auto_approve,
-                        )
-                        results.append(result)
-                    finally:
-                        cleanup_pair()
-
-                return results
-            finally:
-                os.chdir(original_cwd)
-
-        finally:
-            env.cleanup()
-
-    def run_diff_with_repo(
-        self,
-        diff_file_path: str,
-        repo_url: str,
-        commit: str = None,
-        func_name: str = None,
-        max_examples: int = 200,
-        install_deps: bool = True,
-        auto_approve: bool = False,
-        interactive_select: bool = True,
-        selected_functions: str = None,
-    ):
-        """
-        Run differential testing from a diff file with repository context.
-
-        This is the key method for testing when you only have a git diff.
-        It will:
-        1. Clone the repository
-        2. Install dependencies
-        3. Parse the diff to find modified functions
-        4. Run differential tests with full type inference support
-
-        Args:
-            diff_file_path: Path to file containing git diff
-            repo_url: Repository URL to clone (e.g., "https://github.com/user/repo.git")
-            commit: Optional specific commit (extracted from diff if not provided)
-            func_name: Optional filter for specific function name
-            max_examples: Maximum number of test examples per function
-            install_deps: Whether to install dependencies from requirements.txt
-            auto_approve: If True, skip user confirmation for strategies
-            interactive_select: If True, prompt user to select functions interactively
-            selected_functions: Pre-selected function indices (e.g., "1,2,3" or "1-3")
-
-        Returns:
-            List of test results for each modified function
-        """
-        import os
-
-        # Convert diff_file_path to absolute path before changing directories
-        diff_file_path = os.path.abspath(diff_file_path)
-
-        # Read diff file
-        with open(diff_file_path, "r") as f:
-            diff_content = f.read()
-
-        # Build project environment
-        self.log.verbose(
-            f"[Orchestrator] Building project from {repo_url}"
-        )
-        if install_deps:
-            env = self.project_builder.build_from_url(
-                repo_url, commit or "HEAD", install_deps=True
-            )
-        else:
-            env = self.project_builder.build_from_diff_with_repo(
-                diff_content, repo_url, commit
-            )
-
-        try:
-            self.log.verbose(
-                f"[Orchestrator] Project cloned to: {env.project_root}"
-            )
-
-            # Find test file if exists (for type inference)
-            test_file = self._find_test_file(env.project_root)
-
-            # Parse diff to find modified functions
-            pairer = DiffPairer()
-            self.log.verbose(
-                f"[Orchestrator] Parsing diff file: {diff_file_path}"
-            )
-
-            # Change to project root for relative paths to work
-            original_cwd = os.getcwd()
-            os.chdir(env.project_root)
-
-            try:
-                # Get pairs for testing and extract info about all modified functions
-                pairs = pairer.pair_from_diff_file(
-                    diff_file_path, func_name, commit
-                )
-
-                # Also get ALL modified functions (including class methods) for reporting
-                all_modified = pairer.git_parser.parse_diff_from_file(
-                    diff_file_path, commit
-                )
-
-                # Report all found functions/methods
-                if all_modified:
-                    module_funcs = [
-                        m for m in all_modified if not m.is_class_method
-                    ]
-                    class_methods = [
-                        m for m in all_modified if m.is_class_method
-                    ]
-
-                    print(
-                        f"\n📋 Found {len(all_modified)} modified function(s)/method(s):"
-                    )
-
-                    if module_funcs:
-                        print(
-                            f"\n✅ Module-level functions: {len(module_funcs)}"
-                        )
-                        for i, m in enumerate(module_funcs, 1):
-                            print(
-                                f"   {i}. {m.function_name}() at lines {m.line_start}-{m.line_end}"
-                            )
-
-                    if class_methods:
-                        print(
-                            f"\n✅ Class methods: {len(class_methods)}"
-                        )
-                        for m in class_methods:
-                            print(
-                                f"   - {m.class_name}.{m.function_name}() at lines {m.line_start}-{m.line_end}"
-                            )
-                    print()
-
-                if not pairs:
-                    self.log.verbose(
-                        "[Orchestrator] No modified functions/methods found"
-                    )
-                    return []
-
-                # Let user select which functions to test
-                selected_pairs = self._select_functions_to_test(
-                    pairs,
-                    interactive=interactive_select,
-                    preselected=selected_functions
-                )
-
-                if not selected_pairs:
-                    print("\n❌ No functions selected for testing.")
-                    return []
-
-                self.log.verbose(
-                    f"[Orchestrator] Testing {len(selected_pairs)} selected function(s)"
-                )
-
-                # Update harness with venv_path if available
-                if env.venv_path:
-                    self.log.verbose(
-                        f"[Orchestrator] Using virtual environment: {env.venv_path}"
-                    )
-                    self.harness = HarnessBuilder(
-                        venv_path=env.venv_path
-                    )
-
-                # Run tests on each pair
-                results = []
-                for i, (target, cleanup_pair) in enumerate(selected_pairs, 1):
-                    self.log.verbose(
-                        f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
-                    )
-
-                    print(target.file_a)
-                    print(target.file_b)
+                    # Generate unique report path for each function if report_path is provided
+                    func_report_path = None
+                    if report_path:
+                        if len(selected_pairs) > 1:
+                            # Multiple functions: add function name to report path
+                            import os as os_module
+                            base, ext = os_module.path.splitext(report_path)
+                            func_report_path = f"{base}_{target.func_name}{ext}"
+                        else:
+                            # Single function: use original report path
+                            func_report_path = report_path
 
                     try:
                         result = self.run_pair(
@@ -752,6 +589,8 @@ class Orchestrator:
                             max_examples=max_examples,
                             test_file=test_file,
                             auto_approve=auto_approve,
+                            report_path=func_report_path,
+                            seed=seed,
                         )
                         results.append(result)
                     finally:

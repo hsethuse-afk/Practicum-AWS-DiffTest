@@ -252,39 +252,6 @@ pip install hypothesis jinja2 slipcover righttyper
 
 ---
 
-## Git Diff Testing
-
-### Run Differential Test from Git Diff
-
-Test modified functions automatically from a git diff file:
-
-```bash
-python src/run_diff_repo.py \
-  --diff src/testsample/changes.diff \
-  --repo https://github.com/lorien/grab.git \
-  --commit c6b703ace922365cf49526297bd577079b155f88 \
-  --max-examples 200
-```
-
-**Parameters:**
-- `--diff PATH` - Path to git diff file (required)
-- `--repo URL` - Repository URL to clone (required)
-- `--commit HASH` - Specific commit hash (optional, auto-detected from diff)
-- `--max-examples N` - Number of test cases (default: 200)
-- `--log MODE` - Logging level (silent/normal/verbose/debug)
-- `--no-install-deps` - Skip dependency installation
-
-**How it works:**
-1. Clones the repository to a temporary directory
-2. Creates an isolated virtual environment
-3. Installs project dependencies (from pyproject.toml or requirements.txt)
-4. Parses the diff file to identify modified functions
-5. Generates test cases using Hypothesis
-6. Runs differential tests comparing old vs new versions
-7. Reports any behavioral differences
-
----
-
 ## Git Commit Testing
 
 ### Run Differential Test from a Commit
@@ -305,6 +272,8 @@ python src/run_commit.py \
 - `--functions INDICES` - Comma-separated function indices to test, e.g., '1,2,3' or '1-3' (optional)
 - `--no-interactive` - Skip interactive function selection (optional)
 - `--max-examples N` - Number of test cases (default: 200)
+- `--seed N` - Random seed for reproducible test generation (optional)
+- `--report PATH` - Generate HTML report at specified path (optional)
 - `--log MODE` - Logging level (silent/normal/verbose/debug)
 - `--no-install-deps` - Skip dependency installation
 - `--coverage` - Generate coverage report
@@ -342,7 +311,6 @@ python src/run_commit.py \
 
 ### ✅ Fully Supported
 - **Module-level functions** - Direct differential testing
-- **Git diff parsing** - Automatic function extraction from diffs
 - **Git commit testing** - Direct testing from commit hashes
 - **Virtual environment isolation** - Clean dependency management
 - **Automatic type inference** - Using RightTyper and test files
