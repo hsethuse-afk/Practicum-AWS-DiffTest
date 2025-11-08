@@ -36,6 +36,22 @@ class ABComparator:
             except Exception:
                 return False
 
+        # Handle scalar NaN values (float('nan'), np.nan, etc.)
+        # Check for NaN before other comparisons since nan != nan
+        try:
+            import math
+            if isinstance(a, (float, int, np.number)) and isinstance(b, (float, int, np.number)):
+                # Both are numeric - check if both are NaN
+                a_is_nan = math.isnan(float(a))
+                b_is_nan = math.isnan(float(b))
+                if a_is_nan and b_is_nan:
+                    return True
+                if a_is_nan or b_is_nan:
+                    return False  # Only one is NaN
+        except (ValueError, TypeError):
+            # Not numeric or can't convert to float
+            pass
+
         # Handle lists
         if isinstance(a, list) and isinstance(b, list):
             if len(a) != len(b):
@@ -60,6 +76,7 @@ class ABComparator:
     ) -> CompareResult:
         self.log.verbose("[ABComparator] Comparing Results")
         mismatches: List[Dict[str, Any]] = []
+        matches: List[Dict[str, Any]] = []
         mismatches_count = 0
         successes = 0
         total = len(a_results)
@@ -76,16 +93,21 @@ class ABComparator:
                     local_success = False
             if local_success:
                 successes += 1
+                matches.append(
+                    {
+                        "args": a_result.input,
+                        "output": a_result.output,  # Both outputs are the same
+                    }
+                )
             else:
                 mismatches_count += 1
-                if len(mismatches) < 20:  # keep preview small
-                    mismatches.append(
-                        {
-                            "args": a_result.input,
-                            "A": a_result.output,
-                            "B": b_result.output,
-                        }
-                    )
+                mismatches.append(
+                    {
+                        "args": a_result.input,
+                        "A": a_result.output,
+                        "B": b_result.output,
+                    }
+                )
 
         passed = len(mismatches) == 0
         # Pick one illustrative example if any
@@ -106,4 +128,5 @@ class ABComparator:
                 "mismatches": mismatches_count,
             },
             mismatches=mismatches,
+            matches=matches,
         )

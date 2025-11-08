@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Any, Dict, List, Tuple
+from typing import Callable, Any, Dict, List, Tuple, Optional
 from enum import IntEnum
 
 
@@ -8,6 +8,8 @@ class TargetPair:
     file_a: Callable
     file_b: Callable
     func_name: str
+    class_name: Optional[str] = None  # Class name if testing a method
+    is_class_method: bool = False  # True if testing a class method
 
 
 @dataclass
@@ -16,6 +18,10 @@ class StrategyPlan:
     arg_strategy: Any
     # Individual parameter strategies for serialization (param_name -> strategy)
     param_strategies: Dict[str, Any] = None
+    # Instance strategy for class methods (generates instances of the class)
+    instance_strategy: Any = None
+    # Number of unique instances to test with (for class methods)
+    num_instances: int = None
 
 
 @dataclass
@@ -37,7 +43,10 @@ class CompareResult:
     example: Tuple | None = None  # one illustrative failing input
     stats: Dict[str, int] | None = None
     mismatches: List[Dict[str, Any]] | None = (
-        None  # small preview of failures
+        None  # complete list of all mismatches
+    )
+    matches: List[Dict[str, Any]] | None = (
+        None  # complete list of all matches
     )
 
 

@@ -24,9 +24,12 @@ build/
 # Logs
 *.log
 
-# do not include test samples, htmlcov, and slipcover info
+# html
+*.html
+
+# do not include oss test samples, htmlcov, and slipcover info
 /src/htmlcov/
-/src/testsample/
+/src/testsample/oss/
 slipcover.json
 *.coverage
 

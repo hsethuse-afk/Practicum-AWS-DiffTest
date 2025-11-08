@@ -93,7 +93,7 @@ class StrategySerializer:
         Convert a StrategyPlan to a structured dictionary representation using introspection.
 
         This method uses strategy introspection to extract configuration from
-        strategy objects.
+        strategy objects. For class methods, also includes instance strategy.
 
         Args:
             plan: StrategyPlan object to serialize
@@ -103,6 +103,7 @@ class StrategySerializer:
             Dictionary with structured parameter-based strategy representation
         """
         parameters = {}
+        instance_config = None
 
         # Use the individual param_strategies if available (preferred method)
         if plan.param_strategies:
@@ -150,10 +151,26 @@ class StrategySerializer:
                     )
                 )
 
-        return {
+        # Handle instance strategy for class methods
+        if plan.instance_strategy:
+            instance_config = {
+                "strategy": StrategySerializer._introspect_strategy(
+                    plan.instance_strategy, self._strategy_cache
+                ),
+                "num_instances": plan.num_instances,
+            }
+
+        result = {
             "_comment": "Edit this file to customize test input generation. See Hypothesis documentation for available options.",
             "parameters": parameters,
         }
+
+        # Add instance config if present (for class methods)
+        if instance_config:
+            result["instance"] = instance_config
+            result["_comment"] += " For class methods: 'instance' defines how test instances are created."
+
+        return result
 
     # Helper methods for _introspect_strategy
     @staticmethod
@@ -234,25 +251,67 @@ class StrategySerializer:
         args = strategy._LazyStrategy__args
         kwargs = strategy._LazyStrategy__kwargs
 
-        config = {"type": func.__name__}
+        func_name = func.__name__
 
-        # Get parameter names from the function signature
-        try:
-            sig = inspect.signature(func)
-            param_names = list(sig.parameters.keys())
-            has_var_positional = any(
-                p.kind == inspect.Parameter.VAR_POSITIONAL
-                for p in sig.parameters.values()
+        # Special case: from_type() uses a lambda internally (named _from_type_deferred)
+        # Detect this pattern and treat it as builds()
+        # We check: lambda function + single class arg + specific function qualname pattern
+        if (func_name == "<lambda>" and
+            args and len(args) == 1 and
+            inspect.isclass(args[0]) and
+            hasattr(func, '__qualname__') and
+            '_from_type' in func.__qualname__):
+            func_name = "builds"
+
+        config = {"type": func_name}
+
+        # Special handling for builds and from_type - they have 'target' as first positional arg
+        if func_name in ("builds", "from_type") and args:
+            # First arg is the target class/type
+            target = args[0]
+            target_str = StrategySerializer._serialize_value(target, cache)
+            config["target"] = target_str
+
+            # Remaining args (if any) are processed normally
+            remaining_args = args[1:]
+
+            # Get parameter names (skip 'target' which is first param)
+            try:
+                sig = inspect.signature(func)
+                param_names = list(sig.parameters.keys())[1:]  # Skip 'target'
+                has_var_positional = any(
+                    p.kind == inspect.Parameter.VAR_POSITIONAL
+                    for p in sig.parameters.values()
+                )
+            except:
+                param_names = []
+                has_var_positional = False
+
+            # Process remaining args if any
+            if remaining_args:
+                arg_config = StrategySerializer._introspect_lazy_args(
+                    remaining_args, param_names, has_var_positional, cache
+                )
+                config.update(arg_config)
+        else:
+            # Regular strategy - process args normally
+            # Get parameter names from the function signature
+            try:
+                sig = inspect.signature(func)
+                param_names = list(sig.parameters.keys())
+                has_var_positional = any(
+                    p.kind == inspect.Parameter.VAR_POSITIONAL
+                    for p in sig.parameters.values()
+                )
+            except:
+                param_names = []
+                has_var_positional = False
+
+            # Process args
+            arg_config = StrategySerializer._introspect_lazy_args(
+                args, param_names, has_var_positional, cache
             )
-        except:
-            param_names = []
-            has_var_positional = False
-
-        # Process args
-        arg_config = StrategySerializer._introspect_lazy_args(
-            args, param_names, has_var_positional, cache
-        )
-        config.update(arg_config)
+            config.update(arg_config)
 
         # Process kwargs (may return early if has callables)
         kwarg_config = StrategySerializer._introspect_lazy_kwargs(
@@ -352,6 +411,8 @@ class StrategySerializer:
         """
         Convert a structured dictionary back to a StrategyPlan.
 
+        Handles both regular functions and class methods (with instance strategies).
+
         Args:
             data: Dictionary containing structured parameter configuration
             extra_globals: Additional global variables (e.g., user-defined classes)
@@ -406,8 +467,22 @@ class StrategySerializer:
         else:
             arg_strategy = st.tuples()
 
+        # Reconstruct instance strategy if present (for class methods)
+        instance_strategy = None
+        num_instances = None
+
+        if "instance" in data:
+            instance_config = data["instance"]
+            instance_strategy = self._build_strategy(
+                instance_config["strategy"], eval_env
+            )
+            num_instances = instance_config.get("num_instances")
+
         return StrategyPlan(
-            arg_strategy=arg_strategy, param_strategies=param_strategies
+            arg_strategy=arg_strategy,
+            param_strategies=param_strategies,
+            instance_strategy=instance_strategy,
+            num_instances=num_instances,
         )
 
     def _build_strategy(

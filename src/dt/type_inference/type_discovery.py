@@ -15,10 +15,72 @@ class TypeDiscoverer:
 
     Note: Type inference (adding missing annotations) is handled separately
     by TypeInferenceEngine implementations in the Orchestrator.
+
+    Also handles constructor type discovery for class method testing.
     """
 
     def __init__(self):
         self.log = get_logger()
+
+    def discover_constructor_types(
+        self,
+        cls: type,
+        param_hints: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Discover type information for constructor parameters.
+
+        This enables generating instances for class method testing.
+
+        Args:
+            cls: The class to analyze
+            param_hints: Optional manually provided type hints
+
+        Returns:
+            Dictionary mapping constructor parameter names to their types
+        """
+        # Get the __init__ method
+        if not hasattr(cls, "__init__"):
+            self.log.verbose(
+                f"[TypeDiscoverer] Class {cls.__name__} has no __init__ method"
+            )
+            return {}
+
+        init_method = cls.__init__
+
+        # Discover types for __init__ parameters (excluding 'self')
+        try:
+            # Get resolved type hints
+            module = inspect.getmodule(cls)
+            if module:
+                type_hints = get_type_hints(
+                    init_method, globalns=module.__dict__, include_extras=True
+                )
+            else:
+                type_hints = get_type_hints(init_method, include_extras=True)
+        except Exception as e:
+            self.log.debug(
+                f"[TypeDiscoverer] Could not resolve __init__ type hints for {cls.__name__}: {e}"
+            )
+            type_hints = {}
+
+        sig = inspect.signature(init_method)
+        param_types = {}
+
+        for param in sig.parameters.values():
+            # Skip 'self' parameter
+            if param.name == "self":
+                continue
+
+            param_type = self._discover_param_type(
+                param, type_hints, param_hints or {}
+            )
+            param_types[param.name] = param_type
+
+        self.log.verbose(
+            f"[TypeDiscoverer] Constructor types for {cls.__name__}: {param_types}"
+        )
+        return param_types
 
     def discover_param_types(
         self,

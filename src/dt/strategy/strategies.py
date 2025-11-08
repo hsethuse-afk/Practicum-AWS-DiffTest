@@ -9,11 +9,13 @@ from typing import (
     Union,
     get_origin,
     get_args,
+    Optional,
 )
 from hypothesis import strategies as st
 from ..contracts import StrategyPlan
 from ..logger import get_logger
 from .strategy_config import StrategyConfig
+from .instance_planner import InstanceStrategyPlanner
 
 
 class StrategySynthesizer:
@@ -31,22 +33,32 @@ class StrategySynthesizer:
         self.log = get_logger()
         self.config = config
         self.registry = config.get_registry()
+        self.instance_planner = InstanceStrategyPlanner()
 
     def create_strategy(
         self,
         func: Callable,
         param_types: Dict[str, Any],
+        cls: Optional[type] = None,
+        constructor_types: Optional[Dict[str, Any]] = None,
+        max_examples: int = 200,
     ) -> StrategyPlan:
         """
         Create a strategy plan for a function from discovered parameter types.
 
+        For class methods, also generates instance strategy.
+
         Args:
-            func: The function to create strategies for
+            func: The function/method to create strategies for
             param_types: Dictionary mapping parameter names to their types
                         (already discovered by TypeDiscoverer)
+            cls: Optional class type (for class method testing)
+            constructor_types: Optional constructor parameter types (for class method testing)
+            max_examples: Maximum number of test examples (used for instance distribution)
 
         Returns:
-            StrategyPlan containing the argument strategy and individual param strategies
+            StrategyPlan containing the argument strategy, individual param strategies,
+            and optionally instance strategy for class methods
         """
         # Generate strategies from the provided types
         sig = inspect.signature(func)
@@ -54,6 +66,10 @@ class StrategySynthesizer:
         param_strategies = {}
 
         for param in sig.parameters.values():
+            # Skip 'self' parameter for class methods
+            if param.name == "self":
+                continue
+
             param_type = param_types.get(param.name, Any)
             strategy = self._create_strategy_from_type(
                 param_type, param.name
@@ -61,12 +77,72 @@ class StrategySynthesizer:
             strategies.append(strategy)
             param_strategies[param.name] = strategy
 
+        arg_strategy = st.tuples(*strategies) if strategies else st.tuples()
+
+        # Handle class method instance generation
+        instance_strategy = None
+        num_instances = None
+
+        if cls is not None and constructor_types is not None:
+            # Generate instance strategy from constructor types
+            instance_strategy = self._create_instance_strategy(
+                cls, constructor_types
+            )
+
+            # Calculate instance distribution (pass constructor_types for smarter decisions)
+            num_instances, _ = self.instance_planner.calculate_distribution(
+                max_examples, constructor_types=constructor_types
+            )
+
+            self.log.verbose(
+                f"[StrategySynthesizer] Created instance strategy for {cls.__name__} "
+                f"({num_instances} unique instances)"
+            )
+
         return StrategyPlan(
-            arg_strategy=(
-                st.tuples(*strategies) if strategies else st.tuples()
-            ),
-            param_strategies=param_strategies
+            arg_strategy=arg_strategy,
+            param_strategies=param_strategies,
+            instance_strategy=instance_strategy,
+            num_instances=num_instances,
         )
+
+    def _create_instance_strategy(
+        self,
+        cls: type,
+        constructor_types: Dict[str, Any],
+    ) -> st.SearchStrategy:
+        """
+        Create a Hypothesis strategy for generating instances of a class.
+
+        Uses st.builds() to construct instances from the constructor parameters.
+
+        Args:
+            cls: The class to generate instances for
+            constructor_types: Dictionary mapping constructor parameter names to their types
+
+        Returns:
+            A Hypothesis SearchStrategy that generates class instances
+        """
+        # If constructor has no parameters, just use st.builds(cls)
+        if not constructor_types:
+            self.log.verbose(
+                f"[StrategySynthesizer] Creating simple instance strategy for {cls.__name__} (no constructor params)"
+            )
+            return st.builds(cls)
+
+        # Generate strategies for each constructor parameter
+        constructor_strategies = {}
+        for param_name, param_type in constructor_types.items():
+            strategy = self._create_strategy_from_type(param_type, param_name)
+            constructor_strategies[param_name] = strategy
+
+        self.log.verbose(
+            f"[StrategySynthesizer] Creating instance strategy for {cls.__name__} "
+            f"with parameters: {list(constructor_types.keys())}"
+        )
+
+        # Use st.builds to construct instances
+        return st.builds(cls, **constructor_strategies)
 
     def _create_strategy_from_type(
         self, param_type: Any, param_name: str
@@ -171,13 +247,45 @@ class StrategySynthesizer:
                 return st.none() | self._from_annotation(non_none[0])
             return st.one_of(*(self._from_annotation(a) for a in args))
 
-        # Last-ditch: try Hypothesis’ type-based strategy
+        # Try Hypothesis' from_type() for external types and classes
+        # This handles numpy.ndarray, pandas types, and other registered types
         try:
             return st.from_type(annotation)
-        except Exception:
-            # Conservative fallback that never touches `Any`
-            return st.one_of(
-                self.registry[int](),
-                self.registry[float](),
-                self.registry[str](),
+        except Exception as e:
+            self.log.debug(
+                f"[StrategySynthesizer] from_type() failed for {annotation}: {e}"
             )
+            # Fall through to custom class handling
+
+        # Check if it's a custom class (user-defined type) that from_type couldn't handle
+        if inspect.isclass(annotation):
+            # For custom classes, try to build instances using st.builds()
+            try:
+                # Try to discover constructor types and create nested builds
+                from ..type_inference.type_discovery import TypeDiscoverer
+                discoverer = TypeDiscoverer()
+                constructor_types = discoverer.discover_constructor_types(annotation)
+
+                if constructor_types:
+                    # Recursively create strategies for constructor params
+                    constructor_strategies = {}
+                    for param_name, param_type in constructor_types.items():
+                        constructor_strategies[param_name] = self._create_strategy_from_type(
+                            param_type, param_name
+                        )
+                    return st.builds(annotation, **constructor_strategies)
+                else:
+                    # No constructor params - just build with defaults
+                    return st.builds(annotation)
+            except Exception as e:
+                self.log.debug(
+                    f"[StrategySynthesizer] Failed to create builds() for {annotation.__name__}: {e}"
+                )
+                # Fall through to final fallback
+
+        # Final fallback for types we can't handle
+        return st.one_of(
+            self.registry[int](),
+            self.registry[float](),
+            self.registry[str](),
+        )
