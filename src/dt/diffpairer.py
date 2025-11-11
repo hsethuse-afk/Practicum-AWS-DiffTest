@@ -78,7 +78,8 @@ class DiffPairer:
         self,
         diff_file_path: str,
         func_name: Optional[str] = None,
-        commit: Optional[str] = None
+        commit: Optional[str] = None,
+        project_root: Optional[str] = None
     ) -> List[Tuple[TargetPair, callable]]:
         """
         Git diff mode: parse diff file to find modified functions.
@@ -87,6 +88,7 @@ class DiffPairer:
             diff_file_path: Path to file containing git diff
             func_name: Optional filter for specific function name
             commit: Optional commit reference for getting file content
+            project_root: Optional project root to preserve package structure
 
         Returns:
             List of (TargetPair, cleanup_function) tuples
@@ -103,7 +105,10 @@ class DiffPairer:
         # Now supporting both module-level functions AND class methods
         pairs = []
         for mod_func in modified_funcs:
-            temp_files = self.temp_builder.build_temp_files(mod_func)
+            temp_files = self.temp_builder.build_temp_files(
+                mod_func,
+                project_root=project_root
+            )
             target = TargetPair(
                 file_a=temp_files.old_file,
                 file_b=temp_files.new_file,

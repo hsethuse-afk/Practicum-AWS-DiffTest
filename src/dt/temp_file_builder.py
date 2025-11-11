@@ -34,21 +34,40 @@ class TempFileBuilder:
 
     def build_temp_files(
         self,
-        modified_func: ModifiedFunction
+        modified_func: ModifiedFunction,
+        project_root: Optional[str] = None
     ) -> TempFilePair:
         """
         Create temporary files for old and new versions.
 
         Strategy:
-        - Create temp files with the full file content (including dependencies)
-        - Old version: original file content
-        - New version: modified file content
+        - If project_root is provided: Create temp files within the package structure
+          to preserve relative imports
+        - Otherwise: Create isolated temp files in /tmp
 
         Args:
             modified_func: ModifiedFunction object
+            project_root: Optional project root directory to preserve package structure
 
         Returns:
             TempFilePair with paths to temporary files
+        """
+        if project_root:
+            # Create temp files within the project structure to preserve imports
+            return self._build_in_project(modified_func, project_root)
+        else:
+            # Legacy mode: isolated temp files (may fail with relative imports)
+            return self._build_isolated(modified_func)
+
+    def _build_isolated(
+        self,
+        modified_func: ModifiedFunction
+    ) -> TempFilePair:
+        """
+        Create isolated temporary files (legacy mode).
+
+        WARNING: This mode doesn't support relative imports.
+        Use build_in_project for files with relative imports.
         """
         # Create temporary directory
         temp_dir = tempfile.mkdtemp(prefix="difftest_")
@@ -95,6 +114,76 @@ class TempFileBuilder:
             cleanup=cleanup
         )
 
+    def _build_in_project(
+        self,
+        modified_func: ModifiedFunction,
+        project_root: str
+    ) -> TempFilePair:
+        """
+        Create temporary files within the project structure.
+
+        This preserves the package hierarchy and allows relative imports to work.
+
+        Args:
+            modified_func: ModifiedFunction object
+            project_root: Project root directory
+
+        Returns:
+            TempFilePair with paths to temporary files
+        """
+        # Get the original file path relative to project root
+        file_path = modified_func.file_path
+
+        # Determine the directory containing the file
+        file_dir = os.path.dirname(file_path) if os.path.dirname(file_path) else "."
+        target_dir = os.path.join(project_root, file_dir)
+
+        # Ensure directory exists
+        os.makedirs(target_dir, exist_ok=True)
+
+        # Get base filename
+        base_name = os.path.basename(file_path)
+        name, ext = os.path.splitext(base_name)
+
+        # Create temp file paths in the same directory as original file
+        old_file = os.path.join(target_dir, f"{name}_old{ext}")
+        new_file = os.path.join(target_dir, f"{name}_new{ext}")
+
+        # Write old version
+        with open(old_file, 'w') as f:
+            f.write(modified_func.old_content)
+
+        # Write new version
+        with open(new_file, 'w') as f:
+            f.write(modified_func.new_content)
+
+        self.log.verbose(
+            f"[TempFileBuilder] Created temp files in project:\n"
+            f"  Old: {old_file}\n"
+            f"  New: {new_file}"
+        )
+
+        # Cleanup function
+        def cleanup():
+            try:
+                if os.path.exists(old_file):
+                    os.remove(old_file)
+                if os.path.exists(new_file):
+                    os.remove(new_file)
+                self.log.debug(
+                    f"[TempFileBuilder] Cleaned up temp files"
+                )
+            except Exception as e:
+                self.log.debug(
+                    f"[TempFileBuilder] Failed to cleanup: {e}"
+                )
+
+        return TempFilePair(
+            old_file=old_file,
+            new_file=new_file,
+            cleanup=cleanup
+        )
+
     def build_with_dependencies(
         self,
         modified_func: ModifiedFunction,
@@ -114,9 +203,8 @@ class TempFileBuilder:
             TempFilePair with paths to temporary files
 
         Note:
-            This is a future enhancement for handling complex dependencies.
-            Currently just uses the simple build_temp_files approach.
+            This now uses build_temp_files with project_root to preserve
+            package structure and relative imports.
         """
-        # TODO: Implement dependency resolution and copying
-        # For now, use simple approach
-        return self.build_temp_files(modified_func)
+        # Use build_temp_files with project_root to preserve imports
+        return self.build_temp_files(modified_func, project_root=project_root)

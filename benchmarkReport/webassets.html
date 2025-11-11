@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Test Report - jsmin_for_posers</title>
+    <style>
+        /* Modern, clean design with dark mode support */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --code-bg: #f4f4f4;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --border-color: #404040;
+                --code-bg: #2d2d2d;
+                --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .number {
+            display: block;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.success .number {
+            color: var(--success-color);
+        }
+
+        .stat-card.error .number {
+            color: var(--error-color);
+        }
+
+        .stat-card.warning .number {
+            color: var(--warning-color);
+        }
+
+        /* Section */
+        .section {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Details/Summary */
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        summary:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        summary::marker {
+            content: '▶ ';
+        }
+
+        details[open] summary::marker {
+            content: '▼ ';
+        }
+
+        details .content {
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .controls button {
+            cursor: pointer;
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        /* Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .results-table .index-col {
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-table .output-col {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .output-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .output-status.return {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .output-status.exception {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .diff-col {
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        /* Scrollable table container */
+        .scrollable-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .scrollable-table-container .results-table {
+            margin-top: 0;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Instance cards */
+        .instance-card {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instance-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .instance-stats {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.error {
+            background-color: var(--error-color);
+        }
+
+        .progress-fill.success {
+            background-color: var(--success-color);
+        }
+
+        /* Warnings */
+        .warning-list {
+            list-style: none;
+        }
+
+        .warning-list li {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+
+        .warning-list li.execution-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .warning-list li {
+                background-color: #4a4000;
+                color: #ffc107;
+            }
+
+            .warning-list li.execution-error {
+                background-color: #4a1a1e;
+                color: #f8d7da;
+            }
+        }
+
+        .warning-category {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .warning-category.execution-error {
+            color: var(--error-color);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px 40px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Hidden class for filtering */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Metadata grid */
+        .metadata {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metadata dt {
+            font-weight: 600;
+        }
+
+        .metadata dd {
+            color: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge.error {
+            background-color: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                jsmin_for_posers
+                
+                <span class="badge error">✗ Behavior Difference Detected</span>
+                
+            </h1>
+            <div class="subtitle">
+                Differential Test Report | /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_rjg00kws/src/webassets/filter/rjsmin/rjsmin_old.py vs /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_rjg00kws/src/webassets/filter/rjsmin/rjsmin_new.py
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <span class="number">200</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-card error">
+                <span class="number">130</span>
+                <span class="label">Mismatches</span>
+            </div>
+            <div class="stat-card success">
+                <span class="number">70</span>
+                <span class="label">Matches</span>
+            </div>
+            <div
+                class="stat-card error">
+                <span class="number">35.0%</span>
+                <span class="label">Match Rate</span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <details class="section">
+            <summary>
+                <span>📋 Test Configuration</span>
+            </summary>
+            <div class="content">
+                <dl class="metadata">
+                    <dt>Max Examples:</dt>
+                    <dd>200</dd>
+
+                    <dt>Seed:</dt>
+                    <dd>92090179</dd>
+
+                    
+
+                    <dt>Timestamp:</dt>
+                    <dd>2025-11-10 20:19:14</dd>
+
+                    <dt>Duration:</dt>
+                    <dd>0.22s</dd>
+                </dl>
+
+                <h3>Strategy Configuration</h3>
+                <pre><code>{
+  &#34;arg_strategy&#34;: &#34;tuples(one_of(integers(min_value=-50, max_value=50), floats(min_value=-50.0, max_value=50.0, allow_nan=False, allow_infinity=False), text(max_size=10), booleans()), booleans())&#34;,
+  &#34;num_instances&#34;: null
+}</code></pre>
+
+                <h3>Reproduction Command</h3>
+                <pre><code>python src/run_ab.py --a /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_rjg00kws/src/webassets/filter/rjsmin/rjsmin_old.py --b /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_rjg00kws/src/webassets/filter/rjsmin/rjsmin_new.py --func jsmin_for_posers --max-examples 200 --seed 92090179</code></pre>
+            </div>
+        </details>
+
+        <!-- Mismatches Section -->
+        
+        <details class="section" open>
+            <summary>
+                <span>❌ Mismatches (130)</span>
+            </summary>
+            <div class="content">
+                <div class="controls">
+                    <input type="text" id="search-input" placeholder="Search arguments or outputs...">
+                    
+                    <button onclick="clearFilters()">Clear Filters</button>
+                </div>
+
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output A</th>
+                                <th class="output-col">Output B</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mismatches-tbody">
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">1</td>
+                                <td><code>(0, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;0&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">2</td>
+                                <td><code>(-29, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-29&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">3</td>
+                                <td><code>(-20, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-20&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">4</td>
+                                <td><code>(-20, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-20&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">5</td>
+                                <td><code>(0.0, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;0.0&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">6</td>
+                                <td><code>(-1.9818768943552213e-115, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-1.9818768943552213e-115&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">7</td>
+                                <td><code>(45, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;45&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">8</td>
+                                <td><code>(45, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;45&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">9</td>
+                                <td><code>(-2.2147265915961506e-156, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-2.2147265915961506e-156&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">10</td>
+                                <td><code>(-2.2147265915961506e-156, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-2.2147265915961506e-156&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">11</td>
+                                <td><code>(False, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;False&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">12</td>
+                                <td><code>(True, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;True&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">13</td>
+                                <td><code>(False, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;False&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">14</td>
+                                <td><code>(True, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;True&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">15</td>
+                                <td><code>(24, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;24&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">16</td>
+                                <td><code>(49, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;49&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">17</td>
+                                <td><code>(11, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;11&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">18</td>
+                                <td><code>(-4.497533430529331e-52, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-4.497533430529331e-52&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">19</td>
+                                <td><code>(-45.84860048674615, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-45.84860048674615&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">20</td>
+                                <td><code>(47, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;47&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">21</td>
+                                <td><code>(-22, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-22&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">22</td>
+                                <td><code>(-6, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-6&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">23</td>
+                                <td><code>(41.271099889225866, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;41.271099889225866&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">24</td>
+                                <td><code>(50.0, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;50.0&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">25</td>
+                                <td><code>(-48, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-48&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">26</td>
+                                <td><code>(2.64576800540469e-76, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;2.64576800540469e-76&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">27</td>
+                                <td><code>(1.9200145532717055e-140, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;1.9200145532717055e-140&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">28</td>
+                                <td><code>(4, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;4&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">29</td>
+                                <td><code>(32, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;32&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">30</td>
+                                <td><code>(42, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;42&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">31</td>
+                                <td><code>(&#39;M\x0c\r%飼&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;M  %飼&#39;</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;M%飼&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">32</td>
+                                <td><code>(-32, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-32&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">33</td>
+                                <td><code>(-19, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-19&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">34</td>
+                                <td><code>(32.06386140657129, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;32.06386140657129&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">35</td>
+                                <td><code>(-23.286335201345302, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-23.286335201345302&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">36</td>
+                                <td><code>(48, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;48&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">37</td>
+                                <td><code>(45.85395929498175, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;45.85395929498175&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">38</td>
+                                <td><code>(24.78013079313564, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;24.78013079313564&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">39</td>
+                                <td><code>(36.50748119008152, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;36.50748119008152&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">40</td>
+                                <td><code>(23, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;23&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">41</td>
+                                <td><code>(-48, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-48&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">42</td>
+                                <td><code>(-18.46943999043055, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-18.46943999043055&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">43</td>
+                                <td><code>(-29, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-29&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">44</td>
+                                <td><code>(-9.636700022948269e-142, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-9.636700022948269e-142&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">45</td>
+                                <td><code>(&#39;@é\x1a[y7&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;@é [y7&#39;</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;@é[y7&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">46</td>
+                                <td><code>(43.715584916600946, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;43.715584916600946&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">47</td>
+                                <td><code>(6, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;6&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">48</td>
+                                <td><code>(-4, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-4&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">49</td>
+                                <td><code>(50, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;50&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">50</td>
+                                <td><code>(-10.02615355303319, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-10.02615355303319&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">51</td>
+                                <td><code>(-3, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-3&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">52</td>
+                                <td><code>(11, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;11&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">53</td>
+                                <td><code>(6, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;6&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">54</td>
+                                <td><code>(1.9909084901346007e-39, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;1.9909084901346007e-39&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">55</td>
+                                <td><code>(-22.355917543075325, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-22.355917543075325&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">56</td>
+                                <td><code>(-5.960464477539063e-08, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-5.960464477539063e-08&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">57</td>
+                                <td><code>(-7.663764875895673, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-7.663764875895673&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">58</td>
+                                <td><code>(38, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;38&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">59</td>
+                                <td><code>(-50.0, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-50.0&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">60</td>
+                                <td><code>(19, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;19&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">61</td>
+                                <td><code>(10, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;10&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">62</td>
+                                <td><code>(8.710965412123187, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;8.710965412123187&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">63</td>
+                                <td><code>(23, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;23&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">64</td>
+                                <td><code>(-2.2250738585072014e-308, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-2.2250738585072014e-308&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">65</td>
+                                <td><code>(-44, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-44&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">66</td>
+                                <td><code>(-47.93687975744112, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-47.93687975744112&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">67</td>
+                                <td><code>(-2.5152828492407255e-171, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-2.5152828492407255e-171&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">68</td>
+                                <td><code>(-35, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-35&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">69</td>
+                                <td><code>(21, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;21&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">70</td>
+                                <td><code>(1, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;1&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">71</td>
+                                <td><code>(-27.77742669916436, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-27.77742669916436&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">72</td>
+                                <td><code>(&#39;káá\rÂ\x92&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;káá Â\x92&#39;</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;káá\nÂ\x92&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">73</td>
+                                <td><code>(50.0, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;50.0&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">74</td>
+                                <td><code>(-26, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-26&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">75</td>
+                                <td><code>(-21, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-21&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">76</td>
+                                <td><code>(49.99999999999999, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;49.99999999999999&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">77</td>
+                                <td><code>(44.80658405643376, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;44.80658405643376&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">78</td>
+                                <td><code>(35, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;35&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">79</td>
+                                <td><code>(-39, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-39&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">80</td>
+                                <td><code>(-46, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-46&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">81</td>
+                                <td><code>(25, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;25&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">82</td>
+                                <td><code>(-6, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-6&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">83</td>
+                                <td><code>(22, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;22&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">84</td>
+                                <td><code>(25, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;25&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">85</td>
+                                <td><code>(-47, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-47&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">86</td>
+                                <td><code>(2.225073858507203e-309, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;2.225073858507203e-309&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">87</td>
+                                <td><code>(16.135778935230576, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;16.135778935230576&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">88</td>
+                                <td><code>(-1.9, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-1.9&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">89</td>
+                                <td><code>(28.42816471628626, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;28.42816471628626&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">90</td>
+                                <td><code>(&#39;)\x13=n¨åB\x9b\U000cbf68&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;) =n¨åB\x9b\U000cbf68&#39;</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;)=n¨åB\x9b\U000cbf68&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">91</td>
+                                <td><code>(-26, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-26&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">92</td>
+                                <td><code>(-9, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-9&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">93</td>
+                                <td><code>(-30.692137555145475, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-30.692137555145475&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">94</td>
+                                <td><code>(-21, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-21&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">95</td>
+                                <td><code>(18, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;18&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">96</td>
+                                <td><code>(17.182334533675785, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;17.182334533675785&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">97</td>
+                                <td><code>(7, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;7&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">98</td>
+                                <td><code>(-36, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-36&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">99</td>
+                                <td><code>(1.6937209585717024e-255, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;1.6937209585717024e-255&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">100</td>
+                                <td><code>(43, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;43&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">101</td>
+                                <td><code>(&#39;«c\x1e!éO^&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;«c !éO^&#39;</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;«c!éO^&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">102</td>
+                                <td><code>(-17.689120059833776, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-17.689120059833776&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">103</td>
+                                <td><code>(30.774609209894095, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;30.774609209894095&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">104</td>
+                                <td><code>(-49, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-49&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">105</td>
+                                <td><code>(-42.61117834144894, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-42.61117834144894&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">106</td>
+                                <td><code>(-7.790757734350237, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-7.790757734350237&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">107</td>
+                                <td><code>(30, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;30&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">108</td>
+                                <td><code>(-35, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-35&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">109</td>
+                                <td><code>(-38.896035336173895, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-38.896035336173895&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">110</td>
+                                <td><code>(-41, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-41&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">111</td>
+                                <td><code>(-6.073018841821534e-60, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-6.073018841821534e-60&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">112</td>
+                                <td><code>(-30, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-30&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">113</td>
+                                <td><code>(34.6388134871366, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;34.6388134871366&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">114</td>
+                                <td><code>(42.60134107515043, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;42.60134107515043&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">115</td>
+                                <td><code>(34.2090915912606, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;34.2090915912606&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">116</td>
+                                <td><code>(6.007130099296196e-158, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;6.007130099296196e-158&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">117</td>
+                                <td><code>(9.551504002459957e-108, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;9.551504002459957e-108&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">118</td>
+                                <td><code>(-14.546996218861658, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-14.546996218861658&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">119</td>
+                                <td><code>(-4, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-4&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">120</td>
+                                <td><code>(19, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;19&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">121</td>
+                                <td><code>(17, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;17&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">122</td>
+                                <td><code>(-3, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-3&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">123</td>
+                                <td><code>(44.6960519284697, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;44.6960519284697&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">124</td>
+                                <td><code>(-50, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-50&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">125</td>
+                                <td><code>(33.71284438365517, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;33.71284438365517&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">126</td>
+                                <td><code>(-42, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-42&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">127</td>
+                                <td><code>(7.53090969370934, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;7.53090969370934&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">128</td>
+                                <td><code>(15.848574271292932, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;15.848574271292932&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">129</td>
+                                <td><code>(-47.75131091772889, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-47.75131091772889&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">130</td>
+                                <td><code>(-43.7142014328622, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-43.7142014328622&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: Unexpected type</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Matches Section -->
+        
+        <details class="section">
+            <summary>
+                <span>✅ Matching Results (70)</span>
+            </summary>
+            <div class="content">
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td class="index-col">1</td>
+                                <td><code>(&#39;&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">2</td>
+                                <td><code>(&#39;\r\U000ebc69\x07\x98~C&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000ebc69 \x98~C&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">3</td>
+                                <td><code>(&#39;\x0c\x94gé\x01³;Þ&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x94gé ³;Þ&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">4</td>
+                                <td><code>(&#39;)U¥&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;)U¥&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">5</td>
+                                <td><code>(&#39;)U¥&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;)U¥&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">6</td>
+                                <td><code>(&#39;F·Õñ=\x94\x1cí&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;F·Õñ=\x94 í&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">7</td>
+                                <td><code>(&#39;\U00079420\x03\x8c\x07©lâ9\x8f\x8d&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00079420 \x8c ©lâ9\x8f\x8d&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">8</td>
+                                <td><code>(&#39;\x05\U0009276b$c\x0b&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U0009276b$c&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">9</td>
+                                <td><code>(&#39;\x05\U0009276b$c\x0b&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U0009276b$c&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">10</td>
+                                <td><code>(&#39;ê󠅳X\x05&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ê󠅳X&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">11</td>
+                                <td><code>(&#39;\x1e\x83g$\U00034713hÐL?\x85&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x83g$\U00034713hÐL?&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">12</td>
+                                <td><code>(&#39;±ÿÞ?&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;±ÿÞ?&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">13</td>
+                                <td><code>(&#39;\U00076495)e\U00089122±á\U00059403ú\U000384fa£&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00076495)e\U00089122±á\U00059403ú\U000384fa£&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">14</td>
+                                <td><code>(&#39;¸\x96\U000363bbNôî!&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;¸\x96\U000363bbNôî!&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">15</td>
+                                <td><code>(&#39;\x02\U00089a6f&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00089a6f&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">16</td>
+                                <td><code>(&#39;õ&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;õ&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">17</td>
+                                <td><code>(&#39;if&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;if&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">18</td>
+                                <td><code>(&#39;\x81&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x81&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">19</td>
+                                <td><code>(&#39;\U000f24e2&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000f24e2&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">20</td>
+                                <td><code>(&#39;\U000d6b5cH마Û\U0004bc16n\x89wñô&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000d6b5cH마Û\U0004bc16n\x89wñô&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">21</td>
+                                <td><code>(&#39;5\x81#Ö5Iªo\x08¹&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;5\x81#Ö5Iªo ¹&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">22</td>
+                                <td><code>(&#39;sPdÑ\U00012c52\x96x\U0008f157\U000bb9e3\x14&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;sPdÑ\U00012c52\x96x\U0008f157\U000bb9e3&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">23</td>
+                                <td><code>(&#39;handlebars&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;handlebars&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">24</td>
+                                <td><code>(&#39;Õ\x998\x06\x9cõ·]\x86ã&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;Õ\x998 \x9cõ·]\x86ã&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">25</td>
+                                <td><code>(&#39;&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">26</td>
+                                <td><code>(&#39;&amp;\U000c0684&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;&amp;\U000c0684&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">27</td>
+                                <td><code>(&#34;\U000c9500&#39;ë\U0005c1d7\x8dª\x05£)K&#34;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &quot;\U000c9500&#39;ë\U0005c1d7\x8dª £)K&quot;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">28</td>
+                                <td><code>(&#39;¸蕿ã\U000ea4b0\x0fI7?&amp;\x87&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;¸蕿ã\U000ea4b0 I7?&amp;\x87&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">29</td>
+                                <td><code>(&#39;^&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;^&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">30</td>
+                                <td><code>(&#39;þ\x8d&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;þ\x8d&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">31</td>
+                                <td><code>(&#39;T®\xad\x8d\x86,±\x89T\U0001b3e6&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;T®\xad\x8d\x86,±\x89T\U0001b3e6&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">32</td>
+                                <td><code>(&#39;\x1b\U000ffe08ÌGë𧶛&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000ffe08ÌGë𧶛&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">33</td>
+                                <td><code>(&#39;ú7î\x16&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ú7î&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">34</td>
+                                <td><code>(&#39;.\U0008582c&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;.\U0008582c&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">35</td>
+                                <td><code>(&#39;\x18¶𭜀2Ò¯&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;¶𭜀2Ò¯&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">36</td>
+                                <td><code>(&#39;§Æô\x99\x07\x97iñ𰇎l&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;§Æô\x99 \x97iñ𰇎l&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">37</td>
+                                <td><code>(&#39;\U00071ff0²¡&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00071ff0²¡&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">38</td>
+                                <td><code>(&#39;else&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;else&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">39</td>
+                                <td><code>(&#39;𰂴y\x1a\U0001abee&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;𰂴y \U0001abee&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">40</td>
+                                <td><code>(&#39;Rb6\x7f/h&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;Rb6\x7f/h&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">41</td>
+                                <td><code>(&#39;i&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;i&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">42</td>
+                                <td><code>(&#39;\U00019f10±𨇕&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00019f10±𨇕&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">43</td>
+                                <td><code>(&#39;)&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;)&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">44</td>
+                                <td><code>(&#39;a\x83¦\x97b\x86FÞ\x04ß&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;a\x83¦\x97b\x86FÞ ß&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">45</td>
+                                <td><code>(&#39;Â\U000b7efdÁ\U000a7a05ÚxA#ªâ&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;Â\U000b7efdÁ\U000a7a05ÚxA#ªâ&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">46</td>
+                                <td><code>(&#39;\x07%\U0007502d\U00058f09¹H\x04&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;%\U0007502d\U00058f09¹H&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">47</td>
+                                <td><code>(&#39;\x14\U000c9877&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000c9877&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">48</td>
+                                <td><code>(&#39;:\x90ñ\U00078ffd&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;:\x90ñ\U00078ffd&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">49</td>
+                                <td><code>(&#39;\x88\x0f&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x88&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">50</td>
+                                <td><code>(&#39;\U000ce12bò×&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000ce12bò×&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">51</td>
+                                <td><code>(&#39;l\U00080863\x99¾,\x14\U0010aab9:\x0cA&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;l\U00080863\x99¾,\U0010aab9:A&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">52</td>
+                                <td><code>(&#39;-uh\x9d2\U000e208fö\U00068866é\x97&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;-uh\x9d2\U000e208fö\U00068866é\x97&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">53</td>
+                                <td><code>(&#39;k\x08&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;k&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">54</td>
+                                <td><code>(&#39;\U000b2470\x1f4V\U000bdeae\U0003d6df\U0008b8e9ô\U00042b36\U0003b233&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000b2470 4V\U000bdeae\U0003d6df\U0008b8e9ô\U00042b36\U0003b233&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">55</td>
+                                <td><code>(&#39;true&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;true&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">56</td>
+                                <td><code>(&#39;°&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;°&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">57</td>
+                                <td><code>(&#39;íì\x90i\x06&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;íì\x90i&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">58</td>
+                                <td><code>(&#39;ô;v \U000d55cfR¤«\U000f3527½&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ô;v \U000d55cfR¤«\U000f3527½&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">59</td>
+                                <td><code>(&#39;÷&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;÷&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">60</td>
+                                <td><code>(&#39;मनीष منش&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;मनीष منش&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">61</td>
+                                <td><code>(&#39;FÆeÛ4&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;FÆeÛ4&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">62</td>
+                                <td><code>(&#39;ª\U00064373\U000105fbÅ\x83×\x18\U000fc0f9å½&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ª\U00064373\U000105fbÅ\x83× \U000fc0f9å½&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">63</td>
+                                <td><code>(&#39;Ô-£\U000def8b_&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;Ô-£\U000def8b_&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">64</td>
+                                <td><code>(&#39;\U000baf10Ä\x1b&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000baf10Ä&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">65</td>
+                                <td><code>(&#39;T\x99\xa0½\x17&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;T\x99\xa0½&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">66</td>
+                                <td><code>(&#39;\x7f7\x9e°?ö\x80î¾M&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x7f7\x9e°?ö\x80î¾M&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">67</td>
+                                <td><code>(&#39;¥\U0010c08e\x02Ú\x1c¨\U00079841&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;¥\U0010c08e Ú ¨\U00079841&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">68</td>
+                                <td><code>(&#39;\U00055a4c\x8c\x9b¬W\x1dö\U000b1832\U000b3756\U00048a66&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00055a4c\x8c\x9b¬W ö\U000b1832\U000b3756\U00048a66&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">69</td>
+                                <td><code>(&#39;¡\x98&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;¡\x98&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">70</td>
+                                <td><code>(&#39;fN\U000806be\x13\U000981a3ô¬\x86\x9aQ&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;fN\U000806be \U000981a3ô¬\x86\x9aQ&#39;</td>
+                            </tr>
+                            
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Instance Distribution (For Class Methods) -->
+        
+
+        <!-- Warnings Section -->
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Generated:</strong> 2025-11-10 20:19:14</p>
+            <p><strong>Test Duration:</strong> 0.22s</p>
+            <p><strong>Hypothesis Differential Testing Framework</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const instanceFilter = document.getElementById('instance-filter');
+        const mismatchRows = document.querySelectorAll('.mismatch-row');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const instanceId = instanceFilter ? instanceFilter.value : 'all';
+
+            mismatchRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowInstanceId = row.dataset.instanceId;
+
+                const matchesSearch = !searchTerm || text.includes(searchTerm);
+                const matchesInstance = instanceId === 'all' || rowInstanceId === instanceId;
+
+                if (matchesSearch && matchesInstance) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            updateVisibleCount();
+        }
+
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.mismatch-row:not(.hidden)');
+            // Could add a counter here if desired
+        }
+
+        function clearFilters() {
+            if (searchInput) searchInput.value = '';
+            if (instanceFilter) instanceFilter.value = 'all';
+            filterRows();
+        }
+
+        // Add event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterRows);
+        }
+
+        if (instanceFilter) {
+            instanceFilter.addEventListener('change', filterRows);
+        }
+
+        // Initial filter
+        filterRows();
+    </script>
+</body>
+
+</html>

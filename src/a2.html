@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Test Report - update</title>
+    <style>
+        /* Modern, clean design with dark mode support */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --code-bg: #f4f4f4;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --border-color: #404040;
+                --code-bg: #2d2d2d;
+                --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .number {
+            display: block;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.success .number {
+            color: var(--success-color);
+        }
+
+        .stat-card.error .number {
+            color: var(--error-color);
+        }
+
+        .stat-card.warning .number {
+            color: var(--warning-color);
+        }
+
+        /* Section */
+        .section {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Details/Summary */
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        summary:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        summary::marker {
+            content: '▶ ';
+        }
+
+        details[open] summary::marker {
+            content: '▼ ';
+        }
+
+        details .content {
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .controls button {
+            cursor: pointer;
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        /* Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .results-table .index-col {
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-table .output-col {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .output-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .output-status.return {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .output-status.exception {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .diff-col {
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        /* Scrollable table container */
+        .scrollable-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .scrollable-table-container .results-table {
+            margin-top: 0;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Instance cards */
+        .instance-card {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instance-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .instance-stats {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.error {
+            background-color: var(--error-color);
+        }
+
+        .progress-fill.success {
+            background-color: var(--success-color);
+        }
+
+        /* Warnings */
+        .warning-list {
+            list-style: none;
+        }
+
+        .warning-list li {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+
+        .warning-list li.execution-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .warning-list li {
+                background-color: #4a4000;
+                color: #ffc107;
+            }
+
+            .warning-list li.execution-error {
+                background-color: #4a1a1e;
+                color: #f8d7da;
+            }
+        }
+
+        .warning-category {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .warning-category.execution-error {
+            color: var(--error-color);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px 40px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Hidden class for filtering */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Metadata grid */
+        .metadata {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metadata dt {
+            font-weight: 600;
+        }
+
+        .metadata dd {
+            color: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge.error {
+            background-color: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                Counter.update
+                
+                <span class="badge error">✗ Behavior Difference Detected</span>
+                
+            </h1>
+            <div class="subtitle">
+                Differential Test Report | testsample/testClassFunction/a2.py vs testsample/testClassFunction/b2.py
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <span class="number">101</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-card error">
+                <span class="number">100</span>
+                <span class="label">Mismatches</span>
+            </div>
+            <div class="stat-card success">
+                <span class="number">1</span>
+                <span class="label">Matches</span>
+            </div>
+            <div
+                class="stat-card error">
+                <span class="number">1.0%</span>
+                <span class="label">Match Rate</span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <details class="section">
+            <summary>
+                <span>📋 Test Configuration</span>
+            </summary>
+            <div class="content">
+                <dl class="metadata">
+                    <dt>Max Examples:</dt>
+                    <dd>500</dd>
+
+                    <dt>Seed:</dt>
+                    <dd>1260580752</dd>
+
+                    
+                    <dt>Instances:</dt>
+                    <dd>1 unique instances</dd>
+                    
+
+                    <dt>Timestamp:</dt>
+                    <dd>2025-11-06 21:55:42</dd>
+
+                    <dt>Duration:</dt>
+                    <dd>0.06s</dd>
+                </dl>
+
+                <h3>Strategy Configuration</h3>
+                <pre><code>{
+  &#34;arg_strategy&#34;: &#34;tuples(integers(min_value=-50, max_value=50))&#34;,
+  &#34;num_instances&#34;: 1
+}</code></pre>
+
+                <h3>Reproduction Command</h3>
+                <pre><code>python src/run_ab.py --a testsample/testClassFunction/a2.py --b testsample/testClassFunction/b2.py --func update --max-examples 500 --seed 1260580752</code></pre>
+            </div>
+        </details>
+
+        <!-- Mismatches Section -->
+        
+        <details class="section" open>
+            <summary>
+                <span>❌ Mismatches (100)</span>
+            </summary>
+            <div class="content">
+                <div class="controls">
+                    <input type="text" id="search-input" placeholder="Search arguments or outputs...">
+                    
+                    <select id="instance-filter">
+                        <option value="all">All Instances</option>
+                        
+                        <option value="129998633019456">Counter(count=101) (100 mismatches)</option>
+                        
+                    </select>
+                    
+                    <button onclick="clearFilters()">Clear Filters</button>
+                </div>
+
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output A</th>
+                                <th class="output-col">Output B</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mismatches-tbody">
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">1</td>
+                                <td><code>(instance=Counter(count=101), 0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 1</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">2</td>
+                                <td><code>(instance=Counter(count=101), -40)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -39</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -78</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">3</td>
+                                <td><code>(instance=Counter(count=101), 23)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -55</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -31</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">4</td>
+                                <td><code>(instance=Counter(count=101), -14)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -45</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -58</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">5</td>
+                                <td><code>(instance=Counter(count=101), -5)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -63</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -67</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">6</td>
+                                <td><code>(instance=Counter(count=101), -6)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -73</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -78</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">7</td>
+                                <td><code>(instance=Counter(count=101), 39)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -39</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 1</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">8</td>
+                                <td><code>(instance=Counter(count=101), 46)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 47</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 94</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">9</td>
+                                <td><code>(instance=Counter(count=101), 8)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 102</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 111</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">10</td>
+                                <td><code>(instance=Counter(count=101), -13)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 98</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 86</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">11</td>
+                                <td><code>(instance=Counter(count=101), -9)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 77</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 69</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">12</td>
+                                <td><code>(instance=Counter(count=101), -23)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 46</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 24</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">13</td>
+                                <td><code>(instance=Counter(count=101), 40)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 64</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 105</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">14</td>
+                                <td><code>(instance=Counter(count=101), -46)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 59</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 14</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">15</td>
+                                <td><code>(instance=Counter(count=101), -47)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -33</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -79</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">16</td>
+                                <td><code>(instance=Counter(count=101), -21)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -100</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -120</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">17</td>
+                                <td><code>(instance=Counter(count=101), -39)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -159</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -197</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">18</td>
+                                <td><code>(instance=Counter(count=101), -31)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -228</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -258</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">19</td>
+                                <td><code>(instance=Counter(count=101), 6)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -252</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -245</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">20</td>
+                                <td><code>(instance=Counter(count=101), 47)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -198</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -150</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">21</td>
+                                <td><code>(instance=Counter(count=101), 10)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -140</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -129</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">22</td>
+                                <td><code>(instance=Counter(count=101), 19)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -110</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -90</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">23</td>
+                                <td><code>(instance=Counter(count=101), 27)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -63</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -35</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">24</td>
+                                <td><code>(instance=Counter(count=101), 50)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 15</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 66</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">25</td>
+                                <td><code>(instance=Counter(count=101), -7)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 59</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 53</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">26</td>
+                                <td><code>(instance=Counter(count=101), 37)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 90</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 128</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">27</td>
+                                <td><code>(instance=Counter(count=101), 29)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 157</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 187</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">28</td>
+                                <td><code>(instance=Counter(count=101), -12)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 174</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 163</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">29</td>
+                                <td><code>(instance=Counter(count=101), -28)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 135</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 108</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">30</td>
+                                <td><code>(instance=Counter(count=101), 25)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 133</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 159</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">31</td>
+                                <td><code>(instance=Counter(count=101), -34)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 125</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 92</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">32</td>
+                                <td><code>(instance=Counter(count=101), 17)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 109</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 127</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">33</td>
+                                <td><code>(instance=Counter(count=101), -3)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 124</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 122</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">34</td>
+                                <td><code>(instance=Counter(count=101), -18)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 104</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 87</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">35</td>
+                                <td><code>(instance=Counter(count=101), -27)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 60</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 34</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">36</td>
+                                <td><code>(instance=Counter(count=101), -29)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 5</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -23</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">37</td>
+                                <td><code>(instance=Counter(count=101), -41)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -64</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -104</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">38</td>
+                                <td><code>(instance=Counter(count=101), 11)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -93</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -81</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">39</td>
+                                <td><code>(instance=Counter(count=101), 7)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -74</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -66</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">40</td>
+                                <td><code>(instance=Counter(count=101), 26)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -40</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -13</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">41</td>
+                                <td><code>(instance=Counter(count=101), -11)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -24</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -34</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">42</td>
+                                <td><code>(instance=Counter(count=101), -4)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -38</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -41</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">43</td>
+                                <td><code>(instance=Counter(count=101), 2)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -39</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -36</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">44</td>
+                                <td><code>(instance=Counter(count=101), -26)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -62</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -87</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">45</td>
+                                <td><code>(instance=Counter(count=101), 14)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -73</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -58</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">46</td>
+                                <td><code>(instance=Counter(count=101), 16)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -42</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -25</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">47</td>
+                                <td><code>(instance=Counter(count=101), -48)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -73</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -120</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">48</td>
+                                <td><code>(instance=Counter(count=101), -45)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -165</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -209</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">49</td>
+                                <td><code>(instance=Counter(count=101), -24)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -233</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -256</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">50</td>
+                                <td><code>(instance=Counter(count=101), 42)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -214</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -171</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">51</td>
+                                <td><code>(instance=Counter(count=101), -10)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -181</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -190</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">52</td>
+                                <td><code>(instance=Counter(count=101), -8)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -198</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -205</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">53</td>
+                                <td><code>(instance=Counter(count=101), -32)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -237</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -268</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">54</td>
+                                <td><code>(instance=Counter(count=101), 35)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -233</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -197</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">55</td>
+                                <td><code>(instance=Counter(count=101), -35)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -232</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -266</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">56</td>
+                                <td><code>(instance=Counter(count=101), 15)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -251</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -235</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">57</td>
+                                <td><code>(instance=Counter(count=101), 13)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -222</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -208</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">58</td>
+                                <td><code>(instance=Counter(count=101), -50)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -258</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -307</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">59</td>
+                                <td><code>(instance=Counter(count=101), 5)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -302</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -296</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">60</td>
+                                <td><code>(instance=Counter(count=101), -15)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -311</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -325</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">61</td>
+                                <td><code>(instance=Counter(count=101), -17)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -342</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -358</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">62</td>
+                                <td><code>(instance=Counter(count=101), -2)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -360</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -361</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">63</td>
+                                <td><code>(instance=Counter(count=101), -36)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -397</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -432</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">64</td>
+                                <td><code>(instance=Counter(count=101), 45)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -387</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -341</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">65</td>
+                                <td><code>(instance=Counter(count=101), -33)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -374</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -406</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">66</td>
+                                <td><code>(instance=Counter(count=101), 18)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -388</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -369</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">67</td>
+                                <td><code>(instance=Counter(count=101), -42)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -411</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -452</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">68</td>
+                                <td><code>(instance=Counter(count=101), -16)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -468</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -483</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">69</td>
+                                <td><code>(instance=Counter(count=101), 38)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -445</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -406</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">70</td>
+                                <td><code>(instance=Counter(count=101), -38)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -444</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -481</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">71</td>
+                                <td><code>(instance=Counter(count=101), 41)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -440</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -398</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">72</td>
+                                <td><code>(instance=Counter(count=101), 21)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -377</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -355</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">73</td>
+                                <td><code>(instance=Counter(count=101), 4)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -351</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -346</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">74</td>
+                                <td><code>(instance=Counter(count=101), -37)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -383</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -419</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">75</td>
+                                <td><code>(instance=Counter(count=101), 36)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -383</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -346</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">76</td>
+                                <td><code>(instance=Counter(count=101), -19)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -365</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -383</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">77</td>
+                                <td><code>(instance=Counter(count=101), 44)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -339</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -294</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">78</td>
+                                <td><code>(instance=Counter(count=101), 31)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -263</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -231</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">79</td>
+                                <td><code>(instance=Counter(count=101), -49)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -280</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -328</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">80</td>
+                                <td><code>(instance=Counter(count=101), -22)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -350</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -371</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">81</td>
+                                <td><code>(instance=Counter(count=101), 33)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -338</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -304</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">82</td>
+                                <td><code>(instance=Counter(count=101), 32)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -272</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -239</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">83</td>
+                                <td><code>(instance=Counter(count=101), -20)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -259</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -278</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">84</td>
+                                <td><code>(instance=Counter(count=101), -44)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -322</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -365</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">85</td>
+                                <td><code>(instance=Counter(count=101), 12)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -353</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -340</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">86</td>
+                                <td><code>(instance=Counter(count=101), 22)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -318</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -295</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">87</td>
+                                <td><code>(instance=Counter(count=101), 3)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -292</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -288</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">88</td>
+                                <td><code>(instance=Counter(count=101), 34)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -254</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -219</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">89</td>
+                                <td><code>(instance=Counter(count=101), 28)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -191</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -162</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">90</td>
+                                <td><code>(instance=Counter(count=101), -25)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -187</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -211</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">91</td>
+                                <td><code>(instance=Counter(count=101), 9)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -202</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -192</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">92</td>
+                                <td><code>(instance=Counter(count=101), 24)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -168</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -143</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">93</td>
+                                <td><code>(instance=Counter(count=101), 30)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -113</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -82</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">94</td>
+                                <td><code>(instance=Counter(count=101), -43)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -125</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -167</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">95</td>
+                                <td><code>(instance=Counter(count=101), 48)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -119</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -70</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">96</td>
+                                <td><code>(instance=Counter(count=101), 1)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -69</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -67</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">97</td>
+                                <td><code>(instance=Counter(count=101), -30)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -97</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -126</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">98</td>
+                                <td><code>(instance=Counter(count=101), 49)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -77</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -27</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">99</td>
+                                <td><code>(instance=Counter(count=101), 20)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -7</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 14</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="129998633019456">
+                                <td class="index-col">100</td>
+                                <td><code>(instance=Counter(count=101), 43)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 57</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 101</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Matches Section -->
+        
+        <details class="section">
+            <summary>
+                <span>✅ Matching Results (1)</span>
+            </summary>
+            <div class="content">
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td class="index-col">1</td>
+                                <td><code>(instance=Counter(count=101), -1)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 186</td>
+                            </tr>
+                            
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Instance Distribution (For Class Methods) -->
+        
+        <div class="section">
+            <h2>📊 Instance Distribution</h2>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #1: <code>Counter(count=101)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 101 |
+                    Mismatches: 100 |
+                    Matches: 1
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 99.0%"></div>
+                </div>
+            </div>
+            
+        </div>
+        
+
+        <!-- Warnings Section -->
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Generated:</strong> 2025-11-06 21:55:42</p>
+            <p><strong>Test Duration:</strong> 0.06s</p>
+            <p><strong>Hypothesis Differential Testing Framework</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const instanceFilter = document.getElementById('instance-filter');
+        const mismatchRows = document.querySelectorAll('.mismatch-row');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const instanceId = instanceFilter ? instanceFilter.value : 'all';
+
+            mismatchRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowInstanceId = row.dataset.instanceId;
+
+                const matchesSearch = !searchTerm || text.includes(searchTerm);
+                const matchesInstance = instanceId === 'all' || rowInstanceId === instanceId;
+
+                if (matchesSearch && matchesInstance) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            updateVisibleCount();
+        }
+
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.mismatch-row:not(.hidden)');
+            // Could add a counter here if desired
+        }
+
+        function clearFilters() {
+            if (searchInput) searchInput.value = '';
+            if (instanceFilter) instanceFilter.value = 'all';
+            filterRows();
+        }
+
+        // Add event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterRows);
+        }
+
+        if (instanceFilter) {
+            instanceFilter.addEventListener('change', filterRows);
+        }
+
+        // Initial filter
+        filterRows();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,3330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Test Report - process</title>
+    <style>
+        /* Modern, clean design with dark mode support */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --code-bg: #f4f4f4;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --border-color: #404040;
+                --code-bg: #2d2d2d;
+                --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .number {
+            display: block;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.success .number {
+            color: var(--success-color);
+        }
+
+        .stat-card.error .number {
+            color: var(--error-color);
+        }
+
+        .stat-card.warning .number {
+            color: var(--warning-color);
+        }
+
+        /* Section */
+        .section {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Details/Summary */
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        summary:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        summary::marker {
+            content: '▶ ';
+        }
+
+        details[open] summary::marker {
+            content: '▼ ';
+        }
+
+        details .content {
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .controls button {
+            cursor: pointer;
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        /* Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .results-table .index-col {
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-table .output-col {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .output-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .output-status.return {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .output-status.exception {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .diff-col {
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        /* Scrollable table container */
+        .scrollable-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .scrollable-table-container .results-table {
+            margin-top: 0;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Instance cards */
+        .instance-card {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instance-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .instance-stats {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.error {
+            background-color: var(--error-color);
+        }
+
+        .progress-fill.success {
+            background-color: var(--success-color);
+        }
+
+        /* Warnings */
+        .warning-list {
+            list-style: none;
+        }
+
+        .warning-list li {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+
+        .warning-list li.execution-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .warning-list li {
+                background-color: #4a4000;
+                color: #ffc107;
+            }
+
+            .warning-list li.execution-error {
+                background-color: #4a1a1e;
+                color: #f8d7da;
+            }
+        }
+
+        .warning-category {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .warning-category.execution-error {
+            color: var(--error-color);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px 40px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Hidden class for filtering */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Metadata grid */
+        .metadata {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metadata dt {
+            font-weight: 600;
+        }
+
+        .metadata dd {
+            color: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge.error {
+            background-color: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                Pipeline.process
+                
+                <span class="badge success">✓ No Behavior Difference Detected</span>
+                
+            </h1>
+            <div class="subtitle">
+                Differential Test Report | testsample/testClassFunction/a5.py vs testsample/testClassFunction/b5.py
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <span class="number">500</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-card error">
+                <span class="number">0</span>
+                <span class="label">Mismatches</span>
+            </div>
+            <div class="stat-card success">
+                <span class="number">500</span>
+                <span class="label">Matches</span>
+            </div>
+            <div
+                class="stat-card success">
+                <span class="number">100.0%</span>
+                <span class="label">Match Rate</span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <details class="section">
+            <summary>
+                <span>📋 Test Configuration</span>
+            </summary>
+            <div class="content">
+                <dl class="metadata">
+                    <dt>Max Examples:</dt>
+                    <dd>500</dd>
+
+                    <dt>Seed:</dt>
+                    <dd>1540658552</dd>
+
+                    
+                    <dt>Instances:</dt>
+                    <dd>20 unique instances</dd>
+                    
+
+                    <dt>Timestamp:</dt>
+                    <dd>2025-11-06 21:54:36</dd>
+
+                    <dt>Duration:</dt>
+                    <dd>0.80s</dd>
+                </dl>
+
+                <h3>Strategy Configuration</h3>
+                <pre><code>{
+  &#34;arg_strategy&#34;: &#34;tuples(arrays(dtype=scalar_dtypes(), shape=array_shapes(max_dims=2)))&#34;,
+  &#34;num_instances&#34;: 20
+}</code></pre>
+
+                <h3>Reproduction Command</h3>
+                <pre><code>python src/run_ab.py --a testsample/testClassFunction/a5.py --b testsample/testClassFunction/b5.py --func process --max-examples 500 --seed 1540658552</code></pre>
+            </div>
+        </details>
+
+        <!-- Mismatches Section -->
+        
+
+        <!-- Matches Section -->
+        
+        <details class="section">
+            <summary>
+                <span>✅ Matching Results (500)</span>
+            </summary>
+            <div class="content">
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td class="index-col">1</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([False]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">2</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([0.+0.j], dtype=complex64))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">3</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([0.+0.j], dtype=&#39;&gt;c8&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">4</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([               &#39;NaT&#39;,                &#39;NaT&#39;, -9223372036854718939,
+                      &#39;NaT&#39;, -9223372036854759002], dtype=&#39;&gt;m8[Y]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: float() argument must be a string or a real number, not &#39;NoneType&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">5</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[-9223372036854775674, -9223372036854775674, -9223372036854775674,
+        -9223372036854775674, -9223372036854775674, -9223372036854775674],
+       [-9223372036854775674, -9223372036854775674, -9223372036854775674,
+        -9223372036854775674, -9223372036854775674, -9223372036854775674],
+       [-9223372036854775674, -9223372036854775674,                  200,
+        -4345902897854258679, -9223372036854775674, -9223372036854775674],
+       [-9223372036854775674, -9223372036854775701, -9223372036854775720,
+        -9223372036854775674, -9223372036854775674, -9223372036854747918]],
+      dtype=&#39;timedelta64[ms]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: float() argument must be a string or a real number, not &#39;datetime.timedelta&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">6</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([ -22, -117,  127], dtype=int8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -7.23463289735686e-238</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">7</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([False,  True]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 9.043291121696093e-239</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">8</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[49836, 49836, 49836, 23049, 28494,   213]], dtype=uint16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 6.066963147723475e-234</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">9</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([&#39;-9223372036854729983&#39;], dtype=&#39;&gt;M8[Y]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&gt;M8[Y]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">10</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([ 9223372036854775806,                &#39;NaT&#39;, -9223372036854721365,
+                      &#39;NaT&#39;], dtype=&#39;timedelta64[s]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: float() argument must be a string or a real number, not &#39;NoneType&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">11</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([-9223372036854775612], dtype=&#39;&gt;i8&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -1.668192769059776e-219</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">12</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([1], dtype=&#39;&gt;i8&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 1.8086582243392185e-238</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">13</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([0], dtype=int16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">14</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([1], dtype=int16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 1.8086582243392185e-238</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">15</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[-121,  -72],
+       [  -3,   83],
+       [ 100,   81]], dtype=int8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 2.0498126542511137e-237</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">16</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[-121,  -72],
+       [  -3,   83],
+       [ -72,   81]], dtype=int8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -3.1350075888546466e-237</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">17</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([0, 0]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">18</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[0],
+       [0]]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">19</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[0],
+       [0],
+       [0]]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">20</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([0]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">21</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[ 31, 107, 169, 152, 170, 208]], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 2.52307822295321e-236</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">22</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[107]], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 1.9352643000429637e-236</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">23</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([0], dtype=uint16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">24</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([[&#39;NaT&#39;]], dtype=&#39;datetime64[h]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[h]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">25</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;), array([&#39;1970-02&#39;], dtype=&#39;datetime64[M]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[M]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">26</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([False]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">27</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([0.], dtype=float16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">28</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([[ 4.11424142e+16, -9.34092188e+19,  4.11424142e+16,
+         4.11424142e+16,  4.11424142e+16,  4.11424142e+16],
+       [ 4.11424142e+16,  4.11424142e+16,  4.11424142e+16,
+         4.11424142e+16,  4.11424142e+16,  4.11424142e+16],
+       [ 4.11424142e+16,  4.11424142e+16,  4.11424142e+16,
+         4.11424142e+16,  4.11424142e+16,  4.11424142e+16]]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 5.0215733163199366e-163</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">29</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([[&#39;-13952982738247-03-16T04:22&#39;],
+       [&#39;-17536621475646-05-25T20:28&#39;],
+       [                        &#39;NaT&#39;]], dtype=&#39;datetime64[m]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[m]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">30</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([ 78, 118, -78,  85], dtype=int8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -4.9479206459603806e-180</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">31</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([[247, 159, 249, 115],
+       [ 26, 100,   8, 117]], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -1.2442923594890514e-179</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">32</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([[-32768, -22522],
+       [ 19891,   3827]], dtype=&#39;&gt;i2&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 7.695357174101532e-178</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">33</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([-0.0000000e+00+100.j,  1.4275538e+16 +50.j, -0.0000000e+00 +infj,
+       -4.8408954e+16  -0.j], dtype=complex64))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> nan</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">34</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([        200, -2147483544,  -420186804], dtype=int32))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 8.344583341415662e-173</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">35</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([  138829964865977174, -9223372036854727309, -9223372036854775675,
+       -9223372036854725967, -9223372036854771959, -9223372036854727053]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 7.47112134591783e-163</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">36</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([3.6600146e+15+2.4263658e+16j], dtype=&#39;&gt;c8&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">37</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([2.4263658e+16+0.j], dtype=&#39;&gt;c8&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">38</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([2.4263658e+16+2.4263658e+16j], dtype=&#39;&gt;c8&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">39</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([0.+2.42636565e+16j]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">40</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([[ 28, 239, 142,  10],
+       [240, 153,  31, 120]], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -1.1736077788324747e-179</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">41</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([[10]], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -9.749597331941638e-181</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">42</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([[1]], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -9.749597331941637e-182</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">43</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([[0]], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">44</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([                       &#39;NaT&#39;, &#39;-1052197288654970-03-31T05&#39;],
+      dtype=&#39;&gt;M8[h]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&gt;M8[h]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">45</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([&#39;1970-01-02&#39;], dtype=&#39;datetime64[D]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[D]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">46</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([&#39;1970-01&#39;], dtype=&#39;datetime64[M]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[M]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">47</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([&#39;12051631937717372-03-17&#39;,                     &#39;NaT&#39;,
+                           &#39;NaT&#39;,                     &#39;NaT&#39;],
+      dtype=&#39;datetime64[D]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[D]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">48</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([&#39;NaT&#39;, &#39;NaT&#39;, &#39;NaT&#39;, &#39;NaT&#39;], dtype=&#39;datetime64[D]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[D]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">49</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([&#39;1970-01-01T00:03&#39;], dtype=&#39;datetime64[m]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[m]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">50</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;), array([50.], dtype=&#39;&gt;f2&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">51</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([False]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">52</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([0.], dtype=float16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">53</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[ 4.5341734e+15, -5.0000000e-01]], dtype=float32))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">54</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[               &#39;NaT&#39;,                &#39;NaT&#39;],
+       [-9223372036854729818,                &#39;NaT&#39;],
+       [-4746816972746341011,                &#39;NaT&#39;],
+       [               &#39;NaT&#39;,                &#39;NaT&#39;],
+       [-7535938476821188170, -9223372034683593658]],
+      dtype=&#39;timedelta64[h]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: float() argument must be a string or a real number, not &#39;NoneType&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">55</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[-9223372036854711011, -8239839632533520752,                &#39;NaT&#39;,
+                       &#39;NaT&#39;, -9223372036854727579, -9223372036854760912],
+       [-9223372036854732035,   414116353714765522,                &#39;NaT&#39;,
+                       &#39;NaT&#39;,  -414942805795523349,                &#39;NaT&#39;]],
+      dtype=&#39;&gt;m8[D]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: float() argument must be a string or a real number, not &#39;NoneType&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">56</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[15795, 15795, 15795, 15795, 15795],
+       [15795, 15795, 15795, 15795, 15795],
+       [15795, 15795, 15795, 15795, 15795],
+       [15795, 15795, 15795, 15795, 15795],
+       [15795, 15795, 15795, 15795, 15795],
+       [15795, 15795, 15795, 15795, 15795]], dtype=&#39;&gt;u2&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">57</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([-9223372036854775623], dtype=&#39;&gt;i8&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">58</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[ 85, 167],
+       [ 20,  91],
+       [ 85,  85],
+       [236, 152],
+       [ 85, 219]], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">59</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([-0.000000e+00, -0.000000e+00,  0.000000e+00,  7.087146e+16],
+      dtype=&#39;&gt;f4&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">60</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[           nan,  0.0000000e+00],
+       [ 1.0000000e+02,  1.2405197e+16],
+       [-3.0729136e-31,  4.6293906e+15],
+       [-1.9000000e+00, -0.0000000e+00]], dtype=float32))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> nan</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">61</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([-1.18864934e-048+1.00000000e+02j,  5.15354310e+015+7.19678046e+16j,
+        1.34558032e+295-6.03198562e+16j, -6.10351562e-005+6.42581454e+16j]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">62</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[0.+0.j, 0.+0.j, 0.+0.j]]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">63</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[0.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 0.+0.j, 0.+0.j]]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">64</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([0.+0.j]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">65</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([-9223372036854762402], dtype=&#39;&gt;m8[Y]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">66</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([[0]], dtype=&#39;&gt;m8[Y]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">67</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([1], dtype=&#39;timedelta64[M]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">68</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([0], dtype=&#39;timedelta64[M]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">69</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([1], dtype=&#39;timedelta64[M]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">70</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([&#39;NaT&#39;], dtype=&#39;timedelta64[M]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: float() argument must be a string or a real number, not &#39;NoneType&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">71</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([9223372036854775807], dtype=&#39;timedelta64[Y]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">72</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([1], dtype=&#39;timedelta64[Y]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">73</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([ &#39;32823502878-04-30T15:15:35&#39;,                         &#39;NaT&#39;,
+        &#39;17620174387-04-02T13:04:11&#39;, &#39;-55763031098-04-18T08:59:21&#39;],
+      dtype=&#39;&gt;M8[s]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&gt;M8[s]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">74</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([ &#39;32823502878-04-30T15:15:35&#39;,                         &#39;NaT&#39;,
+                               &#39;NaT&#39;, &#39;-55763031098-04-18T08:59:21&#39;],
+      dtype=&#39;&gt;M8[s]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&gt;M8[s]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">75</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;), array([                        &#39;NaT&#39;,                         &#39;NaT&#39;,
+                               &#39;NaT&#39;, &#39;-55763031098-04-18T08:59:21&#39;],
+      dtype=&#39;&gt;M8[s]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&gt;M8[s]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">76</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([False]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">77</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">78</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([[200]], dtype=uint64))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 66.66666666666666</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">79</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([False,  True,  True,  True]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.25</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">80</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([-4.48383243e+016-2.14822695e+015j,
+        4.34989404e+194+2.19302852e+006j,
+        2.00001000e+000+8.22912146e+015j,
+                   -inf+2.03999365e+016j,
+       -1.26791323e+072-1.27871259e-216j,
+       -2.23169581e+016-1.20119621e+016j]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> nan</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">81</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([[65252],
+       [  238],
+       [  223],
+       [   11]], dtype=&#39;&gt;u8&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 5476.999999999999</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">82</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([&#39;-25252734927764488-03-08&#39;,                      &#39;NaT&#39;,
+                            &#39;NaT&#39;], dtype=&#39;datetime64[D]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> UFuncTypeError: ufunc &#39;multiply&#39; cannot use operands with types dtype(&#39;&lt;M8[D]&#39;) and dtype(&#39;float64&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">83</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([               &#39;NaT&#39;,                &#39;NaT&#39;, -9223372036854768530],
+      dtype=&#39;timedelta64[ns]&#39;))</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: float() argument must be a string or a real number, not &#39;NoneType&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">84</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([[ True,  True,  True,  True],
+       [ True,  True,  True,  True],
+       [ True,  True,  True,  True],
+       [ True,  True,  True,  True],
+       [ True, False,  True,  True]]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.3166666666666666</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">85</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([[False],
+       [False],
+       [False]]))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">86</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([[-2147433223, -2147433223, -2147433223, -2147433223],
+       [-2147433223, -2147433223, -2147433223, -2147433223],
+       [-2147433223, -2147433223, -2147433223, -2147433223],
+       [-2147433223, -2147433223, -2147433223, -2147433223],
+       [-2147433223, -2147433223, -2147433223, -2147433223],
+       [-2147433223, -2147433223, -2147433223, -2147433223]], dtype=&#39;&gt;i4&#39;))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -715811074.3333333</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">87</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0, 0, 0, 0], dtype=int8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">88</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0], dtype=int8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">89</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0], dtype=int16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">90</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([1], dtype=int16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.3333333333333333</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">91</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([[-2147483564, -2147483564, -2147483564, -2147483564,  -606096310,
+                200],
+       [-2147483564, -2147483564, -2147483564, -2147483564, -2147483564,
+        -2147483564],
+       [-2147483564, -2147483564, -2147483607, -2147483564, -2147483564,
+        -2147483564],
+       [-2147483564, -2147483564, -2147483564, -2147483564, -2147483564,
+        -2147435421]], dtype=int32))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -664592866.9166666</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">92</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([[200],
+       [  0],
+       [  0],
+       [  0]], dtype=int32))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 16.666666666666664</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">93</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0], dtype=int8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">94</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([1], dtype=int8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.3333333333333333</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">95</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([[49260, 49260, 49260],
+       [49260, 49260, 49260],
+       [49260, 49260, 49260],
+       [49260, 49260, 49260],
+       [49260, 49260, 49260]], dtype=uint64))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 16420.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">96</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0, 0, 0], dtype=uint8))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">97</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0], dtype=uint64))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">98</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0], dtype=uint16))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">99</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([-2.827603e+16, -2.827603e+16, -2.827603e+16, -2.827603e+16,
+       -2.827603e+16, -2.827603e+16], dtype=float32))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> -9425344385777664.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">100</td>
+                                <td><code>(instance=Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;), array([0., 0., 0., 0., 0., 0.], dtype=float32))</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> 0.0</td>
+                            </tr>
+                            
+                            
+                            <tr>
+                                <td colspan="3"
+                                    style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                                    ... and 400 more matching results
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Instance Distribution (For Class Methods) -->
+        
+        <div class="section">
+            <h2>📊 Instance Distribution</h2>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #1: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a270&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #2: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae7119400&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #3: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528350&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #4: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529250&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #5: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaea1b7140&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #6: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab528aa0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #7: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaea067bf0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #8: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a5a0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #9: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52a930&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #10: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae71be630&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #11: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbae71bd550&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #12: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52bc80&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #13: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab500110&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #14: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52ac60&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #15: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaea5df680&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #16: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529fd0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #17: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab5294c0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #18: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab529d60&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #19: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab52b110&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #20: <code>Pipeline(multiplier=&lt;a5.Multiplier object at 0x7fbaab500530&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+        </div>
+        
+
+        <!-- Warnings Section -->
+        
+        
+        <details class="section" >
+            <summary>
+                <span>⚠️ Warnings (214)</span>
+            </summary>
+            <div class="content">
+                <ul class="warning-list">
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/anaconda3/envs/practicum/lib/python3.12/site-packages/numpy/_core/_methods.py:144</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in scalar divide</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/anaconda3/envs/practicum/lib/python3.12/site-packages/numpy/_core/_methods.py:144</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in scalar divide</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/anaconda3/envs/practicum/lib/python3.12/site-packages/numpy/_core/_methods.py:134</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in reduce</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/anaconda3/envs/practicum/lib/python3.12/site-packages/numpy/_core/_methods.py:134</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in reduce</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in cast</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/anaconda3/envs/practicum/lib/python3.12/site-packages/numpy/_core/_methods.py:144</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in divide</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:9</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>overflow encountered in multiply</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/anaconda3/envs/practicum/lib/python3.12/site-packages/numpy/_core/_methods.py:144</code>
+                        <span class="warning-category ">
+                            RuntimeWarning
+                        </span>
+                        <p>invalid value encountered in divide</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/a5.py:18</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                    <li class="">
+                        <code>/home/toris/practicum/Practicum-AWS-DiffTest/src/testsample/testClassFunction/b5.py:20</code>
+                        <span class="warning-category ">
+                            ComplexWarning
+                        </span>
+                        <p>Casting complex values to real discards the imaginary part</p>
+                    </li>
+                    
+                </ul>
+            </div>
+        </details>
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Generated:</strong> 2025-11-06 21:54:36</p>
+            <p><strong>Test Duration:</strong> 0.80s</p>
+            <p><strong>Hypothesis Differential Testing Framework</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const instanceFilter = document.getElementById('instance-filter');
+        const mismatchRows = document.querySelectorAll('.mismatch-row');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const instanceId = instanceFilter ? instanceFilter.value : 'all';
+
+            mismatchRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowInstanceId = row.dataset.instanceId;
+
+                const matchesSearch = !searchTerm || text.includes(searchTerm);
+                const matchesInstance = instanceId === 'all' || rowInstanceId === instanceId;
+
+                if (matchesSearch && matchesInstance) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            updateVisibleCount();
+        }
+
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.mismatch-row:not(.hidden)');
+            // Could add a counter here if desired
+        }
+
+        function clearFilters() {
+            if (searchInput) searchInput.value = '';
+            if (instanceFilter) instanceFilter.value = 'all';
+            filterRows();
+        }
+
+        // Add event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterRows);
+        }
+
+        if (instanceFilter) {
+            instanceFilter.addEventListener('change', filterRows);
+        }
+
+        // Initial filter
+        filterRows();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Test Report - process</title>
+    <style>
+        /* Modern, clean design with dark mode support */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --code-bg: #f4f4f4;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --border-color: #404040;
+                --code-bg: #2d2d2d;
+                --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .number {
+            display: block;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.success .number {
+            color: var(--success-color);
+        }
+
+        .stat-card.error .number {
+            color: var(--error-color);
+        }
+
+        .stat-card.warning .number {
+            color: var(--warning-color);
+        }
+
+        /* Section */
+        .section {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Details/Summary */
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        summary:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        summary::marker {
+            content: '▶ ';
+        }
+
+        details[open] summary::marker {
+            content: '▼ ';
+        }
+
+        details .content {
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .controls button {
+            cursor: pointer;
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        /* Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .results-table .index-col {
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-table .output-col {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .output-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .output-status.return {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .output-status.exception {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .diff-col {
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        /* Scrollable table container */
+        .scrollable-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .scrollable-table-container .results-table {
+            margin-top: 0;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Instance cards */
+        .instance-card {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instance-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .instance-stats {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.error {
+            background-color: var(--error-color);
+        }
+
+        .progress-fill.success {
+            background-color: var(--success-color);
+        }
+
+        /* Warnings */
+        .warning-list {
+            list-style: none;
+        }
+
+        .warning-list li {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+
+        .warning-list li.execution-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .warning-list li {
+                background-color: #4a4000;
+                color: #ffc107;
+            }
+
+            .warning-list li.execution-error {
+                background-color: #4a1a1e;
+                color: #f8d7da;
+            }
+        }
+
+        .warning-category {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .warning-category.execution-error {
+            color: var(--error-color);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px 40px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Hidden class for filtering */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Metadata grid */
+        .metadata {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metadata dt {
+            font-weight: 600;
+        }
+
+        .metadata dd {
+            color: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge.error {
+            background-color: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                TextPipeline.process
+                
+                <span class="badge success">✓ No Behavior Difference Detected</span>
+                
+            </h1>
+            <div class="subtitle">
+                Differential Test Report | testsample/testClassFunction/a6.py vs testsample/testClassFunction/b6.py
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <span class="number">500</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-card error">
+                <span class="number">0</span>
+                <span class="label">Mismatches</span>
+            </div>
+            <div class="stat-card success">
+                <span class="number">500</span>
+                <span class="label">Matches</span>
+            </div>
+            <div
+                class="stat-card success">
+                <span class="number">100.0%</span>
+                <span class="label">Match Rate</span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <details class="section">
+            <summary>
+                <span>📋 Test Configuration</span>
+            </summary>
+            <div class="content">
+                <dl class="metadata">
+                    <dt>Max Examples:</dt>
+                    <dd>500</dd>
+
+                    <dt>Seed:</dt>
+                    <dd>1383849284</dd>
+
+                    
+                    <dt>Instances:</dt>
+                    <dd>20 unique instances</dd>
+                    
+
+                    <dt>Timestamp:</dt>
+                    <dd>2025-11-06 21:54:39</dd>
+
+                    <dt>Duration:</dt>
+                    <dd>0.25s</dd>
+                </dl>
+
+                <h3>Strategy Configuration</h3>
+                <pre><code>{
+  &#34;arg_strategy&#34;: &#34;tuples(text(max_size=10))&#34;,
+  &#34;num_instances&#34;: 20
+}</code></pre>
+
+                <h3>Reproduction Command</h3>
+                <pre><code>python src/run_ab.py --a testsample/testClassFunction/a6.py --b testsample/testClassFunction/b6.py --func process --max-examples 500 --seed 1383849284</code></pre>
+            </div>
+        </details>
+
+        <!-- Mismatches Section -->
+        
+
+        <!-- Matches Section -->
+        
+        <details class="section">
+            <summary>
+                <span>✅ Matching Results (500)</span>
+            </summary>
+            <div class="content">
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td class="index-col">1</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">2</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;´\U0003760a\U000af83fAøC¸\x86&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;´\U0003760a\U000af83faøc¸\x86&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">3</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;ñ爣\U000b9871È\\\x12ÞA&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ñ爣\U000b9871è\\\x12þa&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">4</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;{°\x89𑣝â\x04\x16\U00034edbm\U0008e9a0&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;{°\x89𑣝â\x04\x16\U00034edbm\U0008e9a0&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">5</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;\x89Ë\tJÒ©sÎ\x03\U0001c8e5&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x89ë\tjò©sî\x03\U0001c8e5&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">6</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;8N\x9a\U00085226}i\x0e¨\x9f\U0005ec4d&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;8n\x9a\U00085226}i\x0e¨\x9f\U0005ec4d&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">7</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;.£÷rR&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;.£÷rr&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">8</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;\x8a&amp;Ü&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x8a&amp;ü&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">9</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;ÏÐh\xad\x0bf3\U00060f3b&gt;É&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ïðh\xad\x0bf3\U00060f3b&gt;é&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">10</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;㞪¦\U00063273\x13\U00056618\U000d4e3c&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;㞪¦\U00063273\x13\U00056618\U000d4e3c&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">11</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;V&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;v&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">12</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;ê\x9d&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ê\x9d&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">13</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;else&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;else&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">14</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;ò&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ò&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">15</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;®rqF1\x08G\U00090f0a&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;®rqf1\x08g\U00090f0a&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">16</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;\x8c3c\U000d6c0e\U00101db3ù\U0001c353\x8eyö&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x8c3c\U000d6c0e\U00101db3ù\U0001c353\x8eyö&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">17</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;COM1&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;com1&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">18</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;G8\x1d\U00062968&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;g8\x1d\U00062968&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">19</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;\x1b&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x1b&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">20</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;þ\U00051f59V\x9fàÊ\x19zñ𢓳&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;þ\U00051f59v\x9fàê\x19zñ𢓳&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">21</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;}6&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;}6&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">22</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;²à&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;²à&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">23</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;\x96¢î&lt;\U0010eb98\U000fbda4\x95\U000cd819j&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x96¢î&lt;\U0010eb98\U000fbda4\x95\U000cd819j&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">24</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;mÏ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;mï&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">25</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;), &#39;Inf&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;inf&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">26</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">27</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\U000bf613Ýó\x82\x01\x9a\U000995af¶\x8e&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000bf613ýó\x82\x01\x9a\U000995af¶\x8e&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">28</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\xa0R𦑸&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;r𦑸&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">29</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;J\U0009e0b4\U0006298d&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;j\U0009e0b4\U0006298d&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">30</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;ß𠲎&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ß𠲎&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">31</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\U000ca9fdH\x05\U0010d8b3\x85\U0008e59e\U00094009\U0004d086LI&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000ca9fdh\x05\U0010d8b3\x85\U0008e59e\U00094009\U0004d086li&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">32</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;ªB¨\U0010c562\x0f\U0004464e\x0b\x82{ª&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ªb¨\U0010c562\x0f\U0004464e\x0b\x82{ª&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">33</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;Çê\rî\x85$&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;çê\rî\x85$&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">34</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\x17Ë\x15\U000db631U\x96ë&amp;\U000c5f72&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x17ë\x15\U000db631u\x96ë&amp;\U000c5f72&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">35</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;ô&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ô&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">36</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\x91b&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x91b&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">37</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;ç=\x10\U000f40f3ý§\U000f639bUⒻ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ç=\x10\U000f40f3ý§\U000f639buⓕ&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">38</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;¥ãõq\U000a5398f5\U00085154æ\x0b&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;¥ãõq\U000a5398f5\U00085154æ&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">39</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;righttyper&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;righttyper&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">40</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;Ëü\x97\x0eyÄún\xadÌ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ëü\x97\x0eyäún\xadì&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">41</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\U00098464\x12\x90\x16ûj1&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00098464\x12\x90\x16ûj1&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">42</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;G&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;g&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">43</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#34;VâL&#39;Göì&#34;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &quot;vâl&#39;göì&quot;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">44</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\U000aa414ý&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000aa414ý&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">45</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\U0004ad5fSTÚ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U0004ad5fstú&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">46</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\U00018e9d\x84|\x98\x9d\x83\U00055f96\U00072b0fÁ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00018e9d\x84|\x98\x9d\x83\U00055f96\U00072b0fá&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">47</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;Ê±\xa0&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ê±&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">48</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;õ\U000e772aDST&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;õ\U000e772adst&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">49</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;\U00039101Â\U000d6fa7\U0007f4aa&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00039101â\U000d6fa7\U0007f4aa&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">50</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;), &#39;õ³\U000d78de&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;õ³\U000d78de&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">51</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">52</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;\U00109ff9|\x80aC\x10\U000ea5ae\U000aaac4&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00109ff9|\x80ac\x10\U000ea5ae\U000aaac4&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">53</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;\x89Ñ{¢&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x89ñ{¢&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">54</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;\U00061fe8dÅ\U000873e9Ê\x96&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U00061fe8då\U000873e9ê\x96&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">55</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;\U0008066eÝ\U00065ee1\x8c+\U000a651e\x17&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U0008066eý\U00065ee1\x8c+\U000a651e\x17&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">56</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;\x10ú\x00x\x01 \U00096467\U0007b8c0^¡&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x10ú\x00x\x01 \U00096467\U0007b8c0^¡&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">57</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;bðì\U00091fa1\n\U000fb77d&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;bðì\U00091fa1\n\U000fb77d&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">58</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;ä&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ä&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">59</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;d\x8a6G\x00ë\x1cpÂ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;d\x8a6g\x00ë\x1cpâ&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">60</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;£\x99Ï÷\U000cc25bþ\x95&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;£\x99ï÷\U000cc25bþ\x95&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">61</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;B\U0006637f&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;b\U0006637f&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">62</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;ó\U000aeca6\x8e\x1cBÓ×þ3&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ó\U000aeca6\x8e\x1cbó×þ3&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">63</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;\x99@çðE*°\x1däê&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x99@çðe*°\x1däê&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">64</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;ò\x08Þ\U0008d29eáy\x91\x84ý&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ò\x08þ\U0008d29eáy\x91\x84ý&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">65</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;nil&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;nil&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">66</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;\U0007de82!\x04\x0f\U000a69e4&gt;ã©Ìd&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U0007de82!\x04\x0f\U000a69e4&gt;ã©ìd&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">67</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;w&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;w&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">68</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;t)&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;t)&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">69</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;:c\U0009e80f\x17P&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;:c\U0009e80f\x17p&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">70</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;ï\x8b¥Øp_Ò¢\x18®&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ï\x8b¥øp_ò¢\x18®&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">71</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;if&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;if&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">72</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;5\U0006aa43Ú\U0001467c\U0010e588\x95è&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;5\U0006aa43ú\U0001467c\U0010e588\x95è&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">73</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;¢¬Âè\U0004a98fsÅÖ\x02ï&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;¢¬âè\U0004a98fsåö\x02ï&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">74</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;2\U00100692G&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;2\U00100692g&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">75</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;), &#39;;Û\x08~𒀵\U00101ced&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;;û\x08~𒀵\U00101ced&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">76</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">77</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;ÂÝ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;âý&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">78</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;\x0f2Æ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x0f2æ&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">79</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;Ó\x86!\x9dÔy𥂚Ë&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ó\x86!\x9dôy𥂚ë&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">80</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;\x1bq\U00057c97&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x1bq\U00057c97&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">81</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;í#ð&gt;\U0007ccde\x17&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;í#ð&gt;\U0007ccde\x17&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">82</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;\U000d9a4e\U000d98ca·!Ë\U0009e9f5Â&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000d9a4e\U000d98ca·!ë\U0009e9f5â&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">83</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;Ä&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ä&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">84</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;¬º\U000d1fa2q?&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;¬º\U000d1fa2q?&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">85</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;ï\x89O\x1aå\x90&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ï\x89o\x1aå\x90&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">86</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;wß&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;wß&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">87</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;^\U000b5e10^À\xa0ö\U0001951e\x89Y\U000d4d0a&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;^\U000b5e10^à\xa0ö\U0001951e\x89y\U000d4d0a&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">88</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;\U000abf22Ã&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000abf22ã&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">89</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;\x9cx\x02²\x1b÷Ø\x9c0&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\x9cx\x02²\x1b÷ø\x9c0&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">90</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;]\U000f70bflÓ¡«\x81\U0005691c\x98\x16&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;]\U000f70bfló¡«\x81\U0005691c\x98\x16&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">91</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;ÁçÄ\U000fb99d\U00058d4e\x19\U000401a7lõ/&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;áçä\U000fb99d\U00058d4e\x19\U000401a7lõ/&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">92</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;ÿ\x9f\x92E\x84&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;ÿ\x9f\x92e\x84&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">93</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;2ÈÖj&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;2èöj&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">94</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;\x0cÒdÉ\x13&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;òdé\x13&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">95</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;\U000868e5É&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000868e5é&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">96</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;z&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;z&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">97</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;c&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;c&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">98</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;µ|\x05\U000c8e01\x9f;𠛜\U000ca6a6&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;µ|\x05\U000c8e01\x9f;𠛜\U000ca6a6&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">99</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;HEAD&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;head&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">100</td>
+                                <td><code>(instance=TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;), &#39;\U000fc7c0\U00067b9e\U00096ec2\x91&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> &#39;\U000fc7c0\U00067b9e\U00096ec2\x91&#39;</td>
+                            </tr>
+                            
+                            
+                            <tr>
+                                <td colspan="3"
+                                    style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                                    ... and 400 more matching results
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Instance Distribution (For Class Methods) -->
+        
+        <div class="section">
+            <h2>📊 Instance Distribution</h2>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #1: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb9b0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #2: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c10b01c770&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #3: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c3b0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #4: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb860&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #5: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb470&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #6: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc50fe30&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #7: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c9b0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #8: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41d130&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #9: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41d970&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #10: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc50ef60&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #11: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb7a0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #12: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41d7f0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #13: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc50e1b0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #14: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41ddf0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #15: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41e570&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #16: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc5bb2f0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #17: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41c800&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #18: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41cd70&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #19: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41d9d0&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+            <div class="instance-card">
+                <div class="instance-header">
+                    Instance #20: <code>TextPipeline(normalizer=&lt;a6.Normalizer object at 0x73c0cc41ee10&gt;)</code>
+                </div>
+                <div class="instance-stats">
+                    Tests: 25 |
+                    Mismatches: 0 |
+                    Matches: 25
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill error" style="width: 0.0%"></div>
+                </div>
+            </div>
+            
+        </div>
+        
+
+        <!-- Warnings Section -->
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Generated:</strong> 2025-11-06 21:54:39</p>
+            <p><strong>Test Duration:</strong> 0.25s</p>
+            <p><strong>Hypothesis Differential Testing Framework</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const instanceFilter = document.getElementById('instance-filter');
+        const mismatchRows = document.querySelectorAll('.mismatch-row');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const instanceId = instanceFilter ? instanceFilter.value : 'all';
+
+            mismatchRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowInstanceId = row.dataset.instanceId;
+
+                const matchesSearch = !searchTerm || text.includes(searchTerm);
+                const matchesInstance = instanceId === 'all' || rowInstanceId === instanceId;
+
+                if (matchesSearch && matchesInstance) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            updateVisibleCount();
+        }
+
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.mismatch-row:not(.hidden)');
+            // Could add a counter here if desired
+        }
+
+        function clearFilters() {
+            if (searchInput) searchInput.value = '';
+            if (instanceFilter) instanceFilter.value = 'all';
+            filterRows();
+        }
+
+        // Add event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterRows);
+        }
+
+        if (instanceFilter) {
+            instanceFilter.addEventListener('change', filterRows);
+        }
+
+        // Initial filter
+        filterRows();
+    </script>
+</body>
+
+</html>

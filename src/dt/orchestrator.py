@@ -489,7 +489,7 @@ class Orchestrator:
 
                     # Get pairs for testing and extract info about all modified functions
                     pairs = pairer.pair_from_diff_file(
-                        tmp_diff_path, func_name, commit
+                        tmp_diff_path, func_name, commit, project_root=env.project_root
                     )
 
                     # Also get ALL modified functions (including class methods) for reporting

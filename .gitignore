@@ -24,7 +24,8 @@ build/
 # Logs
 *.log
 
-# html
+# temporary difftest folder
+.difftest_temp/
 
 # do not include oss test samples, htmlcov, and slipcover info
 /src/htmlcov/
