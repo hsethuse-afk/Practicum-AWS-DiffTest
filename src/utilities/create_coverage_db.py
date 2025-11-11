@@ -54,4 +54,19 @@ cov_data.add_lines(line_data_to_add)
 cov_data.write()
 
 print(f"Successfully created {output_db_path} file.")
-print("\nNext step: Run 'coverage html' to generate the report.")
+
+def open_coverage_report():
+    """Runs 'coverage html' and opens the report in a web browser."""
+    import subprocess
+    import webbrowser
+    
+    print("\nGenerating HTML report...")
+    subprocess.run(["coverage", "html"], check=True)
+    
+    report_path = os.path.join(base_dir, '..', 'htmlcov', 'index.html')
+    report_abs_path = os.path.abspath(report_path)
+    
+    print(f"Opening report: {report_abs_path}")
+    webbrowser.open(f'file://{report_abs_path}')
+
+open_coverage_report()
