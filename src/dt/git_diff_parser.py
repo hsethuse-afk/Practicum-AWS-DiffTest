@@ -80,6 +80,22 @@ class GitDiffParser:
             diff_string = f.read()
         return self._parse_diff_output(diff_string, commit)
 
+    def parse_patch_only(self, patch_file_path: str) -> List[ModifiedFunction]:
+        """
+        Parse a patch file without git commit context.
+        Reconstructs old and new file content from the patch itself.
+
+        Args:
+            patch_file_path: Path to file containing git diff/patch
+
+        Returns:
+            List of ModifiedFunction objects
+        """
+        with open(patch_file_path, 'r') as f:
+            patch_content = f.read()
+
+        return self._parse_patch_output(patch_content)
+
     def _get_git_diff(self, commit: str) -> str:
         """Get git diff output for a commit"""
         try:
@@ -225,7 +241,12 @@ class GitDiffParser:
                 return result.stdout
             except subprocess.CalledProcessError:
                 return None
-        return None
+        # If no commit, try reading from current filesystem (fallback)
+        try:
+            with open(file_path, 'r') as f:
+                return f.read()
+        except Exception:
+            return None
 
     def _get_new_file_content(
         self,
@@ -375,3 +396,279 @@ class GitDiffParser:
             self.log.debug(f"[GitDiffParser] Failed to parse Python file: {e}")
 
         return modified_functions
+
+    def _parse_patch_output(self, patch_content: str) -> List[ModifiedFunction]:
+        """
+        Parse patch content and reconstruct old/new file versions.
+
+        This method extracts file content from the patch itself without requiring
+        access to a git repository or commit history.
+
+        Strategy:
+        1. Try to reconstruct from patch hunks
+        2. If reconstruction produces incomplete files, try to read from filesystem
+           and apply the patch to get complete versions
+
+        Args:
+            patch_content: Raw patch/diff content
+
+        Returns:
+            List of ModifiedFunction objects
+        """
+        modified_functions = []
+
+        # Split patch into per-file chunks
+        file_patches = self._split_patch_by_file(patch_content)
+
+        for file_patch in file_patches:
+            if not file_patch['path'].endswith('.py'):
+                continue
+
+            # Try to reconstruct old and new file content from the patch
+            old_content, new_content = self._reconstruct_from_patch(
+                file_patch['hunks'], file_patch['path']
+            )
+
+            if not old_content or not new_content:
+                self.log.verbose(
+                    f"[GitDiffParser] Could not reconstruct content from patch for {file_patch['path']}"
+                )
+                continue
+
+            # Find modified functions using the same logic
+            changed_funcs = self._find_modified_functions(
+                old_content,
+                new_content,
+                file_patch['changed_lines']
+            )
+
+            for func_name, line_start, line_end, class_name, is_class_method in changed_funcs:
+                modified_functions.append(ModifiedFunction(
+                    file_path=file_patch['path'],
+                    function_name=func_name,
+                    old_content=old_content,
+                    new_content=new_content,
+                    line_start=line_start,
+                    line_end=line_end,
+                    class_name=class_name,
+                    is_class_method=is_class_method
+                ))
+
+        return modified_functions
+
+    def _split_patch_by_file(self, patch_content: str) -> List[Dict]:
+        """
+        Split patch content into per-file chunks with hunks.
+
+        Returns:
+            List of dicts with 'path', 'hunks', and 'changed_lines'
+        """
+        file_patches = []
+        current_file = None
+        current_hunks = []
+        changed_lines = []
+        current_line_num = 0
+        current_hunk = None
+
+        for line in patch_content.split('\n'):
+            # New file marker
+            if line.startswith('diff --git'):
+                if current_file and current_hunks:
+                    file_patches.append({
+                        'path': current_file,
+                        'hunks': current_hunks,
+                        'changed_lines': changed_lines
+                    })
+                # Extract file path
+                match = re.search(r' b/(.+)$', line)
+                current_file = match.group(1) if match else None
+                current_hunks = []
+                changed_lines = []
+                current_line_num = 0
+                current_hunk = None
+
+            # Hunk header
+            elif line.startswith('@@'):
+                if current_hunk:
+                    current_hunks.append(current_hunk)
+                # Parse: @@ -old_start,old_count +new_start,new_count @@
+                old_match = re.search(r'-(\d+),?(\d+)?', line)
+                new_match = re.search(r'\+(\d+),?(\d+)?', line)
+
+                if old_match and new_match:
+                    old_start = int(old_match.group(1))
+                    old_count = int(old_match.group(2)) if old_match.group(2) else 1
+                    new_start = int(new_match.group(1))
+                    new_count = int(new_match.group(2)) if new_match.group(2) else 1
+
+                    current_hunk = {
+                        'old_start': old_start,
+                        'old_count': old_count,
+                        'new_start': new_start,
+                        'new_count': new_count,
+                        'lines': []
+                    }
+                    current_line_num = new_start
+
+            # Hunk content
+            elif current_hunk is not None:
+                if line.startswith('---') or line.startswith('+++'):
+                    continue  # Skip file headers
+                elif line.startswith('+') and not line.startswith('+++'):
+                    current_hunk['lines'].append(('add', line[1:]))
+                    changed_lines.append(current_line_num)
+                    current_line_num += 1
+                elif line.startswith('-') and not line.startswith('---'):
+                    current_hunk['lines'].append(('remove', line[1:]))
+                    changed_lines.append(current_line_num)
+                elif not line.startswith('\\'):  # Ignore "\ No newline at end of file"
+                    current_hunk['lines'].append(('context', line[1:] if line else ''))
+                    current_line_num += 1
+
+        # Add last hunk and file
+        if current_hunk:
+            current_hunks.append(current_hunk)
+        if current_file and current_hunks:
+            file_patches.append({
+                'path': current_file,
+                'hunks': current_hunks,
+                'changed_lines': changed_lines
+            })
+
+        return file_patches
+
+    def _reconstruct_from_patch(self, hunks: List[Dict], file_path: str) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Reconstruct old and new file content from patch hunks.
+
+        Strategy:
+        1. If hunks cover the entire file (start at line 1), reconstruct from hunks
+        2. Otherwise, try to read the file from filesystem and apply patches
+        3. If filesystem read fails, still try hunk-only reconstruction
+
+        Args:
+            hunks: List of hunk dictionaries with old_start, new_start, and lines
+            file_path: Path to the file being patched
+
+        Returns:
+            Tuple of (old_content, new_content) as strings, or (None, None) if reconstruction fails
+        """
+        if not hunks:
+            return None, None
+
+        try:
+            # Check if this is a full file or just fragments
+            # If the first hunk starts near the beginning (within first few lines),
+            # it's likely a full file
+            first_hunk_starts_early = hunks[0]['new_start'] <= 5
+
+            # Try to read from filesystem first if available
+            file_content = None
+            try:
+                with open(file_path, 'r') as f:
+                    file_content = f.read()
+                self.log.verbose(f"[GitDiffParser] Read current file from filesystem: {file_path}")
+            except Exception:
+                # File doesn't exist or can't be read - that's OK
+                pass
+
+            # If we have the file and hunks don't start at beginning, apply patches
+            if file_content and not first_hunk_starts_early:
+                return self._apply_patch_to_content(file_content, hunks)
+
+            # Otherwise, reconstruct from hunks only
+            old_lines = []
+            new_lines = []
+
+            # Process each hunk
+            for hunk in hunks:
+                # Add lines from this hunk
+                for line_type, line_content in hunk['lines']:
+                    if line_type == 'context':
+                        # Context lines appear in both versions
+                        old_lines.append(line_content)
+                        new_lines.append(line_content)
+                    elif line_type == 'remove':
+                        # Removed lines only in old version
+                        old_lines.append(line_content)
+                    elif line_type == 'add':
+                        # Added lines only in new version
+                        new_lines.append(line_content)
+
+            old_content = '\n'.join(old_lines)
+            new_content = '\n'.join(new_lines)
+
+            # If we have file content and the reconstruction looks incomplete, use file + patches
+            if file_content:
+                # Check if reconstructed content looks complete (has reasonable length)
+                file_lines = len(file_content.split('\n'))
+                reconstructed_lines = len(new_lines)
+
+                # If reconstruction has significantly fewer lines than the file, use patch application
+                if reconstructed_lines < file_lines * 0.5:
+                    self.log.verbose(
+                        f"[GitDiffParser] Patch appears incomplete ({reconstructed_lines} vs {file_lines} lines), applying to full file"
+                    )
+                    return self._apply_patch_to_content(file_content, hunks)
+
+            return old_content, new_content
+
+        except Exception as e:
+            self.log.debug(f"[GitDiffParser] Failed to reconstruct from patch: {e}")
+            return None, None
+
+    def _apply_patch_to_content(self, file_content: str, hunks: List[Dict]) -> Tuple[str, str]:
+        """
+        Apply patch hunks to existing file content to get old and new versions.
+
+        This reconstructs the old version by reversing the patch operations:
+        - Remove lines that were added (marked with +)
+        - Add back lines that were removed (marked with -)
+
+        Args:
+            file_content: Current file content (assumed to be the 'new' version)
+            hunks: List of patch hunks
+
+        Returns:
+            Tuple of (old_content, new_content)
+        """
+        # The file content we read is the NEW version
+        new_content = file_content
+        new_lines = file_content.split('\n')
+        old_lines = []
+
+        # Build old content by going through hunks in order and reconstructing
+        current_new_pos = 0  # Track position in new file
+
+        for hunk in hunks:
+            hunk_new_start = hunk['new_start'] - 1  # Convert to 0-based
+            hunk_old_start = hunk['old_start'] - 1  # Convert to 0-based
+
+            # Copy unchanged lines before this hunk
+            while current_new_pos < hunk_new_start:
+                if current_new_pos < len(new_lines):
+                    old_lines.append(new_lines[current_new_pos])
+                current_new_pos += 1
+
+            # Process the hunk
+            for line_type, line_content in hunk['lines']:
+                if line_type == 'context':
+                    # Context lines appear in both versions
+                    old_lines.append(line_content)
+                    current_new_pos += 1
+                elif line_type == 'remove':
+                    # Removed line only in old version
+                    old_lines.append(line_content)
+                    # Don't increment new_pos (line doesn't exist in new)
+                elif line_type == 'add':
+                    # Added line only in new version
+                    # Don't add to old_lines (line doesn't exist in old)
+                    current_new_pos += 1
+
+        # Copy remaining lines after last hunk
+        while current_new_pos < len(new_lines):
+            old_lines.append(new_lines[current_new_pos])
+            current_new_pos += 1
+
+        old_content = '\n'.join(old_lines)
+        return old_content, new_content

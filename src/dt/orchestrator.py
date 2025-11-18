@@ -398,6 +398,230 @@ class Orchestrator:
 
         return results
 
+    def run_patch_file(
+        self,
+        patch_file_path: str,
+        func_name: str = None,
+        max_examples: int = 200,
+        auto_approve: bool = False,
+        report_path: str = None,
+        seed: int = None,
+    ):
+        """
+        Run differential testing on modified functions from a patch file.
+        This mode doesn't require git commit context - it reconstructs
+        the old and new versions directly from the patch.
+
+        Args:
+            patch_file_path: Path to file containing git diff/patch
+            func_name: Optional filter for specific function name
+            max_examples: Maximum number of test examples per function
+            auto_approve: If True, skip user confirmation for strategies
+            report_path: Optional path to save HTML report
+            seed: Optional random seed for reproducible test generation
+
+        Returns:
+            List of test results for each modified function
+        """
+        from .diffpairer import DiffPairer
+
+        pairer = DiffPairer()
+
+        # Get modified functions from patch file
+        self.log.verbose(
+            f"[Orchestrator] Parsing patch file: {patch_file_path}"
+        )
+        pairs = pairer.pair_from_patch(patch_file_path, func_name)
+
+        if not pairs:
+            self.log.verbose(
+                "[Orchestrator] No modified functions found in patch"
+            )
+            return []
+
+        self.log.verbose(
+            f"[Orchestrator] Found {len(pairs)} modified function(s) in patch"
+        )
+
+        # Run tests on each pair
+        results = []
+        for i, (target, cleanup) in enumerate(pairs, 1):
+            self.log.verbose(
+                f"[Orchestrator] Testing {i}/{len(pairs)}: {target.func_name}"
+            )
+
+            # Generate unique report path for each function if report_path is provided
+            func_report_path = None
+            if report_path:
+                if len(pairs) > 1:
+                    # Multiple functions: add function name to report path
+                    import os as os_module
+                    base, ext = os_module.path.splitext(report_path)
+                    func_report_path = f"{base}_{target.func_name}{ext}"
+                else:
+                    # Single function: use original report path
+                    func_report_path = report_path
+
+            try:
+                result = self.run_pair(
+                    file_a=target.file_a,
+                    file_b=target.file_b,
+                    func_name=target.func_name,
+                    max_examples=max_examples,
+                    auto_approve=auto_approve,
+                    report_path=func_report_path,
+                    seed=seed,
+                )
+                results.append(result)
+            finally:
+                cleanup()
+
+        return results
+
+    def run_patch_from_repo(
+        self,
+        repo_url: str,
+        patch_file_path: str,
+        func_name: str = None,
+        max_examples: int = 200,
+        install_deps: bool = True,
+        auto_approve: bool = False,
+        interactive_select: bool = True,
+        selected_functions: str = None,
+        report_path: str = None,
+        seed: int = None,
+    ):
+        """
+        Run differential testing from a patch file + repository URL.
+
+        This mode clones the repository and applies the patch to reconstruct
+        old and new versions of the modified functions.
+
+        Args:
+            repo_url: Repository URL to clone (e.g., "https://github.com/user/repo.git")
+            patch_file_path: Path to patch/diff file
+            func_name: Optional filter for specific function name
+            max_examples: Maximum number of test examples per function
+            install_deps: Whether to install dependencies from requirements.txt
+            auto_approve: If True, skip user confirmation for strategies
+            interactive_select: If True, prompt user to select functions interactively
+            selected_functions: Pre-selected function indices (e.g., "1,2,3" or "1-3")
+            report_path: Optional path to save HTML report
+            seed: Optional random seed for reproducible test generation
+
+        Returns:
+            List of test results for each modified function
+        """
+        import os
+        import subprocess
+
+        # Build project environment (clone repo without checking out specific commit)
+        self.log.verbose(
+            f"[Orchestrator] Cloning repository from {repo_url}"
+        )
+        # For patch mode, we don't have a commit, so we'll use HEAD or master
+        env = self.project_builder.build_from_url(
+            repo_url, commit="HEAD", install_deps=install_deps
+        )
+
+        try:
+            self.log.verbose(
+                f"[Orchestrator] Project cloned to: {env.project_root}"
+            )
+
+            # Find test file if exists (for type inference)
+            test_file = self._find_test_file(env.project_root)
+
+            # Change to project root to read files referenced in patch
+            original_cwd = os.getcwd()
+            os.chdir(env.project_root)
+
+            try:
+                # Parse patch to find modified functions
+                from .diffpairer import DiffPairer
+                pairer = DiffPairer()
+
+                self.log.verbose(
+                    f"[Orchestrator] Parsing patch file: {patch_file_path}"
+                )
+
+                # Use the patch parser which will read files from the cloned repo
+                pairs = pairer.pair_from_patch(
+                    os.path.join(original_cwd, patch_file_path),
+                    func_name
+                )
+
+                if not pairs:
+                    self.log.verbose(
+                        "[Orchestrator] No modified functions found in patch"
+                    )
+                    return []
+
+                # Let user select which functions to test
+                selected_pairs = self._select_functions_to_test(
+                    pairs,
+                    interactive=interactive_select,
+                    preselected=selected_functions
+                )
+
+                if not selected_pairs:
+                    print("\n❌ No functions selected for testing.")
+                    return []
+
+                self.log.verbose(
+                    f"[Orchestrator] Testing {len(selected_pairs)} selected function(s)"
+                )
+
+                # Update harness with venv_path if available
+                if env.venv_path:
+                    self.log.verbose(
+                        f"[Orchestrator] Using virtual environment: {env.venv_path}"
+                    )
+                    self.harness = HarnessBuilder(
+                        venv_path=env.venv_path
+                    )
+
+                # Run tests on each pair
+                results = []
+                for i, (target, cleanup_pair) in enumerate(selected_pairs, 1):
+                    self.log.verbose(
+                        f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
+                    )
+
+                    # Generate unique report path for each function if report_path is provided
+                    func_report_path = None
+                    if report_path:
+                        if len(selected_pairs) > 1:
+                            # Multiple functions: add function name to report path
+                            import os as os_module
+                            base, ext = os_module.path.splitext(report_path)
+                            func_report_path = f"{base}_{target.func_name}{ext}"
+                        else:
+                            # Single function: use original report path
+                            func_report_path = report_path
+
+                    try:
+                        result = self.run_pair(
+                            file_a=target.file_a,
+                            file_b=target.file_b,
+                            func_name=target.func_name,
+                            max_examples=max_examples,
+                            test_file=test_file,
+                            auto_approve=auto_approve,
+                            report_path=func_report_path,
+                            seed=seed,
+                        )
+                        results.append(result)
+                    finally:
+                        cleanup_pair()
+
+                return results
+            finally:
+                os.chdir(original_cwd)
+
+        finally:
+            env.cleanup()
+
     def run_commit_from_repo(
         self,
         repo_url: str,
