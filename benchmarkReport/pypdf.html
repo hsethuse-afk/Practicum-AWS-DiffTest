@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Test Report - parse_iso8824_date</title>
+    <style>
+        /* Modern, clean design with dark mode support */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --code-bg: #f4f4f4;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --border-color: #404040;
+                --code-bg: #2d2d2d;
+                --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .number {
+            display: block;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.success .number {
+            color: var(--success-color);
+        }
+
+        .stat-card.error .number {
+            color: var(--error-color);
+        }
+
+        .stat-card.warning .number {
+            color: var(--warning-color);
+        }
+
+        /* Section */
+        .section {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Details/Summary */
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        summary:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        summary::marker {
+            content: '▶ ';
+        }
+
+        details[open] summary::marker {
+            content: '▼ ';
+        }
+
+        details .content {
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .controls button {
+            cursor: pointer;
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        /* Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .results-table .index-col {
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-table .output-col {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .output-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .output-status.return {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .output-status.exception {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .diff-col {
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        /* Scrollable table container */
+        .scrollable-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .scrollable-table-container .results-table {
+            margin-top: 0;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Instance cards */
+        .instance-card {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instance-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .instance-stats {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.error {
+            background-color: var(--error-color);
+        }
+
+        .progress-fill.success {
+            background-color: var(--success-color);
+        }
+
+        /* Warnings */
+        .warning-list {
+            list-style: none;
+        }
+
+        .warning-list li {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+
+        .warning-list li.execution-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .warning-list li {
+                background-color: #4a4000;
+                color: #ffc107;
+            }
+
+            .warning-list li.execution-error {
+                background-color: #4a1a1e;
+                color: #f8d7da;
+            }
+        }
+
+        .warning-category {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .warning-category.execution-error {
+            color: var(--error-color);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px 40px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Hidden class for filtering */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Metadata grid */
+        .metadata {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metadata dt {
+            font-weight: 600;
+        }
+
+        .metadata dd {
+            color: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge.error {
+            background-color: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                parse_iso8824_date
+                
+                <span class="badge error">✗ Behavior Difference Detected</span>
+                
+            </h1>
+            <div class="subtitle">
+                Differential Test Report | /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_k07dbviz/pypdf/_utils_old.py vs /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_k07dbviz/pypdf/_utils_new.py
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <span class="number">200</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-card error">
+                <span class="number">1</span>
+                <span class="label">Mismatches</span>
+            </div>
+            <div class="stat-card success">
+                <span class="number">199</span>
+                <span class="label">Matches</span>
+            </div>
+            <div
+                class="stat-card success">
+                <span class="number">99.5%</span>
+                <span class="label">Match Rate</span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <details class="section">
+            <summary>
+                <span>📋 Test Configuration</span>
+            </summary>
+            <div class="content">
+                <dl class="metadata">
+                    <dt>Max Examples:</dt>
+                    <dd>200</dd>
+
+                    <dt>Seed:</dt>
+                    <dd>235869290</dd>
+
+                    
+
+                    <dt>Timestamp:</dt>
+                    <dd>2025-11-11 20:06:46</dd>
+
+                    <dt>Duration:</dt>
+                    <dd>0.42s</dd>
+                </dl>
+
+                <h3>Strategy Configuration</h3>
+                <pre><code>{
+  &#34;arg_strategy&#34;: &#34;tuples(one_of(none(), text(max_size=10)))&#34;,
+  &#34;num_instances&#34;: null
+}</code></pre>
+
+                <h3>Reproduction Command</h3>
+                <pre><code>python src/run_ab.py --a /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_k07dbviz/pypdf/_utils_old.py --b /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_k07dbviz/pypdf/_utils_new.py --func parse_iso8824_date --max-examples 200 --seed 235869290</code></pre>
+            </div>
+        </details>
+
+        <!-- Mismatches Section -->
+        
+        <details class="section" open>
+            <summary>
+                <span>❌ Mismatches (1)</span>
+            </summary>
+            <div class="content">
+                <div class="controls">
+                    <input type="text" id="search-input" placeholder="Search arguments or outputs...">
+                    
+                    <button onclick="clearFilters()">Clear Filters</button>
+                </div>
+
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output A</th>
+                                <th class="output-col">Output B</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mismatches-tbody">
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">1</td>
+                                <td><code>(&#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> IndexError: string index out of range</td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> None</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Matches Section -->
+        
+        <details class="section">
+            <summary>
+                <span>✅ Matching Results (199)</span>
+            </summary>
+            <div class="content">
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td class="index-col">1</td>
+                                <td><code>(None)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> None</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">2</td>
+                                <td><code>(&#39;;\x14&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">3</td>
+                                <td><code>(&#39;\x96Q\x99\U000a8fb7ì\U0010db41\x1fá&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: Q򨾷ì􍭁á</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">4</td>
+                                <td><code>(&#39;\x8d\x1e\x8c&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: </td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">5</td>
+                                <td><code>(&#39;Á\n\U000e5b08Ç&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: Á
+󥬈Ç</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">6</td>
+                                <td><code>(&#39;\r&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: </td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">7</td>
+                                <td><code>(&#39;A\U000a42b0`\x08 Ù\xa0\U001040c5&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: A򤊰` Ù 􄃅</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">8</td>
+                                <td><code>(&#39;Q&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: Q</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">9</td>
+                                <td><code>(&#39;\U000b2173&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 򲅳</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">10</td>
+                                <td><code>(&#39;¦å\x17xîá~«Ð\U000342fd&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ¦åxîá~«Ð𴋽</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">11</td>
+                                <td><code>(&#39;Zp¯!\x91\x82}U&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: Zp¯!}U</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">12</td>
+                                <td><code>(&#39;àÍì&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: àÍì</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">13</td>
+                                <td><code>(&#39;\x16s/\t&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: s/	</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">14</td>
+                                <td><code>(&#39;R&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: R</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">15</td>
+                                <td><code>(&#39;[Ý&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: [Ý</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">16</td>
+                                <td><code>(&#39;À¡¹&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: À¡¹</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">17</td>
+                                <td><code>(&#34;H\x17æ¹\x94&#39;ô\U000bef64¸B&#34;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: Hæ¹&#39;ô򾽤¸B</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">18</td>
+                                <td><code>(&#39;²ûoÍL&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ²ûoÍL</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">19</td>
+                                <td><code>(&#39;/Title&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: /Title</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">20</td>
+                                <td><code>(&#39;K\U0006f8d9Kx\U000ab1dbí`\x06&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: K񯣙Kx򫇛í`</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">21</td>
+                                <td><code>(&#39;Îú\U00088492K\U00077ed7åå;Èù&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: Îú򈒒K񷻗åå;Èù</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">22</td>
+                                <td><code>(&#39;\U0002ff66\rß¢-\U0008fa48ì&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 𯽦ß¢-򏩈ì</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">23</td>
+                                <td><code>(&#39;t&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: t</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">24</td>
+                                <td><code>(&#39;»&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: »</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">25</td>
+                                <td><code>(&#39;|ò¤&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: |ò¤</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">26</td>
+                                <td><code>(&#39;¦Ã¡\x9e&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ¦Ã¡</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">27</td>
+                                <td><code>(&#39;\U000e7fb7Ý&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 󧾷Ý</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">28</td>
+                                <td><code>(&#39;FA\U00037541\U000f1cbe\U000c409e&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: FA𷕁󱲾󄂞</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">29</td>
+                                <td><code>(&#39;»\U00052de1Q\U000e9012\x98\U0005565e\U000d9ccb}&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: »񒷡Q󩀒񕙞󙳋}</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">30</td>
+                                <td><code>(&#39;xj\x8fv\x01\U000d5eb0W°ç\x02&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: xjv󕺰W°ç</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">31</td>
+                                <td><code>(&#39;c\x81Á𨞵\x9a\x15&gt;\U000c2417\x80þ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: cÁ𨞵&gt;󂐗þ</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">32</td>
+                                <td><code>(&#39;\t×ö¹\U0004846d\U0009a75c\x9f\x02&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 	×ö¹񈑭򚝜</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">33</td>
+                                <td><code>(&#39;ß&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ß</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">34</td>
+                                <td><code>(&#39;uó¯àýùCf𢳒Ï&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: uó¯àýùCf𢳒Ï</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">35</td>
+                                <td><code>(&#39;\x14@\x12Þ\x85îI[\U0007dca3\x18&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: @ÞîI[񽲣</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">36</td>
+                                <td><code>(&#39;g&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: g</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">37</td>
+                                <td><code>(&#39;ßOêÐ\U0006a86d&gt;¬&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ßOêÐ񪡭&gt;¬</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">38</td>
+                                <td><code>(&#39;\x8c&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: </td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">39</td>
+                                <td><code>(&#39;🇺🇸&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 🇺🇸</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">40</td>
+                                <td><code>(&#39;c&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: c</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">41</td>
+                                <td><code>(&#39;§\x8dPèÌ\U000629a2¤öÁ&amp;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: §PèÌ񢦢¤öÁ&amp;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">42</td>
+                                <td><code>(&#39;:\x90ô\U0003b70d𩖣\x03µ𦤼$\x1f&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: :ô𻜍𩖣µ𦤼$</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">43</td>
+                                <td><code>(&#39;êG\U0010279cKò\x94Ã𘤟\x88p&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: êG􂞜KòÃ𘤟p</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">44</td>
+                                <td><code>(&#39;\U0010deab𨎽\x83/\U0008cbdaôK&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 􍺫𨎽/򌯚ôK</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">45</td>
+                                <td><code>(&#39;liì&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: liì</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">46</td>
+                                <td><code>(&#39;L\U0007946d\x93\x13&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: L񹑭</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">47</td>
+                                <td><code>(&#39;ߘ༡&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ߘ༡</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">48</td>
+                                <td><code>(&#39;d\U000741ae&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: d񴆮</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">49</td>
+                                <td><code>(&#39;Ã&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: Ã</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">50</td>
+                                <td><code>(&#39;k}¾&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: k}¾</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">51</td>
+                                <td><code>(&#39;ÂÂ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ÂÂ</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">52</td>
+                                <td><code>(&#39;\U00091997Â\U000b8d52$\x9d+\x0c\U000dca9a´Í&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 򑦗Â򸵒$+󜪚´Í</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">53</td>
+                                <td><code>(&#39;#\x0f p\U0004b29eIªÑ𱯬°&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: # p񋊞IªÑ𱯬°</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">54</td>
+                                <td><code>(&#39;¹\U000640e6&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ¹񤃦</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">55</td>
+                                <td><code>(&#39;\x0cLø°ÚËøÜÒ\x04&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: Lø°ÚËøÜÒ</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">56</td>
+                                <td><code>(&#39;ØËä§\U00103c55\U000e6b29\x04\x92bÞ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ØËä§􃱕󦬩bÞ</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">57</td>
+                                <td><code>(&#39;çõs¯Q\U00079d32R\U000f179c\x17ô&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: çõs¯Q񹴲R󱞜ô</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">58</td>
+                                <td><code>(&#39;\U0009ec8a&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 򞲊</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">59</td>
+                                <td><code>(&#39;then&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: then</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">60</td>
+                                <td><code>(&#39;÷i\x01&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ÷i</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">61</td>
+                                <td><code>(&#39;¶\U000ac9f7í&#34;\U000e55f8nÝé\x0cv&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ¶򬧷í&quot;󥗸nÝév</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">62</td>
+                                <td><code>(&#39;aé\U00038869\U000c884c뢙\x1e\U000bb991ÚÕô&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: aé𸡩󈡌뢙򻦑ÚÕô</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">63</td>
+                                <td><code>(&#39;M~\x0f𧙯\U00074f27\U00057ca3&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: M~𧙯񴼧񗲣</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">64</td>
+                                <td><code>(&#39;}x¥Û\x80z\U000867e2N\U000e93e4§&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: }x¥Ûz򆟢N󩏤§</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">65</td>
+                                <td><code>(&#39;w&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: w</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">66</td>
+                                <td><code>(&#34;&gt;\U000c4186\U000595e1&#39;A鴼\x81\x172*&#34;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: &gt;󄆆񙗡&#39;A鴼2*</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">67</td>
+                                <td><code>(&#39;\U0007ada9&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 񺶩</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">68</td>
+                                <td><code>(&#39;\x1b\x98h\U00093e1eMº淯&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: h򓸞Mº淯</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">69</td>
+                                <td><code>(&#39;$&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: $</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">70</td>
+                                <td><code>(&#39;\\\x11|\U00100038&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: \|􀀸</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">71</td>
+                                <td><code>(&#39;ê\x87é0í\x9ay\x8b\x07\x14&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: êé0íy</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">72</td>
+                                <td><code>(&#39;y/¨\U000e1a0cö&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: y/¨󡨌ö</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">73</td>
+                                <td><code>(&#39;9¸3𨒚\x85&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 9¸3𨒚</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">74</td>
+                                <td><code>(&#39;É\\\U000d62a7\U00034b26&#34;\x08\x9b\U000b90af&gt;\U000bcdc2&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: É\󖊧𴬦&quot;򹂯&gt;򼷂</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">75</td>
+                                <td><code>(&#39;¥ú&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ¥ú</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">76</td>
+                                <td><code>(&#39;RightTyper&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: RightTyper</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">77</td>
+                                <td><code>(&#39;+0.0&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: +0.0</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">78</td>
+                                <td><code>(&#39;\x97&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: </td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">79</td>
+                                <td><code>(&#39;c\x04\x05Õ\x05&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: cÕ</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">80</td>
+                                <td><code>(&#39;³\x03\\\x05m\U000fe595´\U00014c20§£&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ³\m󾖕´𔰠§£</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">81</td>
+                                <td><code>(&#39;,\U000c06f1ñSÏ\x86\U000c5646&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ,󀛱ñSÏ󅙆</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">82</td>
+                                <td><code>(&#39;\x8b&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: </td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">83</td>
+                                <td><code>(&#39;a!\x91\U000a5cc7&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: a!򥳇</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">84</td>
+                                <td><code>(&#39;¢µ\U000699e5\U00107736à]\x8b&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ¢µ񩧥􇜶à]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">85</td>
+                                <td><code>(&#39;M\U000b6756\U000a1168\x99&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: M򶝖򡅨</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">86</td>
+                                <td><code>(&#39;bó¡d\x94\x02&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: bó¡d</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">87</td>
+                                <td><code>(&#39;➸&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ➸</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">88</td>
+                                <td><code>(&#39;\x96\U0007b88eø\U00051cf1õ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 񻢎ø񑳱õ</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">89</td>
+                                <td><code>(&#39;\x83\U000beda2&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 򾶢</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">90</td>
+                                <td><code>(&#39;]J&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ]J</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">91</td>
+                                <td><code>(&#39;D&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: D</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">92</td>
+                                <td><code>(&#39;\x1f\xad&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ­</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">93</td>
+                                <td><code>(&#39;§&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: §</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">94</td>
+                                <td><code>(&#39;1\x87¬@&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 1¬@</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">95</td>
+                                <td><code>(&#39;\x94𒇤\U000a1e8a&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: 𒇤򡺊</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">96</td>
+                                <td><code>(&#39;ò\x86ý}\U000b7f25\x91#\U000475b3ñC&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: òý}򷼥#񇖳ñC</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">97</td>
+                                <td><code>(&#39;º𤻪\x01&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: º𤻪</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">98</td>
+                                <td><code>(&#39;\x14cJ©&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: cJ©</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">99</td>
+                                <td><code>(&#39;ÒâÆÇ\x9c\U000436dc\r&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ÒâÆÇ񃛜</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">100</td>
+                                <td><code>(&#39;?&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Can not convert date: ?</td>
+                            </tr>
+                            
+                            
+                            <tr>
+                                <td colspan="3"
+                                    style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                                    ... and 99 more matching results
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Instance Distribution (For Class Methods) -->
+        
+
+        <!-- Warnings Section -->
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Generated:</strong> 2025-11-11 20:06:46</p>
+            <p><strong>Test Duration:</strong> 0.42s</p>
+            <p><strong>Hypothesis Differential Testing Framework</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const instanceFilter = document.getElementById('instance-filter');
+        const mismatchRows = document.querySelectorAll('.mismatch-row');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const instanceId = instanceFilter ? instanceFilter.value : 'all';
+
+            mismatchRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowInstanceId = row.dataset.instanceId;
+
+                const matchesSearch = !searchTerm || text.includes(searchTerm);
+                const matchesInstance = instanceId === 'all' || rowInstanceId === instanceId;
+
+                if (matchesSearch && matchesInstance) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            updateVisibleCount();
+        }
+
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.mismatch-row:not(.hidden)');
+            // Could add a counter here if desired
+        }
+
+        function clearFilters() {
+            if (searchInput) searchInput.value = '';
+            if (instanceFilter) instanceFilter.value = 'all';
+            filterRows();
+        }
+
+        // Add event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterRows);
+        }
+
+        if (instanceFilter) {
+            instanceFilter.addEventListener('change', filterRows);
+        }
+
+        // Initial filter
+        filterRows();
+    </script>
+</body>
+
+</html>

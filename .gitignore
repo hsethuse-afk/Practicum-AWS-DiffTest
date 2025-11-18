@@ -27,8 +27,12 @@ build/
 # temporary difftest folder
 .difftest_temp/
 
+# SWE-bench workspace
+swebench_workspace/
+
 # do not include oss test samples, htmlcov, and slipcover info
 /src/htmlcov/
+/src/SWEbench
 /src/testsample/oss/
 slipcover.json
 *.coverage
