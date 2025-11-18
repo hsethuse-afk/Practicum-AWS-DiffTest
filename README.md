@@ -29,7 +29,49 @@ pip install hypothesis jinja2 slipcover righttyper
 
 ## Quick Start
 
-### 1. Test from Git Commit (Recommended)
+### 1. Test from Repository + Patch File ✨ NEW
+
+Test modified functions using a repository URL and a patch file (no commit hash needed!):
+
+```bash
+python src/run_repo_patch.py \
+  --repo "https://github.com/pvlib/pvlib-python" \
+  --patch "src/testsample/pylib.diff" \
+  --max-examples 50 \
+  --auto-approve \
+  --log v
+```
+
+**How it works:**
+1. Clones the repository to a temporary directory
+2. Creates an isolated virtual environment
+3. Installs project dependencies
+4. Parses the patch file to identify modified functions
+5. Reconstructs old and new versions from the patch
+6. Generates test cases using Hypothesis
+7. Runs differential tests comparing old vs new versions
+8. Reports any behavioral differences
+
+**When to use this mode:**
+- You have a patch/diff file but no commit hash
+- You want to test changes from external sources (email patches, code reviews, etc.)
+- You're working with patches that aren't yet committed to a repository
+
+**Parameters:**
+- `--repo URL` - Repository URL to clone (required)
+- `--patch PATH` - Path to patch/diff file (required)
+- `--func NAME` - Test only a specific function by name (optional)
+- `--functions INDICES` - Comma-separated function indices to test, e.g., '1,2,3' or '1-3' (optional)
+- `--no-interactive` - Skip interactive function selection (optional)
+- `--max-examples N` - Number of test cases (default: 200)
+- `--seed N` - Random seed for reproducible test generation (optional)
+- `--report PATH` - Generate HTML report at specified path (optional)
+- `--log MODE` - Logging level (silent/normal/verbose/debug)
+- `--no-install-deps` - Skip dependency installation
+- `--coverage` - Generate coverage report
+- `--auto-approve` - Automatically approve test strategies without user confirmation
+
+### 2. Test from Git Commit
 
 Test modified functions directly from a commit hash:
 
@@ -66,7 +108,7 @@ python src/run_commit.py \
 - `--coverage` - Generate coverage report
 - `--auto-approve` - Automatically approve test strategies without user confirmation
 
-### 2. Test Local Files
+### 3. Test Local Files
 
 **Basic usage:**
 ```bash
@@ -89,7 +131,7 @@ python run_ab.py \
   --report my_report.html
 ```
 
-### 3. Test HumanEval Tasks
+### 4. Test HumanEval Tasks
 
 ```bash
 cd src
