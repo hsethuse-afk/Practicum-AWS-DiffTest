@@ -7,6 +7,9 @@ __pycache__/
 # Hypothesis test database
 .hypothesis/
 
+# Temperal differential testing folder
+.difftest_temp/
+
 # Virtual environment
 .venv/
 env/

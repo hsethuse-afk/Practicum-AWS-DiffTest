@@ -1,22 +1,134 @@
+<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+<a id="readme-top"></a>
 
-# Differential Testing Framework
+<!-- PROJECT SHIELDS -->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
 
-A property-based differential testing framework using Hypothesis for automatic test generation and comparison.
 
-## Features
 
-- 🔍 **Automatic Type Discovery** - Infers types from test files using RightTyper when annotations are missing
-- 🎯 **Property-Based Testing** - Generates test inputs using Hypothesis strategies
-- 🏗️ **Class Method Support** - Tests both module-level functions and class methods with intelligent instance generation
-- 📊 **HTML Reports** - Interactive, shareable HTML reports with search, filtering, and collapsible sections
-- 📈 **Coverage Tracking** - Optional code coverage reporting with Slipcover integration
-- ⚙️ **Configurable** - Customize test generation parameters, NumPy dtypes, and strategy behaviors
-- 🔄 **Git Integration** - Compare functions across git commits
-- 🎨 **Dark Mode** - HTML reports automatically adapt to system theme preferences
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/hsethuse-afk/Practicum-AWS-DiffTest">
+    <img src="images/logo.png" alt="Logo" width="80" height="80">
+  </a>
 
-## Quick Start
+<h3 align="center">PyDiffer</h3>
 
-  
+  <p align="center">
+    A property-based differential testing framework using Hypothesis for automatic test generation and comparison
+    <br />
+    <a href="https://github.com/hsethuse-afk/Practicum-AWS-DiffTest"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/hsethuse-afk/Practicum-AWS-DiffTest">View Demo</a>
+  </p>
+</div>
+
+
+
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#code-structure">Code Structure</a></li>
+    <li><a href="#benchmarks">Benchmarks</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
+
+
+
+<!-- ABOUT THE PROJECT -->
+## About The Project
+
+<!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
+
+PyDiffer is a property-based differential testing framework that automatically discovers behavioral differences between two versions of Python code. It leverages Hypothesis for intelligent test generation and RightTyper for automatic type inference, making it easy to detect regressions and verify code equivalence.
+
+### Key Features
+
+- **Automatic Type Discovery** - Infers types from test files using RightTyper when annotations are missing
+- **Property-Based Testing** - Generates test inputs using Hypothesis strategies
+- **Class Method Support** - Tests both module-level functions and class methods with intelligent instance generation
+- **HTML Reports** - Interactive, shareable HTML reports with search, filtering, and collapsible sections
+- **Coverage Tracking** - Optional code coverage reporting with Slipcover integration
+- **Git Integration** - Compare functions across git commits
+- **Dark Mode** - HTML reports automatically adapt to system theme preferences
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+### Built With
+
+* [![Hypothesis][Hypothesis]][Hypothesis-url]
+* [![RightTyper][RightTyper]][RightTyper-url]
+* [![Python][Python]][Python-url]
+* Slipcover
+* Jinja2
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- GETTING STARTED -->
+## Getting Started
+
+Follow these steps to get PyDiffer up and running on your local machine.
+
+### Prerequisites
+
+* Python 3.11 or higher
+* pip (Python package manager)
+
+### Installation
+
+1. Clone the repo
+   ```sh
+   git clone https://github.com/hsethuse-afk/Practicum-AWS-DiffTest.git
+   ```
+2. Navigate to the project directory
+   ```sh
+   cd Practicum-AWS-DiffTest
+   ```
+3. Create a virtual environment (recommended)
+   ```sh
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+4. Install dependencies
+   ```sh
+   pip install hypothesis jinja2 slipcover righttyper
+   ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- USAGE EXAMPLES -->
+## Usage
 
 ### Basic Usage - Module Functions
 
@@ -25,7 +137,8 @@ cd src
 python run_ab.py --a testsample/a.py --b testsample/b.py --func has_close_elements
 ```
 
-**With type inference from test file:**
+### With Type Inference
+
 ```bash
 python run_ab.py --a a.py --b b.py --func my_function --test-file test.py
 ```
@@ -41,14 +154,7 @@ python run_ab.py \
   --max-examples 500
 ```
 
-The framework automatically:
-- Detects constructor parameters and generates instances
-- Distributes test cases across multiple instances using smart heuristics
-- Shows per-instance statistics in reports
-
 ### Generating HTML Reports
-
-Add `--report` flag to generate interactive HTML reports:
 
 ```bash
 python run_ab.py \
@@ -60,14 +166,6 @@ python run_ab.py \
   --report my_report.html
 ```
 
-**Report features:**
-- ✅ Visual status indicators and statistics
-- 🔍 Search and filter mismatches
-- 📊 Per-instance distribution (for class methods)
-- 📋 Collapsible, scrollable sections
-- 🌓 Dark mode support
-- 💾 Self-contained single HTML file
-
 ### Run HumanEval Task by ID
 
 ```bash
@@ -75,177 +173,140 @@ cd src
 python run_by_taskid.py --t HumanEval/10
 ```
 
-Test file is automatically used for type inference.
+### Command-Line Options
 
-### Run All Tests
+| Option | Description |
+|--------|-------------|
+| `--a PATH` | Path to first version of the code |
+| `--b PATH` | Path to second version of the code |
+| `--func NAME` | Function name to test |
+| `--max-examples N` | Number of test cases to generate (default: 200) |
+| `--seed N` | Random seed for reproducibility |
+| `--test-file PATH` | Test file for type inference |
+| `--report PATH` | Generate HTML report at specified path |
+| `--auto-approve` | Skip strategy confirmation prompt |
+| `--log MODE` | Logging: `s`ilent, `n`ormal, `v`erbose, `d`ebug |
+| `--coverage` | Generate coverage report |
 
-```bash
-cd src
-python run_all_tests.py --jsonl-results testsample/samples.jsonl_results.jsonl
-```
+_For more examples, please refer to the [Documentation](https://github.com/hsethuse-afk/Practicum-AWS-DiffTest)_
 
-## Command-Line Options
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### run_ab.py
 
-- `--a PATH` - Path to first version of the code
-- `--b PATH` - Path to second version of the code
-- `--func NAME` - Function name to test
-- `--max-examples N` - Number of test cases to generate (default: 200)
-- `--seed N` - Random seed for reproducibility
-- `--test-file PATH` - Test file for type inference
-- `--report PATH` - Generate HTML report at specified path
-- `--auto-approve` - Skip strategy confirmation prompt
-- `--log MODE` - Logging: `s`ilent, `n`ormal, `v`erbose, `d`ebug (default: normal)
-- `--coverage` - Generate coverage report
 
-## Configuration & Customization
+<!-- CODE STRUCTURE -->
+## Code Structure
 
-### Strategy Configuration
+| Document | Description |
+|----------|-------------|
+| [Architecture Overview](docs/architecture.md) | High-level system design and component interactions |
+| [Type Inference](docs/type-inference.md) | Pluggable type inference engine, current implementation focuses on RightTyper integration |
+| [Strategy System](docs/strategy-system.md) | How Hypothesis strategies are generated and customized |
+| [Test Runner](docs/test-runner.md) | Core differential testing execution flow |
+| [Report Generation](docs/report-generation.md) | HTML report templating and output formats |
+| [Coverage Integration](docs/coverage.md) | Slipcover integration for code coverage tracking |
 
-Customize test generation parameters in strategy configuration files:
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```python
-class StrategyConfig:
-    INT_MIN_VALUE = -50
-    INT_MAX_VALUE = 50
-    STRING_MAX_SIZE = 10
-    LIST_MAX_SIZE = 10
-    # ... and many more options
-```
 
-See [src/dt/strategy/STRATEGY_CONFIG.md](src/dt/STRATEGY_CONFIG.md) for complete customization guide.
 
-### Strategy Files
+<!-- BENCHMARKS -->
+## Benchmarks
 
-The framework automatically generates strategy files that you can customize. See [Hypothesis Documentation](https://hypothesis.readthedocs.io/en/latest/reference/strategies.html#hypothesis.strategies.builds) for more customization options. The strategy file uses a structured JSON format:
+PyDiffer utilized code generation benchmarks to test the abilities to detect behavior differences
 
-```json
-{
-  "parameters": {
-    "parameter1": {
-      "type": "integers",
-      "min_value": -50,
-      "max_value": 50
-    },
-    "parameter1": {
-      "type": "integers",
-      "min_value": -50,
-      "max_value": 50
-    }
-  }
-}
-```
+### [HumanEval](https://github.com/openai/human-eval)
 
-**For class methods with complex types:**
+| Metric | Value |
+|--------|-------|
+| Tasks Evaluated | 164 |
+| Mismatch Detection Rate | TBD |
+| Average Test Cases per Task | TBD |
 
-```json
-{
-  "_comment": "Customize instance and method parameter generation",
-  "parameters": {
-    "points": {
-      "type": "lists",
-      "elements": {
-        "type": "builds",
-        "target": "mymodule.Point",
-        "x": {
-          "type": "floats",
-          "min_value": -50.0,
-          "max_value": 50.0
-        },
-        "y": {
-          "type": "floats",
-          "min_value": -50.0,
-          "max_value": 50.0
-        }
-      },
-      "min_size": 0,
-      "max_size": 10
-    },
-    "threshold": {
-      "type": "floats",
-      "min_value": 0.0,
-      "max_value": 100.0
-    }
-  }
-}
-```
+### [SWE-bench](https://www.swebench.com/)
 
-The framework will:
-- Generate a strategy file automatically on first run
-- Prompt you to review and approve the strategy
-- Allow you to edit the JSON file to customize parameters
-- Reload the strategy after you make changes
+| Metric | Value |
+|--------|-------|
+| Tasks Evaluated | TBD |
+| Mismatch Detection Rate | TBD |
+| Average Test Cases per Task | TBD |
 
-## Advanced Features
+For detailed benchmark results and methodology, see [docs/benchmarks.md](docs/benchmarks.md).
 
-### Instance Distribution for Class Methods
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-The framework uses intelligent heuristics to distribute test cases across instances:
-- **Square Root Heuristic**: `num_instances = sqrt(max_examples)`
-- **Minimum Tests**: Ensures at least 5-7 tests per instance
-- **Smart Balancing**: Distributes tests evenly across instances
 
-### Strategy Serialization
 
-All test strategies are serialized to JSON for:
-- **Reproducibility**: Re-run tests with exact same strategy
-- **Review & Approval**: User can review before execution
-- **Customization**: Modify strategies per function or class
-- **Version Control**: Track strategy changes over time
+<!-- CONTRIBUTING -->
+## Contributing
 
-### Coverage Integration
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-Coverage tracking uses Slipcover for minimal overhead:
-- Shows lines executed during differential testing
-- Helps identify untested code paths
-- Integrates seamlessly with test execution
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
 
-## Examples
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Example 1: Testing a Calculator Class
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```bash
-# Test the add method with custom parameters
-python src/run_ab.py \
-  --a examples/calculator_v1.py \
-  --b examples/calculator_v2.py \
-  --func add \
-  --class Calculator \
-  --max-examples 500 \
-  --report calculator_test.html \
-  --auto-approve
-```
+### Top contributors:
 
-### Example 2: NumPy Function with Coverage
+<a href="https://github.com/hsethuse-afk/Practicum-AWS-DiffTest/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=hsethuse-afk/Practicum-AWS-DiffTest" alt="contrib.rocks image" />
+</a>
 
-```bash
-# Test with coverage tracking
-python src/run_by_taskid.py \
-  --t HumanEval/10 \
-  --coverage \
-  --max-examples 1000
-```
 
-### Example 3: Git Diff Testing
 
-```bash
-# Compare current commit with previous
-python src/run_ab.py \
-  --commit HEAD \
-  --func my_function \
-  --report git_diff_report.html
-```
+<!-- LICENSE -->
+## License
 
-## Requirements
+Distributed under the MIT License. See `LICENSE.txt` for more information.
 
-- Python 3.11+
-- Hypothesis (property-based testing)
-- Jinja2 (HTML report generation)
-- Slipcover (optional, for coverage tracking)
-- RightTyper (type inference)
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Install dependencies:
-```bash
-pip install hypothesis jinja2 slipcover righttyper
-```
+
+
+<!-- CONTACT -->
+## Contact
+
+Project Link: [https://github.com/hsethuse-afk/Practicum-AWS-DiffTest](https://github.com/hsethuse-afk/Practicum-AWS-DiffTest)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+* [Hypothesis](https://hypothesis.works/) - Property-based testing library
+* [RightTyper](https://github.com/RightTyper/RightTyper) - Type inference tool by AWS
+* [Slipcover](https://github.com/plasma-umass/slipcover) - Code coverage tool
+* [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[contributors-shield]: https://img.shields.io/github/contributors/hsethuse-afk/Practicum-AWS-DiffTest.svg?style=for-the-badge
+[contributors-url]: https://github.com/hsethuse-afk/Practicum-AWS-DiffTest/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/hsethuse-afk/Practicum-AWS-DiffTest.svg?style=for-the-badge
+[forks-url]: https://github.com/hsethuse-afk/Practicum-AWS-DiffTest/network/members
+[stars-shield]: https://img.shields.io/github/stars/hsethuse-afk/Practicum-AWS-DiffTest.svg?style=for-the-badge
+[stars-url]: https://github.com/hsethuse-afk/Practicum-AWS-DiffTest/stargazers
+[issues-shield]: https://img.shields.io/github/issues/hsethuse-afk/Practicum-AWS-DiffTest.svg?style=for-the-badge
+[issues-url]: https://github.com/hsethuse-afk/Practicum-AWS-DiffTest/issues
+[license-shield]: https://img.shields.io/github/license/hsethuse-afk/Practicum-AWS-DiffTest.svg?style=for-the-badge
+[license-url]: https://github.com/hsethuse-afk/Practicum-AWS-DiffTest/blob/master/LICENSE.txt
+[product-screenshot]: images/screenshot.png
+[Hypothesis]: https://img.shields.io/badge/Hypothesis-BD1C2B?style=for-the-badge&logo=python&logoColor=white
+[Hypothesis-url]: https://hypothesis.works/
+[RightTyper]: https://img.shields.io/badge/RightTyper-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white
+[RightTyper-url]: https://github.com/RightTyper/RightTyper
+[Python]: https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
+[Python-url]: https://www.python.org/
