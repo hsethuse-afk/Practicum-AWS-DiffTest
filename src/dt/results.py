@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .contracts import TargetPair, CompareResult, TestResult
 from .logger import get_logger
 import inspect
@@ -145,3 +145,27 @@ class ResultCollector:
                     log.normal(
                         f"  {w['filename']}:{w['lineno']}: {w['category']}: {w['message']}"
                     )
+
+    @staticmethod
+    def get_difference(result: TestResult) -> Optional[Dict[str, Any]]:
+        """
+        Extract a simple summary of the test result.
+
+        Returns a dictionary with:
+        - difference_found: bool - True if differences were found
+        - total_examples: int - Total number of test cases
+        - mismatches: int - Number of mismatches
+        - reason: str - Reason for failure (if any)
+        """
+        if result is None:
+            return None
+
+        stats = result.detail.get("stats") or {}
+
+        return {
+            "difference_found": not result.passed,
+            "total_examples": stats.get("total_examples", 0),
+            "mismatches": stats.get("mismatches", 0),
+            "successes": stats.get("successes", 0),
+            "reason": result.detail.get("reason") if not result.passed else None,
+        }

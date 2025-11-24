@@ -39,9 +39,16 @@ def _observe(fn: Callable, args: tuple, captured_warnings: List) -> Tuple[str, A
 
 
 class ABRunner:
-    def __init__(self):
+    def __init__(self, timeout: int = None):
+        """
+        Initialize the ABRunner.
+
+        Args:
+            timeout: Optional timeout in seconds for test execution (default: None, no timeout)
+        """
         self.log = get_logger()
         self.captured_warnings: List[Dict[str, Any]] = []
+        self.timeout = timeout
 
     def execute(
         self,
@@ -49,22 +56,33 @@ class ABRunner:
         fn_b: Callable,
         strat: StrategyPlan,
         cfg: RunConfig,
+        timeout: int = None,
     ) -> Tuple[List[RunResult], List[RunResult], List[Dict[str, Any]]]:
         """
         Execute differential tests on two functions or class methods.
 
         For class methods, generates instances and distributes tests across them.
 
+        Args:
+            fn_a: First function to test
+            fn_b: Second function to test
+            strat: Strategy plan for test generation
+            cfg: Run configuration
+            timeout: Optional timeout in seconds for this execution (overrides instance timeout)
+
         Returns:
             Tuple of (a_results, b_results, captured_warnings)
         """
         self.log.verbose("[ABRunner] Executing Tests")
 
+        # Use provided timeout or fall back to instance timeout
+        effective_timeout = timeout if timeout is not None else self.timeout
+
         # Check if we're testing class methods (instance strategy present)
         if strat.instance_strategy and strat.num_instances:
-            return self._execute_class_methods(fn_a, fn_b, strat, cfg)
+            return self._execute_class_methods(fn_a, fn_b, strat, cfg, effective_timeout)
         else:
-            return self._execute_functions(fn_a, fn_b, strat, cfg)
+            return self._execute_functions(fn_a, fn_b, strat, cfg, effective_timeout)
 
     def _execute_functions(
         self,
@@ -72,8 +90,12 @@ class ABRunner:
         fn_b: Callable,
         strat: StrategyPlan,
         cfg: RunConfig,
+        timeout: int = None,
     ) -> Tuple[List[RunResult], List[RunResult], List[Dict[str, Any]]]:
         """Execute tests for regular functions."""
+        import signal
+        import sys
+
         # Shared mutable state to collect a full run
         total = {"count": 0}
         a_results: List[RunResult] = []
@@ -115,8 +137,36 @@ class ABRunner:
         else:
             _property = make_property()
 
-        # Drive generation; will not stop early
-        _property()
+        # Drive generation with timeout if specified
+        if timeout:
+            def timeout_handler(signum, frame):
+                raise TimeoutError(f"Test execution exceeded {timeout} seconds")
+
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+
+            try:
+                _property()
+                signal.alarm(0)
+            except TimeoutError:
+                signal.alarm(0)
+                self.log.normal(f"\n⏱️  Timeout: Test execution exceeded {timeout}s")
+                # Add timeout warning
+                self.captured_warnings.append({
+                    "message": f"Test execution timeout after {timeout}s",
+                    "category": "TimeoutError",
+                    "filename": "<test_execution>",
+                    "lineno": 0,
+                })
+            except KeyboardInterrupt:
+                signal.alarm(0)
+                self.log.normal(f"\n⏱️  Interrupted by user")
+                sys.exit(1)
+            finally:
+                signal.signal(signal.SIGALRM, old_handler)
+        else:
+            _property()
+
         return a_results, b_results, self.captured_warnings
 
     def _execute_class_methods(
@@ -125,6 +175,7 @@ class ABRunner:
         method_b: Callable,
         strat: StrategyPlan,
         cfg: RunConfig,
+        timeout: int = None,
     ) -> Tuple[List[RunResult], List[RunResult], List[Dict[str, Any]]]:
         """
         Execute tests for class methods with instance generation.
@@ -132,6 +183,7 @@ class ABRunner:
         Generates unique instances and distributes tests across them.
         """
         from hypothesis import strategies as st
+        import signal
 
         total = {"count": 0}
         a_results: List[RunResult] = []
@@ -191,54 +243,82 @@ class ABRunner:
 
             return a_results, b_results, self.captured_warnings
 
-        # Test each instance with its allocated examples
-        for instance_idx, instance in enumerate(instances):
-            self.log.debug(
-                f"[ABRunner] Testing instance {instance_idx+1}/{len(instances)}"
-            )
-
-            # Define test property for this instance
-            def make_property():
-                @settings(
-                    max_examples=examples_per_instance,
-                    suppress_health_check=[
-                        HealthCheck.too_slow,
-                        HealthCheck.filter_too_much,
-                    ],
-                    deadline=None,
-                    database=None,
+        # Setup timeout handler if specified
+        def run_tests():
+            # Test each instance with its allocated examples
+            for instance_idx, instance in enumerate(instances):
+                self.log.debug(
+                    f"[ABRunner] Testing instance {instance_idx+1}/{len(instances)}"
                 )
-                @given(strat.arg_strategy)
-                def _property(args):
-                    total["count"] += 1
 
-                    # Prepend instance to args (method call: instance.method(*args))
-                    # For unbound method call: method(instance, *args)
-                    full_args = (instance,) + args
-
-                    self.log.debug(
-                        f"[ABRunner] input {total['count']}: instance={instance}, args={args}"
+                # Define test property for this instance
+                def make_property():
+                    @settings(
+                        max_examples=examples_per_instance,
+                        suppress_health_check=[
+                            HealthCheck.too_slow,
+                            HealthCheck.filter_too_much,
+                        ],
+                        deadline=None,
+                        database=None,
                     )
+                    @given(strat.arg_strategy)
+                    def _property(args):
+                        total["count"] += 1
 
-                    out_a = _observe(method_a, full_args, self.captured_warnings)
-                    out_b = _observe(method_b, full_args, self.captured_warnings)
+                        # Prepend instance to args (method call: instance.method(*args))
+                        # For unbound method call: method(instance, *args)
+                        full_args = (instance,) + args
 
-                    self.log.debug(
-                        f"[ABRunner] output {total['count']}: A {out_a}, B {out_b}"
-                    )
+                        self.log.debug(
+                            f"[ABRunner] input {total['count']}: instance={instance}, args={args}"
+                        )
 
-                    # Store results with full args (including instance)
-                    a_results.append(RunResult(input=full_args, output=out_a))
-                    b_results.append(RunResult(input=full_args, output=out_b))
+                        out_a = _observe(method_a, full_args, self.captured_warnings)
+                        out_b = _observe(method_b, full_args, self.captured_warnings)
 
-                return _property
+                        self.log.debug(
+                            f"[ABRunner] output {total['count']}: A {out_a}, B {out_b}"
+                        )
 
-            # Apply seed decorator if provided (only for first instance)
-            if cfg.seed is not None and instance_idx == 0:
-                _property = hseed(cfg.seed)(make_property())
-            else:
-                _property = make_property()
+                        # Store results with full args (including instance)
+                        a_results.append(RunResult(input=full_args, output=out_a))
+                        b_results.append(RunResult(input=full_args, output=out_b))
 
-            _property()
+                    return _property
+
+                # Apply seed decorator if provided (only for first instance)
+                if cfg.seed is not None and instance_idx == 0:
+                    _property = hseed(cfg.seed)(make_property())
+                else:
+                    _property = make_property()
+
+                _property()
+
+        # Execute with timeout if specified
+        if timeout:
+            def timeout_handler(signum, frame):
+                raise TimeoutError(f"Test execution exceeded {timeout} seconds")
+
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+
+            try:
+                run_tests()
+                signal.alarm(0)
+            except TimeoutError:
+                signal.alarm(0)
+                self.log.normal(f"\n⏱️  Timeout: Test execution exceeded {timeout}s")
+                # Add timeout warning
+                self.captured_warnings.append({
+                    "message": f"Test execution timeout after {timeout}s",
+                    "category": "TimeoutError",
+                    "filename": "<test_execution>",
+                    "lineno": 0,
+                })
+            finally:
+                signal.signal(signal.SIGALRM, old_handler)
+        else:
+            run_tests()
 
         return a_results, b_results, self.captured_warnings

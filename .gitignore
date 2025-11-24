@@ -35,6 +35,7 @@ slipcover.json
 
 # Exclude strategy JSON files
 strategy_*.json
+*benchmark*.json
 
 # OS-specific junk
 .DS_Store

@@ -21,6 +21,7 @@ class Orchestrator:
         log_mode: LoggerMode = LoggerMode.Normal,
         inference_engine: TypeInferenceEngine = None,
         enable_strategy_extras: list = None,
+        timeout: int = None,
     ):
         """
         Initialize the orchestrator.
@@ -31,6 +32,7 @@ class Orchestrator:
                              Can be swapped for other engines (MonkeyType, Pytype, etc.)
             enable_strategy_extras: List of extra Hypothesis strategy modules to enable
                                    (e.g., ['numpy', 'pandas']). If None, enables all available.
+            timeout: Optional timeout in seconds for run_pair execution (default: None, no timeout)
         """
         logger.set_logger(Logger(log_mode))
         self.log = logger.get_logger()
@@ -41,10 +43,13 @@ class Orchestrator:
         self.serializer = StrategySerializer(
             enable_extras=enable_strategy_extras
         )
-        self.runner = ABRunner()
+        self.runner = ABRunner(timeout=timeout)
         self.comparator = ABComparator()
         self.results = ResultCollector()
         self.project_builder = ProjectBuilder()
+        self.timeout = timeout
+
+        self.difference = True
 
     def run_pair(
         self,
@@ -56,6 +61,7 @@ class Orchestrator:
         auto_approve: bool = False,
         report_path: str = None,
         seed: int = None,
+        timeout: int = None,
     ):
         """
         Run differential testing on a pair of functions.
@@ -70,6 +76,7 @@ class Orchestrator:
             auto_approve: If True, skip user confirmation and use saved strategy immediately
             report_path: Optional path to save HTML report
             seed: Optional random seed for reproducible test generation
+            timeout: Optional timeout in seconds for test execution (overrides instance timeout)
         """
 
         # TODO if strategy file exits, skip the type inference
@@ -220,18 +227,25 @@ class Orchestrator:
         # Generate seed if not provided
         if seed is None:
             seed = random.randint(0, 2**32 - 1)
-            self.log.normal(f"\n🎲 Generated random seed: {seed}")
+            self.log.verbose(f"\n🎲 Generated random seed: {seed}")
         else:
-            self.log.normal(f"\n🎲 Using provided seed: {seed}")
-
-        self.log.normal(f"   To reproduce: --seed {seed}\n")
+            self.log.verbose(f"\n🎲 Using provided seed: {seed}")
 
         run_config = RunConfig(max_examples=max_examples, seed=seed)
+
+        # Use provided timeout or fall back to instance timeout
+        effective_timeout = timeout if timeout is not None else self.timeout
+
         a_results, b_results, warnings = self.runner.execute(
-            fn_a, fn_b, plan, run_config
+            fn_a, fn_b, plan, run_config, timeout=effective_timeout
         )
 
         duration = time.time() - start_time
+
+        # If timeout occurred and no results, return None
+        if effective_timeout and not a_results and not b_results:
+            self.log.normal(f"\n⏱️  Test timed out after {effective_timeout}s with no results")
+            return None
 
         cmp = self.comparator.compare(a_results, b_results)
         out = self.results.collect(target, cmp, warnings)
@@ -253,6 +267,18 @@ class Orchestrator:
             )
 
         return out
+
+    def get_difference(self, result):
+        """
+        Get a simple summary of the test result.
+
+        Args:
+            result: TestResult object from run_pair
+
+        Returns:
+            Dictionary with difference_found, total_examples, mismatches, reason
+        """
+        return self.results.get_difference(result)
 
     def run_git_diff(
         self,
