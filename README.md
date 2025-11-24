@@ -150,7 +150,6 @@ python run_ab.py \
   --a calculator_v1.py \
   --b calculator_v2.py \
   --func add \
-  --class Calculator \
   --max-examples 500
 ```
 
@@ -161,7 +160,6 @@ python run_ab.py \
   --a calculator_v1.py \
   --b calculator_v2.py \
   --func add \
-  --class Calculator \
   --max-examples 500 \
   --report my_report.html
 ```
@@ -224,16 +222,16 @@ PyDiffer utilized code generation benchmarks to test the abilities to detect beh
 | Metric | Value |
 |--------|-------|
 | Tasks Evaluated | 164 |
-| Mismatch Detection Rate | TBD |
-| Average Test Cases per Task | TBD |
+| Task Supported | 150 |
+| Task Passed | 150 |
 
 ### [SWE-bench](https://www.swebench.com/)
 
 | Metric | Value |
 |--------|-------|
 | Tasks Evaluated | TBD |
-| Mismatch Detection Rate | TBD |
-| Average Test Cases per Task | TBD |
+| Task Supported | TBD |
+| Task Passed | TBD |
 
 For detailed benchmark results and methodology, see [docs/benchmarks.md](docs/benchmarks.md).
 

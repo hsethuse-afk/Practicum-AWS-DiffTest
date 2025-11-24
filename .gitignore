@@ -7,6 +7,8 @@ __pycache__/
 # Hypothesis test database
 .hypothesis/
 
+/swebench_workspace/
+
 # Temperal differential testing folder
 .difftest_temp/
 
