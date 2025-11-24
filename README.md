@@ -200,9 +200,11 @@ _For more examples, please refer to the [Documentation](https://github.com/hseth
 | Document | Description |
 |----------|-------------|
 | [Architecture Overview](docs/architecture.md) | High-level system design and component interactions |
+| [Orchestrator](docs/orchestrator.md) | Define and execute workflow for running the differential testing framework |
 | [Type Inference](docs/type-inference.md) | Pluggable type inference engine, current implementation focuses on RightTyper integration |
 | [Strategy System](docs/strategy-system.md) | How Hypothesis strategies are generated and customized |
 | [Test Runner](docs/test-runner.md) | Core differential testing execution flow |
+| [Comparator](docs/comparator.md) | Compare results from Test Runner to identify behavior differences |
 | [Report Generation](docs/report-generation.md) | HTML report templating and output formats |
 | [Coverage Integration](docs/coverage.md) | Slipcover integration for code coverage tracking |
 
