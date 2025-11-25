@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 """
-Run differential testing from a git diff with repository context.
+Run differential testing directly from a commit in a remote repository.
 
-This is the main entry point when you ONLY have:
-- A git diff file
-- A repository URL
-
-The tool will:
-1. Clone the repository
-2. Install dependencies
-3. Extract modified functions from the diff
-4. Run differential tests with full type inference
+This is simpler than run_diff_repo - just provide repo URL and commit!
+No need to create a diff file first.
 """
 
 import argparse
@@ -20,30 +13,24 @@ from utilities.coverage_runner import handle_coverage
 
 def main():
     p = argparse.ArgumentParser(
-        description="Run differential testing from git diff with repository context"
+        description="Run differential testing directly from a commit"
     )
 
     # Required arguments
-    p.add_argument(
-        "--diff",
-        type=str,
-        required=True,
-        help="Path to git diff file"
-    )
     p.add_argument(
         "--repo",
         type=str,
         required=True,
         help="Repository URL (e.g., https://github.com/user/repo.git)"
     )
-
-    # Optional arguments
     p.add_argument(
         "--commit",
         type=str,
-        default=None,
-        help="Specific commit hash (auto-detected from diff if not provided)"
+        required=True,
+        help="Commit hash to test (e.g., ed7facc1b108ceff12bcb412d7a98471509f41b0)"
     )
+
+    # Optional arguments
     p.add_argument(
         "--func",
         type=str,
@@ -68,6 +55,18 @@ def main():
         help="Number of test cases to generate (default: 200)"
     )
     p.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed for reproducible test generation (optional)"
+    )
+    p.add_argument(
+        "--report",
+        type=str,
+        default=None,
+        help="Generate HTML report at specified path (optional)"
+    )
+    p.add_argument(
         "--no-install-deps",
         action="store_true",
         help="Skip installing dependencies from requirements.txt"
@@ -82,6 +81,11 @@ def main():
         "--coverage",
         action="store_true",
         help="Generate coverage report.",
+    )
+    p.add_argument(
+        "--auto-approve",
+        action="store_true",
+        help="Automatically approve test strategies without user confirmation"
     )
 
     args = p.parse_args()
@@ -103,15 +107,14 @@ def main():
     # Create orchestrator
     orch = Orchestrator(log_mode=log_mode)
 
-    # Run differential testing with repository context
-    print(f"\n🔬 Running differential testing from diff...")
-    print(f"📁 Diff file: {args.diff}")
+    # Run differential testing from commit
+    print(f"\n🔬 Running differential testing from commit...")
     print(f"🌐 Repository: {args.repo}")
+    print(f"📌 Commit: {args.commit}")
     print(f"📦 Install deps: {not args.no_install_deps}")
     print()
 
-    results = orch.run_diff_with_repo(
-        diff_file_path=args.diff,
+    results = orch.run_commit_from_repo(
         repo_url=args.repo,
         commit=args.commit,
         func_name=args.func,
@@ -119,6 +122,9 @@ def main():
         install_deps=not args.no_install_deps,
         interactive_select=not args.no_interactive,
         selected_functions=args.functions,
+        auto_approve=args.auto_approve,
+        report_path=args.report,
+        seed=args.seed,
     )
 
     # Summary

@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Test Report - find_closest_points</title>
+    <style>
+        /* Modern, clean design with dark mode support */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --code-bg: #f4f4f4;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --border-color: #404040;
+                --code-bg: #2d2d2d;
+                --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .number {
+            display: block;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.success .number {
+            color: var(--success-color);
+        }
+
+        .stat-card.error .number {
+            color: var(--error-color);
+        }
+
+        .stat-card.warning .number {
+            color: var(--warning-color);
+        }
+
+        /* Section */
+        .section {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Details/Summary */
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        summary:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        summary::marker {
+            content: '▶ ';
+        }
+
+        details[open] summary::marker {
+            content: '▼ ';
+        }
+
+        details .content {
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .controls button {
+            cursor: pointer;
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        /* Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .results-table .index-col {
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-table .output-col {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .output-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .output-status.return {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .output-status.exception {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .diff-col {
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        /* Scrollable table container */
+        .scrollable-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .scrollable-table-container .results-table {
+            margin-top: 0;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Instance cards */
+        .instance-card {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instance-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .instance-stats {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.error {
+            background-color: var(--error-color);
+        }
+
+        .progress-fill.success {
+            background-color: var(--success-color);
+        }
+
+        /* Warnings */
+        .warning-list {
+            list-style: none;
+        }
+
+        .warning-list li {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+
+        .warning-list li.execution-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .warning-list li {
+                background-color: #4a4000;
+                color: #ffc107;
+            }
+
+            .warning-list li.execution-error {
+                background-color: #4a1a1e;
+                color: #f8d7da;
+            }
+        }
+
+        .warning-category {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .warning-category.execution-error {
+            color: var(--error-color);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px 40px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Hidden class for filtering */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Metadata grid */
+        .metadata {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metadata dt {
+            font-weight: 600;
+        }
+
+        .metadata dd {
+            color: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge.error {
+            background-color: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                find_closest_points
+                
+                <span class="badge success">✓ No Behavior Difference Detected</span>
+                
+            </h1>
+            <div class="subtitle">
+                Differential Test Report | testsample/testCustomClass/a1.py vs testsample/testCustomClass/b1.py
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <span class="number">50</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-card error">
+                <span class="number">0</span>
+                <span class="label">Mismatches</span>
+            </div>
+            <div class="stat-card success">
+                <span class="number">50</span>
+                <span class="label">Matches</span>
+            </div>
+            <div
+                class="stat-card success">
+                <span class="number">100.0%</span>
+                <span class="label">Match Rate</span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <details class="section">
+            <summary>
+                <span>📋 Test Configuration</span>
+            </summary>
+            <div class="content">
+                <dl class="metadata">
+                    <dt>Max Examples:</dt>
+                    <dd>50</dd>
+
+                    <dt>Seed:</dt>
+                    <dd>2392112891</dd>
+
+                    
+
+                    <dt>Timestamp:</dt>
+                    <dd>2025-11-06 21:56:23</dd>
+
+                    <dt>Duration:</dt>
+                    <dd>0.10s</dd>
+                </dl>
+
+                <h3>Strategy Configuration</h3>
+                <pre><code>{
+  &#34;arg_strategy&#34;: &#34;tuples(lists(builds(Point, x=floats(), y=floats()), max_size=10), floats(min_value=-50.0, max_value=50.0, allow_nan=False, allow_infinity=False))&#34;,
+  &#34;num_instances&#34;: null
+}</code></pre>
+
+                <h3>Reproduction Command</h3>
+                <pre><code>python src/run_ab.py --a testsample/testCustomClass/a1.py --b testsample/testCustomClass/b1.py --func find_closest_points --max-examples 50 --seed 2392112891</code></pre>
+            </div>
+        </details>
+
+        <!-- Mismatches Section -->
+        
+
+        <!-- Matches Section -->
+        
+        <details class="section">
+            <summary>
+                <span>✅ Matching Results (50)</span>
+            </summary>
+            <div class="content">
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td class="index-col">1</td>
+                                <td><code>([], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">2</td>
+                                <td><code>([Point(0.0, 0.0)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">3</td>
+                                <td><code>([Point(3.866004575438419e+276, 0.0)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">4</td>
+                                <td><code>([Point(4.706239190219361e+16, 0.0)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">5</td>
+                                <td><code>([Point(-1.6819034321649728e+16, 0.0)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">6</td>
+                                <td><code>([Point(4.845479923026137e+16, 0.0)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">7</td>
+                                <td><code>([Point(4.845479923026137e+16, 2.4528497558070564e+16), Point(1.9942916028467172e+16, -5.006244968849381e+16), Point(0.5, -3.492661279681749e+16), Point(50.0, -5e-324)], 20.21980412277199)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">8</td>
+                                <td><code>([Point(-inf, -7.130506999813593e+16), Point(-50.0, 0.5)], 7.547070752693422)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">9</td>
+                                <td><code>([Point(2.2250738585072014e-308, 1.8251712893534133e-277), Point(inf, -1.3924997329951613e-176), Point(5.810889599400366e+23, 4868471692178351.0), Point(-0.0032489649279844332, 22.200720335762608), Point(-5.856626433285061e+16, 4.191678676779758e-09), Point(-8596742603575871.0, 1.8975239630185026e-225), Point(-3.608663051355107e+118, -1.3078968905605162e+16), Point(-5.1991175061319336e+16, -50.0), Point(-6.938511980620511e+16, -9.940209545775716e-96)], 26.83783386597129)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(2.2250738585072014e-308, 1.8251712893534133e-277), Point(-0.0032489649279844332, 22.200720335762608))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">10</td>
+                                <td><code>([Point(inf, -2.8813100287412965e-28)], 2.7488013907844697e-152)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">11</td>
+                                <td><code>([Point(-8870593.40914955, -6169154000126238.0), Point(-3.7030452276560936e+16, -6203207108896584.0), Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(inf, -5.340034003734582e+16), Point(2.253259138935737e+16, 1.4405211122239312e+270), Point(6.558663489636846e-179, -3.274691557378388e-165), Point(2.0980134682664693e+130, -2.220446049250313e-16), Point(8.790832537077233e-113, 50.0)], 2.6081153801942847)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">12</td>
+                                <td><code>([Point(-8870593.40914955, -6169154000126238.0), Point(-3.7030452276560936e+16, -6203207108896584.0), Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(inf, -5.340034003734582e+16), Point(2.253259138935737e+16, 1.4405211122239312e+270), Point(6.558663489636846e-179, -3.274691557378388e-165), Point(2.0980134682664693e+130, -2.220446049250313e-16), Point(1.9157816757847541e+34, -6.235771682148207e-152)], 2.6081153801942847)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">13</td>
+                                <td><code>([Point(-8870593.40914955, -6169154000126238.0), Point(-3.7030452276560936e+16, -6203207108896584.0), Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(inf, -5.340034003734582e+16), Point(2.253259138935737e+16, 1.4405211122239312e+270), Point(6.558663489636846e-179, -3.274691557378388e-165), Point(6.558663489636846e-179, -2.220446049250313e-16), Point(1.9157816757847541e+34, -6.235771682148207e-152)], 2.6081153801942847)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">14</td>
+                                <td><code>([Point(-8870593.40914955, -6169154000126238.0), Point(-6203207108896584.0, -6203207108896584.0), Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(inf, -5.340034003734582e+16), Point(2.253259138935737e+16, 1.4405211122239312e+270), Point(6.558663489636846e-179, -3.274691557378388e-165), Point(6.558663489636846e-179, -2.220446049250313e-16), Point(1.9157816757847541e+34, -6.235771682148207e-152)], 2.6081153801942847)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">15</td>
+                                <td><code>([Point(-8870593.40914955, -6169154000126238.0), Point(-6203207108896584.0, -6203207108896584.0), Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(inf, -5.340034003734582e+16), Point(-6203207108896584.0, -6203207108896584.0), Point(6.558663489636846e-179, -3.274691557378388e-165), Point(6.558663489636846e-179, -2.220446049250313e-16), Point(1.9157816757847541e+34, -6.235771682148207e-152)], 2.6081153801942847)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(-6203207108896584.0, -6203207108896584.0), Point(-6203207108896584.0, -6203207108896584.0)), (Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(1.9157816757847541e+34, -6.235771682148207e-152)), (Point(6.558663489636846e-179, -3.274691557378388e-165), Point(6.558663489636846e-179, -2.220446049250313e-16))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">16</td>
+                                <td><code>([Point(-8870593.40914955, -6169154000126238.0), Point(-6203207108896584.0, -6203207108896584.0), Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(inf, -5.340034003734582e+16), Point(1.9157816757847541e+34, -6203207108896584.0), Point(6.558663489636846e-179, -3.274691557378388e-165), Point(6.558663489636846e-179, -2.220446049250313e-16), Point(1.9157816757847541e+34, -6.235771682148207e-152)], 2.6081153801942847)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(1.9157816757847541e+34, -6.235771682148207e-152)), (Point(6.558663489636846e-179, -3.274691557378388e-165), Point(6.558663489636846e-179, -2.220446049250313e-16))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">17</td>
+                                <td><code>([Point(-8870593.40914955, -6169154000126238.0), Point(-6203207108896584.0, -6203207108896584.0), Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(inf, -5.340034003734582e+16), Point(1.9157816757847541e+34, -6203207108896584.0), Point(6.558663489636846e-179, -3.274691557378388e-165), Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(1.9157816757847541e+34, -6.235771682148207e-152)], 2.6081153801942847)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(1.9157816757847541e+34, -6.235771682148207e-152)), (Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(1.9157816757847541e+34, -6.235771682148207e-152)), (Point(1.9157816757847541e+34, -6.235771682148207e-152), Point(1.9157816757847541e+34, -6.235771682148207e-152))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">18</td>
+                                <td><code>([Point(2.419095066913358e+183, 6.604124535819614e+16), Point(-6650841693950971.0, 7.807237934834655e+134), Point(-5043345351249559.0, -5.719020408315955e+16), Point(-2.513104171086048e+16, 0.99999)], -42.19273125452001)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">19</td>
+                                <td><code>([Point(2.419095066913358e+183, 6.604124535819614e+16)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">20</td>
+                                <td><code>([Point(2.8374586324859325e-288, -9.915509819374513e-08), Point(-6.256175783730555e+16, -2.8700475597401556e-104), Point(-1.2815183779297926e+16, 8.040395451097102e-19), Point(-6.705192447722281e+16, -0.004960479905895039), Point(-3.4858253715830412e+16, 2.6829621235212337e+144), Point(3.789753014659521e+89, 1e-05)], 30.53517855019139)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">21</td>
+                                <td><code>([Point(2.8374586324859325e-288, -9.915509819374513e-08), Point(-6.256175783730555e+16, -2.8700475597401556e-104), Point(-1.2815183779297926e+16, -6.256175783730555e+16), Point(-6.705192447722281e+16, -0.004960479905895039), Point(-3.4858253715830412e+16, 2.6829621235212337e+144), Point(3.789753014659521e+89, 1e-05)], 30.53517855019139)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">22</td>
+                                <td><code>([Point(2.8374586324859325e-288, -9.915509819374513e-08), Point(-6.256175783730555e+16, -2.8700475597401556e-104), Point(-1.2815183779297926e+16, -6.256175783730555e+16), Point(-6.705192447722281e+16, -0.004960479905895039), Point(3.789753014659521e+89, 1e-05), Point(3.789753014659521e+89, 1e-05)], 30.53517855019139)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(3.789753014659521e+89, 1e-05), Point(3.789753014659521e+89, 1e-05))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">23</td>
+                                <td><code>([Point(3.6384660235480434e+109, 1.6079526267377198e+16)], 10.640254308857081)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">24</td>
+                                <td><code>([Point(3.6384660235480434e+109, 1.6079526267377198e+16)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">25</td>
+                                <td><code>([Point(0.0, 1.6079526267377198e+16)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">26</td>
+                                <td><code>([Point(3262732442718105.0, 2.2250738585e-313), Point(-6.241959743562226e+216, -6.892635803783114e-10), Point(50.0, -3.235994696885904e-279), Point(-1e-05, 6.772978866975679e+16), Point(-1.5836864536965299e-51, -9.1693169638883e+211), Point(-528058393604500.25, -3.402823466e+38)], 13.938351703907259)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">27</td>
+                                <td><code>([Point(3262732442718105.0, 2.2250738585e-313), Point(-9.1693169638883e+211, -6.892635803783114e-10), Point(50.0, -3.235994696885904e-279), Point(-1e-05, 6.772978866975679e+16), Point(-1.5836864536965299e-51, -9.1693169638883e+211), Point(-528058393604500.25, -3.402823466e+38)], 13.938351703907259)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">28</td>
+                                <td><code>([Point(3262732442718105.0, 2.2250738585e-313), Point(-9.1693169638883e+211, -9.1693169638883e+211), Point(50.0, -3.235994696885904e-279), Point(-1e-05, 6.772978866975679e+16), Point(-1.5836864536965299e-51, -9.1693169638883e+211), Point(-528058393604500.25, -3.402823466e+38)], 13.938351703907259)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">29</td>
+                                <td><code>([Point(3262732442718105.0, 2.2250738585e-313), Point(-9.1693169638883e+211, -9.1693169638883e+211), Point(50.0, -3.235994696885904e-279), Point(-1e-05, 6.772978866975679e+16), Point(-1.5836864536965299e-51, -9.1693169638883e+211), Point(-528058393604500.25, -3.402823466e+38)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">30</td>
+                                <td><code>([Point(3262732442718105.0, 2.2250738585e-313), Point(-9.1693169638883e+211, -9.1693169638883e+211), Point(50.0, -3.235994696885904e-279), Point(-1e-05, 6.772978866975679e+16), Point(-1.5836864536965299e-51, -9.1693169638883e+211), Point(-1.5836864536965299e-51, -9.1693169638883e+211)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">31</td>
+                                <td><code>([Point(3262732442718105.0, 2.2250738585e-313), Point(-9.1693169638883e+211, -9.1693169638883e+211), Point(50.0, -3.235994696885904e-279), Point(-1e-05, 6.772978866975679e+16), Point(50.0, -3.235994696885904e-279), Point(-1.5836864536965299e-51, -9.1693169638883e+211)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">32</td>
+                                <td><code>([Point(3262732442718105.0, 2.2250738585e-313), Point(3262732442718105.0, -9.1693169638883e+211), Point(50.0, -3.235994696885904e-279), Point(-1e-05, 6.772978866975679e+16), Point(50.0, -3.235994696885904e-279), Point(-1.5836864536965299e-51, -9.1693169638883e+211)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">33</td>
+                                <td><code>([Point(-6.32805041512381e+16, 100.0), Point(2.225073858507e-311, 3.7522515913014616e+16), Point(-7.027253446710736e+16, 4.6334315968310904e+16), Point(-2.89581628804028e-288, 0.0), Point(3.012118763802037e+278, -5.004425538426049e+136), Point(-2.9672366619984388e+16, 3.6631805336858178e+19), Point(0.5, -6.7502267972524344e+16), Point(-inf, -6.5003526918356184e+16), Point(-3.596511230096765e+16, -1.151435132999675e+221), Point(5.234747732657497e+16, -2.2250738585e-313)], 8.82008566893019)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">34</td>
+                                <td><code>([Point(-6.32805041512381e+16, 100.0), Point(2.225073858507e-311, 3.7522515913014616e+16), Point(-7.027253446710736e+16, 4.6334315968310904e+16), Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0), Point(-2.9672366619984388e+16, 3.6631805336858178e+19), Point(0.5, -6.7502267972524344e+16), Point(-inf, -6.5003526918356184e+16), Point(-3.596511230096765e+16, -1.151435132999675e+221), Point(5.234747732657497e+16, -2.2250738585e-313)], 8.82008566893019)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">35</td>
+                                <td><code>([Point(-6.32805041512381e+16, 100.0), Point(2.225073858507e-311, 3.7522515913014616e+16), Point(-7.027253446710736e+16, 4.6334315968310904e+16), Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0), Point(-2.9672366619984388e+16, 3.6631805336858178e+19), Point(0.5, -6.7502267972524344e+16), Point(-inf, -6.5003526918356184e+16), Point(-3.596511230096765e+16, -1.151435132999675e+221), Point(-inf, -6.5003526918356184e+16)], 8.82008566893019)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: (34, &#39;Numerical result out of range&#39;)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">36</td>
+                                <td><code>([Point(-6.32805041512381e+16, 100.0), Point(2.225073858507e-311, 3.7522515913014616e+16), Point(-7.027253446710736e+16, 4.6334315968310904e+16), Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0), Point(-2.9672366619984388e+16, 3.6631805336858178e+19), Point(0.5, -6.7502267972524344e+16), Point(-inf, -6.5003526918356184e+16), Point(-2.89581628804028e-288, 0.0), Point(-inf, -6.5003526918356184e+16)], 8.82008566893019)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0)), (Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0)), (Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">37</td>
+                                <td><code>([Point(-6.32805041512381e+16, 100.0), Point(2.225073858507e-311, 3.7522515913014616e+16), Point(-7.027253446710736e+16, 4.6334315968310904e+16), Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0), Point(-2.9672366619984388e+16, 3.6631805336858178e+19), Point(0.5, -6.7502267972524344e+16), Point(-inf, -6.5003526918356184e+16), Point(-2.89581628804028e-288, 0.0), Point(-inf, -6.5003526918356184e+16)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">38</td>
+                                <td><code>([Point(-6.32805041512381e+16, 100.0), Point(2.225073858507e-311, 3.7522515913014616e+16), Point(-7.027253446710736e+16, 4.6334315968310904e+16), Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0), Point(-2.9672366619984388e+16, 3.6631805336858178e+19), Point(0.0, -6.7502267972524344e+16), Point(-inf, -6.5003526918356184e+16), Point(-2.89581628804028e-288, 0.0), Point(-inf, -6.5003526918356184e+16)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">39</td>
+                                <td><code>([Point(-6.32805041512381e+16, 100.0), Point(2.225073858507e-311, 3.7522515913014616e+16), Point(-2.9672366619984388e+16, 3.6631805336858178e+19), Point(-2.89581628804028e-288, 0.0), Point(-2.89581628804028e-288, 0.0), Point(-2.9672366619984388e+16, 3.6631805336858178e+19), Point(0.0, -6.7502267972524344e+16), Point(-inf, -6.5003526918356184e+16), Point(-2.89581628804028e-288, 0.0), Point(-inf, -6.5003526918356184e+16)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">40</td>
+                                <td><code>([Point(1.9297102643669794e+139, -2.7308354482349938e-191), Point(1.950905821797082e-42, -5.5658178742669704e+16), Point(4704423667775257.0, 1.861779596590041e-214), Point(0.0, 100.0)], 1.4520436432739855e-164)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">41</td>
+                                <td><code>([Point(1.9297102643669794e+139, -2.7308354482349938e-191), Point(1.950905821797082e-42, -5.5658178742669704e+16), Point(4704423667775257.0, 1.861779596590041e-214), Point(0.0, 100.0)], -2.7308354482349938e-191)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">42</td>
+                                <td><code>([Point(4704423667775257.0, 1.861779596590041e-214), Point(1.950905821797082e-42, -5.5658178742669704e+16), Point(4704423667775257.0, 1.861779596590041e-214), Point(0.0, 100.0)], -2.7308354482349938e-191)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">43</td>
+                                <td><code>([Point(4704423667775257.0, 1.861779596590041e-214), Point(1.950905821797082e-42, -5.5658178742669704e+16), Point(4704423667775257.0, 1.861779596590041e-214), Point(1.950905821797082e-42, -5.5658178742669704e+16)], -2.7308354482349938e-191)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">44</td>
+                                <td><code>([Point(4704423667775257.0, 1.861779596590041e-214), Point(1.950905821797082e-42, -5.5658178742669704e+16), Point(4704423667775257.0, 1.861779596590041e-214), Point(1.950905821797082e-42, -5.5658178742669704e+16)], 1.950905821797082e-42)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(4704423667775257.0, 1.861779596590041e-214), Point(4704423667775257.0, 1.861779596590041e-214)), (Point(1.950905821797082e-42, -5.5658178742669704e+16), Point(1.950905821797082e-42, -5.5658178742669704e+16))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">45</td>
+                                <td><code>([Point(-5.5658178742669704e+16, 1.861779596590041e-214), Point(1.950905821797082e-42, -5.5658178742669704e+16), Point(4704423667775257.0, 1.861779596590041e-214), Point(1.950905821797082e-42, -5.5658178742669704e+16)], 1.950905821797082e-42)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(1.950905821797082e-42, -5.5658178742669704e+16), Point(1.950905821797082e-42, -5.5658178742669704e+16))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">46</td>
+                                <td><code>([Point(1.3204602737794088e+16, -1.1561964329366548e+16), Point(2.1820758764572924e+63, 6.103515625e-05), Point(2.881858409684718e-30, 1.1125369292536007e-308), Point(0.5, 3.0329075930265386e-28), Point(2.3157933400500744e+16, -1.6463669015661e+99), Point(-0.0, -1.1125369292536007e-308)], 15.894980240598755)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> [(Point(2.881858409684718e-30, 1.1125369292536007e-308), Point(0.5, 3.0329075930265386e-28)), (Point(2.881858409684718e-30, 1.1125369292536007e-308), Point(-0.0, -1.1125369292536007e-308)), (Point(0.5, 3.0329075930265386e-28), Point(-0.0, -1.1125369292536007e-308))]</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">47</td>
+                                <td><code>([Point(1.3204602737794088e+16, -1.1561964329366548e+16), Point(2.1820758764572924e+63, 6.103515625e-05), Point(2.881858409684718e-30, 1.1125369292536007e-308), Point(0.5, 3.0329075930265386e-28), Point(2.3157933400500744e+16, -1.6463669015661e+99)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">48</td>
+                                <td><code>([Point(1.3204602737794088e+16, -1.1561964329366548e+16), Point(2.1820758764572924e+63, 6.103515625e-05), Point(2.881858409684718e-30, 1.1125369292536007e-308), Point(0.5, 3.0329075930265386e-28), Point(2.881858409684718e-30, 1.1125369292536007e-308)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">49</td>
+                                <td><code>([Point(1.3204602737794088e+16, -1.1561964329366548e+16), Point(2.1820758764572924e+63, 6.103515625e-05), Point(2.881858409684718e-30, -1.1561964329366548e+16), Point(0.5, 3.0329075930265386e-28), Point(2.881858409684718e-30, 1.1125369292536007e-308)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">50</td>
+                                <td><code>([Point(1.3204602737794088e+16, -1.1561964329366548e+16), Point(2.1820758764572924e+63, 6.103515625e-05), Point(2.881858409684718e-30, -1.1561964329366548e+16), Point(0.5, 3.0329075930265386e-28), Point(2.881858409684718e-30, 1.3204602737794088e+16)], 0.0)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> []</td>
+                            </tr>
+                            
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Instance Distribution (For Class Methods) -->
+        
+
+        <!-- Warnings Section -->
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Generated:</strong> 2025-11-06 21:56:23</p>
+            <p><strong>Test Duration:</strong> 0.10s</p>
+            <p><strong>Hypothesis Differential Testing Framework</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const instanceFilter = document.getElementById('instance-filter');
+        const mismatchRows = document.querySelectorAll('.mismatch-row');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const instanceId = instanceFilter ? instanceFilter.value : 'all';
+
+            mismatchRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowInstanceId = row.dataset.instanceId;
+
+                const matchesSearch = !searchTerm || text.includes(searchTerm);
+                const matchesInstance = instanceId === 'all' || rowInstanceId === instanceId;
+
+                if (matchesSearch && matchesInstance) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            updateVisibleCount();
+        }
+
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.mismatch-row:not(.hidden)');
+            // Could add a counter here if desired
+        }
+
+        function clearFilters() {
+            if (searchInput) searchInput.value = '';
+            if (instanceFilter) instanceFilter.value = 'all';
+            filterRows();
+        }
+
+        // Add event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterRows);
+        }
+
+        if (instanceFilter) {
+            instanceFilter.addEventListener('change', filterRows);
+        }
+
+        // Initial filter
+        filterRows();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,35 @@
+{
+  "test_id": "click_9c079247",
+  "project": "10_click",
+  "commit": "9c079247f9b9655077b4ceff52b3fb0a44a9473f",
+  "file": "src/click/core.py",
+  "changed_functions": [
+    {
+      "name": "consume_value",
+      "before": {
+        "name": "consume_value",
+        "lineno": 3172,
+        "args": [
+          "self",
+          "ctx",
+          "opts"
+        ],
+        "has_annotations": true,
+        "source": "def consume_value(\n        self, ctx: Context, opts: cabc.Mapping[str, Parameter]\n    ) -> tuple[t.Any, ParameterSource]:\n        \"\"\"For :class:`Option`, the value can be collected from an interactive prompt\n        if the option is a flag that needs a value (and the :attr:`prompt` property is\n        set).\n\n        Additionally, this method handles flag option that are activated without a\n        value, in which case the :attr:`flag_value` is returned.\n\n        :meta private:\n        \"\"\"\n        value, source = super().consume_value(ctx, opts)\n\n        # The parser will emit a sentinel value if the option is allowed to as a flag\n        # without a value.\n        if value is _flag_needs_value:\n            # If the option allows for a prompt, we start an interaction with the user.\n            if self.prompt is not None and not ctx.resilient_parsing:\n                value = self.prompt_for_value(ctx)\n                source = ParameterSource.PROMPT\n            # Else the flag takes its flag_value as value.\n            else:\n                value = self.flag_value\n                source = ParameterSource.COMMANDLINE\n\n        # A flag which is activated always returns the flag value, unless the value\n        # comes from the explicitly sets default.\n        elif (\n            self.is_flag\n            and value is True\n            and not self.is_bool_flag\n            and source not in (ParameterSource.DEFAULT, ParameterSource.DEFAULT_MAP)\n        ):\n            value = self.flag_value\n\n        # Re-interpret a multiple option which has been sent as-is by the parser.\n        # Here we replace each occurrence of value-less flags (marked by the\n        # _flag_needs_value sentinel) with the flag_value.\n        elif (\n            self.multiple\n            and value is not UNSET\n            and source not in (ParameterSource.DEFAULT, ParameterSource.DEFAULT_MAP)\n            and any(v is _flag_needs_value for v in value)\n        ):\n            value = [self.flag_value if v is _flag_needs_value else v for v in value]\n            source = ParameterSource.COMMANDLINE\n\n        # The value wasn't set, or used the param's default, prompt for one to the user\n        # if prompting is enabled.\n        elif (\n            (\n                value is UNSET\n                or source in (ParameterSource.DEFAULT, ParameterSource.DEFAULT_MAP)\n            )\n            and self.prompt is not None\n            and (self.required or self.prompt_required)\n            and not ctx.resilient_parsing\n        ):\n            value = self.prompt_for_value(ctx)\n            source = ParameterSource.PROMPT\n\n        return value, source"
+      },
+      "after": {
+        "name": "consume_value",
+        "lineno": 3172,
+        "args": [
+          "self",
+          "ctx",
+          "opts"
+        ],
+        "has_annotations": true,
+        "source": "def consume_value(\n        self, ctx: Context, opts: cabc.Mapping[str, Parameter]\n    ) -> tuple[t.Any, ParameterSource]:\n        \"\"\"For :class:`Option`, the value can be collected from an interactive prompt\n        if the option is a flag that needs a value (and the :attr:`prompt` property is\n        set).\n\n        Additionally, this method handles flag option that are activated without a\n        value, in which case the :attr:`flag_value` is returned.\n\n        :meta private:\n        \"\"\"\n        value, source = super().consume_value(ctx, opts)\n\n        # The parser will emit a sentinel value if the option is allowed to as a flag\n        # without a value.\n        if value is FLAG_NEEDS_VALUE:\n            # If the option allows for a prompt, we start an interaction with the user.\n            if self.prompt is not None and not ctx.resilient_parsing:\n                value = self.prompt_for_value(ctx)\n                source = ParameterSource.PROMPT\n            # Else the flag takes its flag_value as value.\n            else:\n                value = self.flag_value\n                source = ParameterSource.COMMANDLINE\n\n        # A flag which is activated always returns the flag value, unless the value\n        # comes from the explicitly sets default.\n        elif (\n            self.is_flag\n            and value is True\n            and not self.is_bool_flag\n            and source not in (ParameterSource.DEFAULT, ParameterSource.DEFAULT_MAP)\n        ):\n            value = self.flag_value\n\n        # Re-interpret a multiple option which has been sent as-is by the parser.\n        # Here we replace each occurrence of value-less flags (marked by the\n        # FLAG_NEEDS_VALUE sentinel) with the flag_value.\n        elif (\n            self.multiple\n            and value is not UNSET\n            and source not in (ParameterSource.DEFAULT, ParameterSource.DEFAULT_MAP)\n            and any(v is FLAG_NEEDS_VALUE for v in value)\n        ):\n            value = [self.flag_value if v is FLAG_NEEDS_VALUE else v for v in value]\n            source = ParameterSource.COMMANDLINE\n\n        # The value wasn't set, or used the param's default, prompt for one to the user\n        # if prompting is enabled.\n        elif (\n            (\n                value is UNSET\n                or source in (ParameterSource.DEFAULT, ParameterSource.DEFAULT_MAP)\n            )\n            and self.prompt is not None\n            and (self.required or self.prompt_required)\n            and not ctx.resilient_parsing\n        ):\n            value = self.prompt_for_value(ctx)\n            source = ParameterSource.PROMPT\n\n        return value, source"
+      },
+      "has_type_hints_before": true,
+      "has_type_hints_after": true
+    }
+  ]
+}

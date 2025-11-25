@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Test Report - iso_to_gregorian</title>
+    <style>
+        /* Modern, clean design with dark mode support */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --code-bg: #f4f4f4;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --border-color: #404040;
+                --code-bg: #2d2d2d;
+                --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .number {
+            display: block;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.success .number {
+            color: var(--success-color);
+        }
+
+        .stat-card.error .number {
+            color: var(--error-color);
+        }
+
+        .stat-card.warning .number {
+            color: var(--warning-color);
+        }
+
+        /* Section */
+        .section {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Details/Summary */
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        summary:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        summary::marker {
+            content: '▶ ';
+        }
+
+        details[open] summary::marker {
+            content: '▼ ';
+        }
+
+        details .content {
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .controls button {
+            cursor: pointer;
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        /* Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .results-table .index-col {
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-table .output-col {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .output-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .output-status.return {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .output-status.exception {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .diff-col {
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        /* Scrollable table container */
+        .scrollable-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .scrollable-table-container .results-table {
+            margin-top: 0;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Instance cards */
+        .instance-card {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instance-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .instance-stats {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.error {
+            background-color: var(--error-color);
+        }
+
+        .progress-fill.success {
+            background-color: var(--success-color);
+        }
+
+        /* Warnings */
+        .warning-list {
+            list-style: none;
+        }
+
+        .warning-list li {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+
+        .warning-list li.execution-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .warning-list li {
+                background-color: #4a4000;
+                color: #ffc107;
+            }
+
+            .warning-list li.execution-error {
+                background-color: #4a1a1e;
+                color: #f8d7da;
+            }
+        }
+
+        .warning-category {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .warning-category.execution-error {
+            color: var(--error-color);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px 40px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Hidden class for filtering */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Metadata grid */
+        .metadata {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metadata dt {
+            font-weight: 600;
+        }
+
+        .metadata dd {
+            color: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge.error {
+            background-color: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                iso_to_gregorian
+                
+                <span class="badge error">✗ Behavior Difference Detected</span>
+                
+            </h1>
+            <div class="subtitle">
+                Differential Test Report | /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_86v5qpry/arrow/util_old.py vs /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_86v5qpry/arrow/util_new.py
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <span class="number">200</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-card error">
+                <span class="number">195</span>
+                <span class="label">Mismatches</span>
+            </div>
+            <div class="stat-card success">
+                <span class="number">5</span>
+                <span class="label">Matches</span>
+            </div>
+            <div
+                class="stat-card error">
+                <span class="number">2.5%</span>
+                <span class="label">Match Rate</span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <details class="section">
+            <summary>
+                <span>📋 Test Configuration</span>
+            </summary>
+            <div class="content">
+                <dl class="metadata">
+                    <dt>Max Examples:</dt>
+                    <dd>200</dd>
+
+                    <dt>Seed:</dt>
+                    <dd>94970351</dd>
+
+                    
+
+                    <dt>Timestamp:</dt>
+                    <dd>2025-11-10 20:38:15</dd>
+
+                    <dt>Duration:</dt>
+                    <dd>0.19s</dd>
+                </dl>
+
+                <h3>Strategy Configuration</h3>
+                <pre><code>{
+  &#34;arg_strategy&#34;: &#34;tuples(one_of(integers(min_value=-50, max_value=50), floats(min_value=-50.0, max_value=50.0, allow_nan=False, allow_infinity=False), text(max_size=10), booleans()), one_of(integers(min_value=-50, max_value=50), floats(min_value=-50.0, max_value=50.0, allow_nan=False, allow_infinity=False), text(max_size=10), booleans()), one_of(integers(min_value=-50, max_value=50), floats(min_value=-50.0, max_value=50.0, allow_nan=False, allow_infinity=False), text(max_size=10), booleans()))&#34;,
+  &#34;num_instances&#34;: null
+}</code></pre>
+
+                <h3>Reproduction Command</h3>
+                <pre><code>python src/run_ab.py --a /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_86v5qpry/arrow/util_old.py --b /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project_86v5qpry/arrow/util_new.py --func iso_to_gregorian --max-examples 200 --seed 94970351</code></pre>
+            </div>
+        </details>
+
+        <!-- Mismatches Section -->
+        
+        <details class="section" open>
+            <summary>
+                <span>❌ Mismatches (195)</span>
+            </summary>
+            <div class="content">
+                <div class="controls">
+                    <input type="text" id="search-input" placeholder="Search arguments or outputs...">
+                    
+                    <button onclick="clearFilters()">Clear Filters</button>
+                </div>
+
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output A</th>
+                                <th class="output-col">Output B</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mismatches-tbody">
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">1</td>
+                                <td><code>(0, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">2</td>
+                                <td><code>(False, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">3</td>
+                                <td><code>(True, &#39;W&#39;, 37.86945345274826)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">4</td>
+                                <td><code>(42, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">5</td>
+                                <td><code>(42, &#39;\x85Õ\x05&#39;, &#39;¼\x8d{&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">6</td>
+                                <td><code>(-45, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">7</td>
+                                <td><code>(-45, -50.0, -23)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -45 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">8</td>
+                                <td><code>(&#39;&#39;, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">9</td>
+                                <td><code>(&#39;i°L\x9a\x0bõæ\U000f2695þm&#39;, False, &#39;§EX\U000491bf\x14ñ&lt;H\x13j&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">10</td>
+                                <td><code>(&#39;\U00015213𧏷\x82e§\x1a=·&#39;, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">11</td>
+                                <td><code>(&#39;\U00015213𧏷\x82e§\x1a=·&#39;, 24.11417366369396, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">12</td>
+                                <td><code>(False, 24.11417366369396, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">13</td>
+                                <td><code>(False, False, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">14</td>
+                                <td><code>(True, 0.0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">15</td>
+                                <td><code>(True, 8.033702056197721e-156, 8)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> datetime.date(1, 1, 1)</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">16</td>
+                                <td><code>(True, 8.033702056197721e-156, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">17</td>
+                                <td><code>(True, True, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">18</td>
+                                <td><code>(True, &#39;\x96\r&#39;, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">19</td>
+                                <td><code>(True, &#39;\x96\r&#39;, 34.018425987119045)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">20</td>
+                                <td><code>(0.0, &#39;\x96\r&#39;, 34.018425987119045)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">21</td>
+                                <td><code>(34.018425987119045, &#39;\x96\r&#39;, 34.018425987119045)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">22</td>
+                                <td><code>(-29.91302348641222, -27.549072940582704, -7.8693576272150025)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">23</td>
+                                <td><code>(-29.91302348641222, -27.549072940582704, -29.91302348641222)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">24</td>
+                                <td><code>(-29.91302348641222, -27.549072940582704, -27.549072940582704)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">25</td>
+                                <td><code>(-27.549072940582704, -27.549072940582704, -27.549072940582704)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">26</td>
+                                <td><code>(True, &#39;bÙÂ\x01\U000c2e3a] &#39;, 47)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">27</td>
+                                <td><code>(True, 0, 47)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">28</td>
+                                <td><code>(True, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">29</td>
+                                <td><code>(&#39;&#39;, &#39;2·C\U0008f938\U000a9f37&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">30</td>
+                                <td><code>(&#39;&#39;, &#39;2·C\U0008f938\U000a9f37&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">31</td>
+                                <td><code>(&#39;&#39;, &#39;&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">32</td>
+                                <td><code>(&#39;{&#39;, -2.90856445394068e-171, &#39;\x86g¥²\U000dccf41F\x05e,&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">33</td>
+                                <td><code>(&#39;{&#39;, -2.90856445394068e-171, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">34</td>
+                                <td><code>(&#39;{&#39;, &#39;&#39;, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">35</td>
+                                <td><code>(&#39;{&#39;, &#39;{&#39;, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">36</td>
+                                <td><code>(&#39;{&#39;, &#39;{&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">37</td>
+                                <td><code>(&#39;{&#39;, &#39;&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">38</td>
+                                <td><code>(&#39;{&#39;, &#39;&#39;, &#39;{&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">39</td>
+                                <td><code>(True, False, 9.697343248366886e-268)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">40</td>
+                                <td><code>(True, True, 9.697343248366886e-268)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: date value out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">41</td>
+                                <td><code>(0.0, True, 9.697343248366886e-268)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">42</td>
+                                <td><code>(0.0, 0.0, 9.697343248366886e-268)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">43</td>
+                                <td><code>(0.0, 0.0, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">44</td>
+                                <td><code>(30.5, -32, -28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">45</td>
+                                <td><code>(0, -32, -28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">46</td>
+                                <td><code>(-28, -32, -28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -28 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">47</td>
+                                <td><code>(-32, -32, -28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -32 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">48</td>
+                                <td><code>(-32, -28, -28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -32 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">49</td>
+                                <td><code>(-28, -28, -28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -28 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">50</td>
+                                <td><code>(False, &#39;&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">51</td>
+                                <td><code>(&#39;C\U00072123\x1co&#39;, 40, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">52</td>
+                                <td><code>(&#39;C\U00072123\x1co&#39;, 40, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">53</td>
+                                <td><code>(&#39;C\U00072123\x1co&#39;, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">54</td>
+                                <td><code>(&#39;C\U00072123\x1co&#39;, &#39;&#39;, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">55</td>
+                                <td><code>(&#39;C\U00072123\x1co&#39;, &#39;C\U00072123\x1co&#39;, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">56</td>
+                                <td><code>(&#39;C\U00072123\x1co&#39;, &#39;C\U00072123\x1co&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">57</td>
+                                <td><code>(&#39;&#39;, &#39;C\U00072123\x1co&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">58</td>
+                                <td><code>(0, 0, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">59</td>
+                                <td><code>(0, False, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">60</td>
+                                <td><code>(False, False, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">61</td>
+                                <td><code>(-38, -21, -2.8982980910108694e-61)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -38 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">62</td>
+                                <td><code>(-38, -38, -2.8982980910108694e-61)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -38 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">63</td>
+                                <td><code>(-38, -38, -38)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -38 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">64</td>
+                                <td><code>(True, False, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">65</td>
+                                <td><code>(True, True, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">66</td>
+                                <td><code>(0.5, -1.3182584014092767e-83, -32)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">67</td>
+                                <td><code>(-1.3182584014092767e-83, -1.3182584014092767e-83, -32)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">68</td>
+                                <td><code>(-1.3182584014092767e-83, -1.3182584014092767e-83, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">69</td>
+                                <td><code>(-1.3182584014092767e-83, -1.3182584014092767e-83, -1.3182584014092767e-83)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">70</td>
+                                <td><code>(False, True, -42.157257600166396)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">71</td>
+                                <td><code>(False, False, -42.157257600166396)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">72</td>
+                                <td><code>(False, -42.157257600166396, -42.157257600166396)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">73</td>
+                                <td><code>(True, &#39;&amp;â\U000ff38e!LB\U001003d9È¦ò&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">74</td>
+                                <td><code>(False, &#39;&amp;â\U000ff38e!LB\U001003d9È¦ò&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">75</td>
+                                <td><code>(False, &#39;&amp;â\U000ff38e!LB\U001003d9È¦ò&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">76</td>
+                                <td><code>(False, &#39;&amp;â\U000ff38e!LB\U001003d9È¦ò&#39;, &#39;&amp;â\U000ff38e!LB\U001003d9È¦ò&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">77</td>
+                                <td><code>(&#39;&#39;, &#39;&amp;â\U000ff38e!LB\U001003d9È¦ò&#39;, &#39;&amp;â\U000ff38e!LB\U001003d9È¦ò&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">78</td>
+                                <td><code>(&#39;&#39;, &#39;&#39;, &#39;&amp;â\U000ff38e!LB\U001003d9È¦ò&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">79</td>
+                                <td><code>(&#39;v\U00056ab4)ÅH&#39;, 40.78521108144896, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">80</td>
+                                <td><code>(&#39;v\U00056ab4)ÅH&#39;, &#39;&#39;, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">81</td>
+                                <td><code>(&#39;&#39;, &#39;&#39;, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">82</td>
+                                <td><code>(&#39;\\î𪝃pæôE\x9b\U00082776â&#39;, 14, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">83</td>
+                                <td><code>(&#39;\\î𪝃pæôE\x9b\U00082776â&#39;, 14, &#39;\\î𪝃pæôE\x9b\U00082776â&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">84</td>
+                                <td><code>(&#39;\\î𪝃pæôE\x9b\U00082776â&#39;, &#39;\\î𪝃pæôE\x9b\U00082776â&#39;, &#39;\\î𪝃pæôE\x9b\U00082776â&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">85</td>
+                                <td><code>(30, &#39;&#39;, &#39;\U000d90ba`&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">86</td>
+                                <td><code>(30, 0, &#39;\U000d90ba`&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">87</td>
+                                <td><code>(30, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">88</td>
+                                <td><code>(10.39940986353568, False, &#39;\U00050d52&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">89</td>
+                                <td><code>(&#39;\U00050d52&#39;, False, &#39;\U00050d52&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">90</td>
+                                <td><code>(False, False, &#39;\U00050d52&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">91</td>
+                                <td><code>(-10, -14, -30)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -10 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">92</td>
+                                <td><code>(-10, -14, -10)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -10 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">93</td>
+                                <td><code>(-14, -14, -10)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -14 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">94</td>
+                                <td><code>(-14, -10, -10)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -14 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">95</td>
+                                <td><code>(-10, -10, -10)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -10 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">96</td>
+                                <td><code>(50.0, &#39;\x17𠓈c&#39;, 6.823112577517897)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">97</td>
+                                <td><code>(50.0, &#39;\x17𠓈c&#39;, 50.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">98</td>
+                                <td><code>(50.0, &#39;\x17𠓈c&#39;, &#39;\x17𠓈c&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">99</td>
+                                <td><code>(&#39;\x17𠓈c&#39;, &#39;\x17𠓈c&#39;, &#39;\x17𠓈c&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">100</td>
+                                <td><code>(False, False, &#39;MX&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">101</td>
+                                <td><code>(-0.23228795992879014, -1.7248936757138367, -2.2266899662095817e-243)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">102</td>
+                                <td><code>(-0.23228795992879014, -0.23228795992879014, -2.2266899662095817e-243)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">103</td>
+                                <td><code>(-2.2266899662095817e-243, -0.23228795992879014, -2.2266899662095817e-243)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">104</td>
+                                <td><code>(-2.2266899662095817e-243, -2.2266899662095817e-243, -2.2266899662095817e-243)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">105</td>
+                                <td><code>(43, &#39;&#39;, -1)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">106</td>
+                                <td><code>(43, 0, -1)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">107</td>
+                                <td><code>(0, 0, -1)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">108</td>
+                                <td><code>(&#39;Ô&#39;, 5, 42)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">109</td>
+                                <td><code>(&#39;Ô&#39;, 42, 42)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">110</td>
+                                <td><code>(&#39;Ô&#39;, &#39;Ô&#39;, 42)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">111</td>
+                                <td><code>(&#39;Ô&#39;, &#39;&#39;, 42)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">112</td>
+                                <td><code>(&#39;Ô&#39;, &#39;Ô&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">113</td>
+                                <td><code>(&#39;Ô&#39;, &#39;Ô&#39;, &#39;Ô&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">114</td>
+                                <td><code>(True, 18.016291158252443, 24)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> datetime.date(1, 5, 23)</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">115</td>
+                                <td><code>(True, 18.016291158252443, 18.016291158252443)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> datetime.date(1, 5, 17)</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">116</td>
+                                <td><code>(0.0, 18.016291158252443, 18.016291158252443)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">117</td>
+                                <td><code>(0.0, 0.0, 18.016291158252443)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">118</td>
+                                <td><code>(18.016291158252443, 0.0, 18.016291158252443)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">119</td>
+                                <td><code>(18.016291158252443, 18.016291158252443, 18.016291158252443)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">120</td>
+                                <td><code>(28, &#39;&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">121</td>
+                                <td><code>(28, False, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">122</td>
+                                <td><code>(10.385330980000774, &#39;}ÀCsªò𪲠&#39;, &#39;§\x08&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">123</td>
+                                <td><code>(10.385330980000774, &#39;§\x08&#39;, &#39;§\x08&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">124</td>
+                                <td><code>(10.385330980000774, &#39;§\x08&#39;, 10.385330980000774)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">125</td>
+                                <td><code>(10.385330980000774, 0.0, 10.385330980000774)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">126</td>
+                                <td><code>(10.385330980000774, 10.385330980000774, 10.385330980000774)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">127</td>
+                                <td><code>(23, -36.994864383016, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">128</td>
+                                <td><code>(23, -36.994864383016, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">129</td>
+                                <td><code>(23, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">130</td>
+                                <td><code>(23, 23, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">131</td>
+                                <td><code>(23, 0, 23)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">132</td>
+                                <td><code>(0, 0, 23)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">133</td>
+                                <td><code>(0, 23, 23)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">134</td>
+                                <td><code>(-45.961382344801294, -33.177185611905166, -9.726049614127348e-280)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">135</td>
+                                <td><code>(-45.961382344801294, -45.961382344801294, -9.726049614127348e-280)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">136</td>
+                                <td><code>(-45.961382344801294, -45.961382344801294, -45.961382344801294)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">137</td>
+                                <td><code>(&#39;days&#39;, &#39;眉&#39;, &#39;\U00094594\x99G\U000c0d7b»ô´Í\x9e&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">138</td>
+                                <td><code>(&#39;days&#39;, &#39;眉&#39;, &#39;眉&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">139</td>
+                                <td><code>(&#39;眉&#39;, &#39;眉&#39;, &#39;眉&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">140</td>
+                                <td><code>(-27, False, 28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">141</td>
+                                <td><code>(False, False, 28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">142</td>
+                                <td><code>(&#39;夋Ö4j\x86\U0008f661&#39;, False, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">143</td>
+                                <td><code>(&#39;夋Ö4j\x86\U0008f661&#39;, False, &#39;夋Ö4j\x86\U0008f661&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">144</td>
+                                <td><code>(-37, &#39;Të\x1aë\U00043a82&#39;, 47.79071129767519)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -37 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">145</td>
+                                <td><code>(-37, &#39;Të\x1aë\U00043a82&#39;, &#39;Të\x1aë\U00043a82&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -37 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">146</td>
+                                <td><code>(-37, &#39;Të\x1aë\U00043a82&#39;, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">147</td>
+                                <td><code>(-37, -37, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">148</td>
+                                <td><code>(-37, 0, 0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">149</td>
+                                <td><code>(-5.131831522230622e-153, 23, &#39;!\U000be388\x86Y&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">150</td>
+                                <td><code>(-5.131831522230622e-153, 0.0, &#39;!\U000be388\x86Y&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">151</td>
+                                <td><code>(-5.131831522230622e-153, &#39;!\U000be388\x86Y&#39;, &#39;!\U000be388\x86Y&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">152</td>
+                                <td><code>(-5.131831522230622e-153, -5.131831522230622e-153, &#39;!\U000be388\x86Y&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">153</td>
+                                <td><code>(&#39;!\U000be388\x86Y&#39;, -5.131831522230622e-153, &#39;!\U000be388\x86Y&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">154</td>
+                                <td><code>(0.0, -5.131831522230622e-153, &#39;!\U000be388\x86Y&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">155</td>
+                                <td><code>(&#39;!\U000be388\x86Y&#39;, -5.131831522230622e-153, -5.131831522230622e-153)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">156</td>
+                                <td><code>(&#39;S\x90Ï§&#39;, 21.818624179019466, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">157</td>
+                                <td><code>(&#39;S\x90Ï§&#39;, 21.818624179019466, 21.818624179019466)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">158</td>
+                                <td><code>(21.818624179019466, 21.818624179019466, 21.818624179019466)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">159</td>
+                                <td><code>(False, &#39;&#39;, -6.890955443498989)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">160</td>
+                                <td><code>(False, &#39;&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">161</td>
+                                <td><code>(True, 47.448889022029334, 26)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> datetime.date(1, 12, 17)</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">162</td>
+                                <td><code>(True, 47.448889022029334, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">163</td>
+                                <td><code>(True, 0.0, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">164</td>
+                                <td><code>(True, &#39;dH&#39;, -3.92493317512416)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">165</td>
+                                <td><code>(True, 0.0, -3.92493317512416)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">166</td>
+                                <td><code>(True, -3.92493317512416, -3.92493317512416)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> OverflowError: date value out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">167</td>
+                                <td><code>(True, False, -3.92493317512416)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">168</td>
+                                <td><code>(False, False, -3.92493317512416)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">169</td>
+                                <td><code>(&#39;b\U000d3212§¦\U000d67aa\U000eae83E&#39;, 1.599716084033723, 15)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">170</td>
+                                <td><code>(15, 1.599716084033723, 15)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> datetime.date(15, 1, 16)</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">171</td>
+                                <td><code>(15, 0, 15)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">172</td>
+                                <td><code>(15, 15, 15)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> datetime.date(15, 4, 20)</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">173</td>
+                                <td><code>(False, &#39;®â&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">174</td>
+                                <td><code>(False, &#39;®â&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">175</td>
+                                <td><code>(16.11414961204615, &#39;\x81&amp;&#39;, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">176</td>
+                                <td><code>(16.11414961204615, &#39;\x81&amp;&#39;, &#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">177</td>
+                                <td><code>(16.11414961204615, &#39;\x81&amp;&#39;, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">178</td>
+                                <td><code>(16.11414961204615, 0.0, 0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">179</td>
+                                <td><code>(-39, -32, 6.227700629595805e-178)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -39 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">180</td>
+                                <td><code>(-39, -32, -32)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -39 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">181</td>
+                                <td><code>(-32, -32, -32)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -32 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">182</td>
+                                <td><code>(5.92285889303667e-87, True, -47)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">183</td>
+                                <td><code>(-47, True, -47)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -47 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">184</td>
+                                <td><code>(False, True, -47)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">185</td>
+                                <td><code>(False, 0, -47)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">186</td>
+                                <td><code>(False, 0, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">187</td>
+                                <td><code>(2.1062318300653968e-201, 2.5950122959817964e-233, -7)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">188</td>
+                                <td><code>(2.1062318300653968e-201, -7, -7)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;float&#39; object cannot be interpreted as an integer</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">189</td>
+                                <td><code>(-7, -7, -7)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year -7 is out of range</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">190</td>
+                                <td><code>(True, &#39;¬Ú\U0003a4b2W\x8aÐ&#39;, &#39;\U00092c3a&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">191</td>
+                                <td><code>(True, &#39;¬Ú\U0003a4b2W\x8aÐ&#39;, &#39;¬Ú\U0003a4b2W\x8aÐ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">192</td>
+                                <td><code>(True, &#39;¬Ú\U0003a4b2W\x8aÐ&#39;, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: unsupported operand type(s) for -: &#39;str&#39; and &#39;int&#39;</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;&lt;=&#39; not supported between instances of &#39;int&#39; and &#39;str&#39;</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">193</td>
+                                <td><code>(True, False, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">194</td>
+                                <td><code>(True, False, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week value must be between 1-53.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">195</td>
+                                <td><code>(True, True, False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar week and day values must be 1-53 and 1-7 respectively.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Iso Calendar day value must be between 1-7</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Matches Section -->
+        
+        <details class="section">
+            <summary>
+                <span>✅ Matching Results (5)</span>
+            </summary>
+            <div class="content">
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td class="index-col">1</td>
+                                <td><code>(True, True, True)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> datetime.date(1, 1, 1)</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">2</td>
+                                <td><code>(&#39;:{m÷¦&#39;, 17, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">3</td>
+                                <td><code>(0, 17, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">4</td>
+                                <td><code>(False, True, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: year 0 is out of range</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">5</td>
+                                <td><code>(&#39;v\U00056ab4)ÅH&#39;, 40.78521108144896, True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> TypeError: &#39;str&#39; object cannot be interpreted as an integer</td>
+                            </tr>
+                            
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Instance Distribution (For Class Methods) -->
+        
+
+        <!-- Warnings Section -->
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Generated:</strong> 2025-11-10 20:38:15</p>
+            <p><strong>Test Duration:</strong> 0.19s</p>
+            <p><strong>Hypothesis Differential Testing Framework</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const instanceFilter = document.getElementById('instance-filter');
+        const mismatchRows = document.querySelectorAll('.mismatch-row');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const instanceId = instanceFilter ? instanceFilter.value : 'all';
+
+            mismatchRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowInstanceId = row.dataset.instanceId;
+
+                const matchesSearch = !searchTerm || text.includes(searchTerm);
+                const matchesInstance = instanceId === 'all' || rowInstanceId === instanceId;
+
+                if (matchesSearch && matchesInstance) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            updateVisibleCount();
+        }
+
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.mismatch-row:not(.hidden)');
+            // Could add a counter here if desired
+        }
+
+        function clearFilters() {
+            if (searchInput) searchInput.value = '';
+            if (instanceFilter) instanceFilter.value = 'all';
+            filterRows();
+        }
+
+        // Add event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterRows);
+        }
+
+        if (instanceFilter) {
+            instanceFilter.addEventListener('change', filterRows);
+        }
+
+        // Initial filter
+        filterRows();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Test Report - strtobool</title>
+    <style>
+        /* Modern, clean design with dark mode support */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --code-bg: #f4f4f4;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --border-color: #404040;
+                --code-bg: #2d2d2d;
+                --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .number {
+            display: block;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.success .number {
+            color: var(--success-color);
+        }
+
+        .stat-card.error .number {
+            color: var(--error-color);
+        }
+
+        .stat-card.warning .number {
+            color: var(--warning-color);
+        }
+
+        /* Section */
+        .section {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Details/Summary */
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        summary:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        summary::marker {
+            content: '▶ ';
+        }
+
+        details[open] summary::marker {
+            content: '▼ ';
+        }
+
+        details .content {
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .controls button {
+            cursor: pointer;
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        /* Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .results-table .index-col {
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-table .output-col {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .output-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .output-status.return {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .output-status.exception {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .diff-col {
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        /* Scrollable table container */
+        .scrollable-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .scrollable-table-container .results-table {
+            margin-top: 0;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Instance cards */
+        .instance-card {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instance-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .instance-stats {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.error {
+            background-color: var(--error-color);
+        }
+
+        .progress-fill.success {
+            background-color: var(--success-color);
+        }
+
+        /* Warnings */
+        .warning-list {
+            list-style: none;
+        }
+
+        .warning-list li {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+
+        .warning-list li.execution-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .warning-list li {
+                background-color: #4a4000;
+                color: #ffc107;
+            }
+
+            .warning-list li.execution-error {
+                background-color: #4a1a1e;
+                color: #f8d7da;
+            }
+        }
+
+        .warning-category {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .warning-category.execution-error {
+            color: var(--error-color);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px 40px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Hidden class for filtering */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Metadata grid */
+        .metadata {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metadata dt {
+            font-weight: 600;
+        }
+
+        .metadata dd {
+            color: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge.error {
+            background-color: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                strtobool
+                
+                <span class="badge error">✗ Behavior Difference Detected</span>
+                
+            </h1>
+            <div class="subtitle">
+                Differential Test Report | /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project__acz74z1/./decouple_old.py vs /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project__acz74z1/./decouple_new.py
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <span class="number">200</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-card error">
+                <span class="number">63</span>
+                <span class="label">Mismatches</span>
+            </div>
+            <div class="stat-card success">
+                <span class="number">137</span>
+                <span class="label">Matches</span>
+            </div>
+            <div
+                class="stat-card warning">
+                <span class="number">68.5%</span>
+                <span class="label">Match Rate</span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <details class="section">
+            <summary>
+                <span>📋 Test Configuration</span>
+            </summary>
+            <div class="content">
+                <dl class="metadata">
+                    <dt>Max Examples:</dt>
+                    <dd>200</dd>
+
+                    <dt>Seed:</dt>
+                    <dd>4148710500</dd>
+
+                    
+
+                    <dt>Timestamp:</dt>
+                    <dd>2025-11-10 20:16:54</dd>
+
+                    <dt>Duration:</dt>
+                    <dd>0.16s</dd>
+                </dl>
+
+                <h3>Strategy Configuration</h3>
+                <pre><code>{
+  &#34;arg_strategy&#34;: &#34;tuples(one_of(integers(min_value=-50, max_value=50), floats(min_value=-50.0, max_value=50.0, allow_nan=False, allow_infinity=False), text(max_size=10), booleans()))&#34;,
+  &#34;num_instances&#34;: null
+}</code></pre>
+
+                <h3>Reproduction Command</h3>
+                <pre><code>python src/run_ab.py --a /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project__acz74z1/./decouple_old.py --b /home/toris/practicum/Practicum-AWS-DiffTest/.difftest_temp/difftest_project__acz74z1/./decouple_new.py --func strtobool --max-examples 200 --seed 4148710500</code></pre>
+            </div>
+        </details>
+
+        <!-- Mismatches Section -->
+        
+        <details class="section" open>
+            <summary>
+                <span>❌ Mismatches (63)</span>
+            </summary>
+            <div class="content">
+                <div class="controls">
+                    <input type="text" id="search-input" placeholder="Search arguments or outputs...">
+                    
+                    <button onclick="clearFilters()">Clear Filters</button>
+                </div>
+
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output A</th>
+                                <th class="output-col">Output B</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mismatches-tbody">
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">1</td>
+                                <td><code>(&#39;&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value </td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: </td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">2</td>
+                                <td><code>(&#39;æ\x96#hÚ¬å\U0001e4b8¿|&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value æ#hÚ¬å𞒸¿|</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: æ#hú¬å𞒸¿|</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">3</td>
+                                <td><code>(&#39;\x8aݵÓ\xa0\U00076d1aÏµ軴C.&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ݵÓ 񶴚Ïµ軴C.</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ݵó 񶴚ïµ軴c.</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">4</td>
+                                <td><code>(&#39;¯\\\U000352f0Â&amp;¸\U0001f280\U0010c8aa\x0f/&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ¯\𵋰Â&amp;¸🊀􌢪/</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ¯\𵋰â&amp;¸🊀􌢪/</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">5</td>
+                                <td><code>(&#39;K\U0008ae62¬Mê8&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value K򊹢¬Mê8</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: k򊹢¬mê8</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">6</td>
+                                <td><code>(&#39;\U0006f776xÕ🬦ú\U0010b4df0=Ö\U000392fb&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 񯝶xÕ🬦ú􋓟0=Ö𹋻</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 񯝶xõ🬦ú􋓟0=ö𹋻</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">7</td>
+                                <td><code>(&#39;Ø\x02³\x17&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value Ø³</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ø³</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">8</td>
+                                <td><code>(&#39;JX\U000890b3\U000e67b6\x96cÓîÁÙ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value JX򉂳󦞶cÓîÁÙ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: jx򉂳󦞶cóîáù</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">9</td>
+                                <td><code>(&#39;\x97\x9aç\x13|&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ç|</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ç|</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">10</td>
+                                <td><code>(&#39;£&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value £</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: £</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">11</td>
+                                <td><code>(&#39;\x96¡\xad&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ¡­</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ¡­</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">12</td>
+                                <td><code>(&#39;ß&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ß</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ß</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">13</td>
+                                <td><code>(&#39;º\U0006dcffâ°X&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value º񭳿â°X</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: º񭳿â°x</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">14</td>
+                                <td><code>(&#39;\U000a1fc1Z&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 򡿁Z</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 򡿁z</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">15</td>
+                                <td><code>(&#39;\U000df9e7s\U0007217fQ\x0eÁ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 󟧧s񲅿QÁ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 󟧧s񲅿qá</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">16</td>
+                                <td><code>(&#39;¢¢&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ¢¢</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ¢¢</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">17</td>
+                                <td><code>(&#39;\U000587fc\U000e887e\x93¾𤟃{\U000f2437^Ö&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 񘟼󨡾¾𤟃{󲐷^Ö</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 񘟼󨡾¾𤟃{󲐷^ö</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">18</td>
+                                <td><code>(&#39;\x93\U0008c698&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 򌚘</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 򌚘</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">19</td>
+                                <td><code>(&#39;\U00104337g{°&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 􄌷g{°</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 􄌷g{°</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">20</td>
+                                <td><code>(&#39;Å&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value Å</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: å</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">21</td>
+                                <td><code>(&#39;âgº\U000c892d\U000b7cd4n®D&lt;\U000f5595&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value âgº󈤭򷳔n®D&lt;󵖕</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: âgº󈤭򷳔n®d&lt;󵖕</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">22</td>
+                                <td><code>(&#39;k&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value k</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: k</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">23</td>
+                                <td><code>(&#39;×\U000bb8df¨ËÛ\U000c3142LÉU\U00079362&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ×򻣟¨ËÛ󃅂LÉU񹍢</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ×򻣟¨ëû󃅂léu񹍢</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">24</td>
+                                <td><code>(&#39;Ùd\x88\x1dµ\U0004660b°\x1e²\x99&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value Ùdµ񆘋°²</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ùdµ񆘋°²</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">25</td>
+                                <td><code>(&#39;V\U00090715D\xa0\x17&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value V򐜕D </td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: v򐜕d </td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">26</td>
+                                <td><code>(&#39;\x9esà\x1cVÎ\U000a569a/tÍ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value sàVÎ򥚚/tÍ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: sàvî򥚚/tí</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">27</td>
+                                <td><code>(&#39;s&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value s</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: s</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">28</td>
+                                <td><code>(&#39;?&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ?</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ?</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">29</td>
+                                <td><code>(&#39;R熦Ï¯&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value R熦Ï¯</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: r熦ï¯</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">30</td>
+                                <td><code>(&#39;\U000aba86zê&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 򫪆zê</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 򫪆zê</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">31</td>
+                                <td><code>(&#39;·&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ·</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ·</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">32</td>
+                                <td><code>(&#39;I/&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value I/</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: i/</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">33</td>
+                                <td><code>(&#39;â9\x96ZD\U0005e5a7\U0009b4fb\x03\U0005e0dd¿&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value â9ZD񞖧򛓻񞃝¿</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: â9zd񞖧򛓻񞃝¿</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">34</td>
+                                <td><code>(&#39;¶Ö&amp;7C,\x9c&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ¶Ö&amp;7C,</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ¶ö&amp;7c,</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">35</td>
+                                <td><code>(&#39;ë\x03\x83P\U000f7f8dK\U0004e4ca4&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ëP󷾍K񎓊4</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ëp󷾍k񎓊4</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">36</td>
+                                <td><code>(&#39;\x9b\tÛ\x919×ûk\x17\x1b&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 	Û9×ûk</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 	û9×ûk</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">37</td>
+                                <td><code>(&#39;\U000b44efo[¹ã»¿w\x7fF&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 򴓯o[¹ã»¿wF</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 򴓯o[¹ã»¿wf</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">38</td>
+                                <td><code>(&#39;ºz\x96GL@ÇF\U000db710\U0009edb2&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ºzGL@ÇF󛜐򞶲</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ºzgl@çf󛜐򞶲</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">39</td>
+                                <td><code>(&#39;k\x9e&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value k</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: k</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">40</td>
+                                <td><code>(&#39;v\x05Pª[&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value vPª[</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: vpª[</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">41</td>
+                                <td><code>(&#39;#O\x00f\x1e\x01+&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value #O f+</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: #o f+</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">42</td>
+                                <td><code>(&#39;(¼V&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value (¼V</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: (¼v</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">43</td>
+                                <td><code>(&#39;\U000bfdcf¬\x85&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 򿷏¬</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 򿷏¬</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">44</td>
+                                <td><code>(&#39;\U0010c96a&amp;Ò\x8e\U000618d2\x93\\\U000d5835&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 􌥪&amp;Ò񡣒\󕠵</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 􌥪&amp;ò񡣒\󕠵</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">45</td>
+                                <td><code>(&#39;\x9b\U000b3764¯q\x07&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 򳝤¯q</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 򳝤¯q</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">46</td>
+                                <td><code>(&#39;nmâ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value nmâ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: nmâ</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">47</td>
+                                <td><code>(&#34;\x1c&#39;\x87|Æ\x9d퐛õ\x85À&#34;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value &#39;|Æ퐛õÀ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: &#39;|æ퐛õà</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">48</td>
+                                <td><code>(&#39;z\U0009af37\U000b29e4\U0009aabf\U00066db8$\U00078b94d$!&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value z򚼷򲧤򚪿񦶸$񸮔d$!</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: z򚼷򲧤򚪿񦶸$񸮔d$!</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">49</td>
+                                <td><code>(&#39;soµ\U000db0ea&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value soµ󛃪</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: soµ󛃪</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">50</td>
+                                <td><code>(&#39;9\U0001ec21\x85&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 9𞰡</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 9𞰡</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">51</td>
+                                <td><code>(&#39;\x03`\U000fd480\x7fn\xadíÅ\U0001dfeb&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value `󽒀n­íÅ𝿫</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: `󽒀n­íå𝿫</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">52</td>
+                                <td><code>(&#39;dt\x83\x9c&gt;K\U000738eeëÐ\x86&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value dt&gt;K񳣮ëÐ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: dt&gt;k񳣮ëð</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">53</td>
+                                <td><code>(&#39;Ó&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value Ó</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ó</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">54</td>
+                                <td><code>(&#39;´\x95À\U000504ccÅ_&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ´À񐓌Å_</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ´à񐓌å_</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">55</td>
+                                <td><code>(&#39;\U00054a8cäå\x80Î&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 񔪌äåÎ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 񔪌äåî</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">56</td>
+                                <td><code>(&#39;ùüR\x9b\U000b80aa HÛ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ùüR򸂪 HÛ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ùür򸂪 hû</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">57</td>
+                                <td><code>(&#39;ZM\x1e\U00073920ÅQ&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ZM񳤠ÅQ</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: zm񳤠åq</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">58</td>
+                                <td><code>(&#39;)ó\x83¦\U0006ab38\U00067342CF-&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value )ó¦񪬸񧍂CF-</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: )ó¦񪬸񧍂cf-</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">59</td>
+                                <td><code>(&#39;È\x15M&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ÈM</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: èm</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">60</td>
+                                <td><code>(&#39;𧵐&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 𧵐</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 𧵐</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">61</td>
+                                <td><code>(&#39;\U0010a25b\x05ÝTÜ嘲øÃs\x82&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 􊉛ÝTÜ嘲øÃs</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 􊉛ýtü嘲øãs</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">62</td>
+                                <td><code>(&#39;\x05쾙\x91\x06Ï¥$Ui-&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value 쾙Ï¥$Ui-</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: 쾙ï¥$ui-</td>
+                            </tr>
+                            
+                            <tr class="mismatch-row"
+                                data-instance-id="none">
+                                <td class="index-col">63</td>
+                                <td><code>(&#39;\x86\x19ü&#39;)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: invalid truth value ü</td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> ValueError: Invalid truth value: ü</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Matches Section -->
+        
+        <details class="section">
+            <summary>
+                <span>✅ Matching Results (137)</span>
+            </summary>
+            <div class="content">
+                <div class="scrollable-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th class="index-col">#</th>
+                                <th>Arguments</th>
+                                <th class="output-col">Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td class="index-col">1</td>
+                                <td><code>(0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">2</td>
+                                <td><code>(0.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">3</td>
+                                <td><code>(-1.9451173156796433e-128)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">4</td>
+                                <td><code>(45)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">5</td>
+                                <td><code>(-46.446481605401075)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">6</td>
+                                <td><code>(-20)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">7</td>
+                                <td><code>(False)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;bool&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">8</td>
+                                <td><code>(True)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;bool&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">9</td>
+                                <td><code>(-1)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">10</td>
+                                <td><code>(-19.74790462818507)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">11</td>
+                                <td><code>(&#39;no&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> False</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">12</td>
+                                <td><code>(&#39;f&#39;)</code></td>
+                                <td class="output-col"><span class='output-status return'>Return:</span> False</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">13</td>
+                                <td><code>(-38.60837135187522)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">14</td>
+                                <td><code>(-4.649040926956666e-236)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">15</td>
+                                <td><code>(-14)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">16</td>
+                                <td><code>(-5.826052242524668)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">17</td>
+                                <td><code>(-23)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">18</td>
+                                <td><code>(1.401298464324817e-45)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">19</td>
+                                <td><code>(-18)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">20</td>
+                                <td><code>(18.120195862489666)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">21</td>
+                                <td><code>(-39.49608278351282)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">22</td>
+                                <td><code>(1.1502416474913107e-39)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">23</td>
+                                <td><code>(-28)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">24</td>
+                                <td><code>(-34.71141389685612)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">25</td>
+                                <td><code>(-12)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">26</td>
+                                <td><code>(6)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">27</td>
+                                <td><code>(30)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">28</td>
+                                <td><code>(-25)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">29</td>
+                                <td><code>(22)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">30</td>
+                                <td><code>(19)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">31</td>
+                                <td><code>(47)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">32</td>
+                                <td><code>(-50.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">33</td>
+                                <td><code>(26)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">34</td>
+                                <td><code>(5.960464477539063e-08)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">35</td>
+                                <td><code>(2.380592904730058)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">36</td>
+                                <td><code>(-34)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">37</td>
+                                <td><code>(-32)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">38</td>
+                                <td><code>(31)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">39</td>
+                                <td><code>(-22.11174727206541)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">40</td>
+                                <td><code>(1.6196116617032152e-22)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">41</td>
+                                <td><code>(26.684622348803046)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">42</td>
+                                <td><code>(13)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">43</td>
+                                <td><code>(-8.803617001313472e-86)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">44</td>
+                                <td><code>(-46)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">45</td>
+                                <td><code>(-1.149840735998837e-299)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">46</td>
+                                <td><code>(1.6618611424153455e-31)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">47</td>
+                                <td><code>(-5e-324)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">48</td>
+                                <td><code>(-15)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">49</td>
+                                <td><code>(49.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">50</td>
+                                <td><code>(8)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">51</td>
+                                <td><code>(2.220446049250313e-16)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">52</td>
+                                <td><code>(27.517134930199646)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">53</td>
+                                <td><code>(-2.1934802885394134e-206)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">54</td>
+                                <td><code>(7)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">55</td>
+                                <td><code>(2.00001)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">56</td>
+                                <td><code>(-27)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">57</td>
+                                <td><code>(-3)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">58</td>
+                                <td><code>(43.60624329701032)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">59</td>
+                                <td><code>(32.90836702325426)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">60</td>
+                                <td><code>(-38)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">61</td>
+                                <td><code>(44)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">62</td>
+                                <td><code>(-23.67376003587715)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">63</td>
+                                <td><code>(42)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">64</td>
+                                <td><code>(32)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">65</td>
+                                <td><code>(14.03460065502641)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">66</td>
+                                <td><code>(-39)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">67</td>
+                                <td><code>(5.184613442331951)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">68</td>
+                                <td><code>(-21.806142758971585)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">69</td>
+                                <td><code>(-16.61752911858396)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">70</td>
+                                <td><code>(-1.5)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">71</td>
+                                <td><code>(-16)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">72</td>
+                                <td><code>(4.1033740453851856e-225)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">73</td>
+                                <td><code>(-25.29755792497425)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">74</td>
+                                <td><code>(-1e-05)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">75</td>
+                                <td><code>(-3.277555393697411e-227)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">76</td>
+                                <td><code>(29)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">77</td>
+                                <td><code>(4)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">78</td>
+                                <td><code>(27)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">79</td>
+                                <td><code>(48)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">80</td>
+                                <td><code>(-24)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">81</td>
+                                <td><code>(10.783833314685786)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">82</td>
+                                <td><code>(50)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">83</td>
+                                <td><code>(38)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">84</td>
+                                <td><code>(5)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">85</td>
+                                <td><code>(-8.663471686543812e-220)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">86</td>
+                                <td><code>(-0.99999)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">87</td>
+                                <td><code>(37.766396166016335)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">88</td>
+                                <td><code>(-47)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">89</td>
+                                <td><code>(21)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">90</td>
+                                <td><code>(12.749286896148213)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">91</td>
+                                <td><code>(3.273624514339135e-225)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">92</td>
+                                <td><code>(2.225073858507203e-309)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">93</td>
+                                <td><code>(-46.17661427433459)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">94</td>
+                                <td><code>(25)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">95</td>
+                                <td><code>(-37)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">96</td>
+                                <td><code>(3)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">97</td>
+                                <td><code>(-44)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;int&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">98</td>
+                                <td><code>(-2.094248332254575e-88)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">99</td>
+                                <td><code>(50.0)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="index-col">100</td>
+                                <td><code>(9.805244616043174e-213)</code></td>
+                                <td class="output-col"><span class='output-status exception'>Exception:</span> AttributeError: &#39;float&#39; object has no attribute &#39;lower&#39;</td>
+                            </tr>
+                            
+                            
+                            <tr>
+                                <td colspan="3"
+                                    style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                                    ... and 37 more matching results
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+        
+
+        <!-- Instance Distribution (For Class Methods) -->
+        
+
+        <!-- Warnings Section -->
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Generated:</strong> 2025-11-10 20:16:54</p>
+            <p><strong>Test Duration:</strong> 0.16s</p>
+            <p><strong>Hypothesis Differential Testing Framework</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const instanceFilter = document.getElementById('instance-filter');
+        const mismatchRows = document.querySelectorAll('.mismatch-row');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const instanceId = instanceFilter ? instanceFilter.value : 'all';
+
+            mismatchRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowInstanceId = row.dataset.instanceId;
+
+                const matchesSearch = !searchTerm || text.includes(searchTerm);
+                const matchesInstance = instanceId === 'all' || rowInstanceId === instanceId;
+
+                if (matchesSearch && matchesInstance) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            updateVisibleCount();
+        }
+
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.mismatch-row:not(.hidden)');
+            // Could add a counter here if desired
+        }
+
+        function clearFilters() {
+            if (searchInput) searchInput.value = '';
+            if (instanceFilter) instanceFilter.value = 'all';
+            filterRows();
+        }
+
+        // Add event listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', filterRows);
+        }
+
+        if (instanceFilter) {
+            instanceFilter.addEventListener('change', filterRows);
+        }
+
+        // Initial filter
+        filterRows();
+    </script>
+</body>
+
+</html>

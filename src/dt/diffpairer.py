@@ -78,7 +78,8 @@ class DiffPairer:
         self,
         diff_file_path: str,
         func_name: Optional[str] = None,
-        commit: Optional[str] = None
+        commit: Optional[str] = None,
+        project_root: Optional[str] = None
     ) -> List[Tuple[TargetPair, callable]]:
         """
         Git diff mode: parse diff file to find modified functions.
@@ -87,6 +88,7 @@ class DiffPairer:
             diff_file_path: Path to file containing git diff
             func_name: Optional filter for specific function name
             commit: Optional commit reference for getting file content
+            project_root: Optional project root to preserve package structure
 
         Returns:
             List of (TargetPair, cleanup_function) tuples
@@ -101,6 +103,50 @@ class DiffPairer:
             ]
 
         # Now supporting both module-level functions AND class methods
+        pairs = []
+        for mod_func in modified_funcs:
+            temp_files = self.temp_builder.build_temp_files(
+                mod_func,
+                project_root=project_root
+            )
+            target = TargetPair(
+                file_a=temp_files.old_file,
+                file_b=temp_files.new_file,
+                func_name=mod_func.function_name,
+                class_name=mod_func.class_name,
+                is_class_method=mod_func.is_class_method,
+            )
+            pairs.append((target, temp_files.cleanup))
+
+        return pairs
+
+    def pair_from_patch(
+        self,
+        patch_file_path: str,
+        func_name: Optional[str] = None
+    ) -> List[Tuple[TargetPair, callable]]:
+        """
+        Patch-only mode: parse patch file without git commit context.
+        Reconstructs old and new file content directly from the patch.
+
+        Args:
+            patch_file_path: Path to file containing git diff/patch
+            func_name: Optional filter for specific function name
+
+        Returns:
+            List of (TargetPair, cleanup_function) tuples
+        """
+        # Use the new patch-only parser
+        modified_funcs = self.git_parser.parse_patch_only(patch_file_path)
+
+        # Filter by function name if specified
+        if func_name:
+            modified_funcs = [
+                f for f in modified_funcs
+                if f.function_name == func_name
+            ]
+
+        # Build temp files and target pairs
         pairs = []
         for mod_func in modified_funcs:
             temp_files = self.temp_builder.build_temp_files(mod_func)

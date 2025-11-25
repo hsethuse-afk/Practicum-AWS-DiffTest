@@ -46,14 +46,20 @@ def _find_method_in_module(module: types.ModuleType, method_name: str):
     import inspect
 
     # Iterate through all members of the module
-    for name, obj in inspect.getmembers(module):
-        # Check if it's a class defined in this module
-        if inspect.isclass(obj) and obj.__module__ == module.__name__:
-            # Check if the class has the method
-            if hasattr(obj, method_name):
-                method = getattr(obj, method_name)
-                if callable(method):
-                    return obj, method
+    # Use __dict__ instead of inspect.getmembers to avoid triggering descriptors
+    for name, obj in module.__dict__.items():
+        try:
+            # Check if it's a class defined in this module
+            if inspect.isclass(obj) and obj.__module__ == module.__name__:
+                # Check if the class has the method
+                if hasattr(obj, method_name):
+                    method = getattr(obj, method_name)
+                    if callable(method):
+                        return obj, method
+        except Exception:
+            # Skip objects that can't be inspected (e.g., Django lazy objects
+            # that require settings configuration, or other problematic objects)
+            continue
 
     return None
 
@@ -121,6 +127,12 @@ def _load_function_from_file(
         sys.path.insert(0, cwd)
         added_paths.append(cwd)
 
+    # Add utils directory if it exists (common pattern in many projects)
+    utils_dir = os.path.join(cwd, 'utils')
+    if os.path.isdir(utils_dir) and utils_dir not in sys.path:
+        sys.path.insert(0, utils_dir)
+        added_paths.append(utils_dir)
+
     # Add the package root to the system path if not already present
     if package_root and package_root not in sys.path:
         sys.path.insert(0, package_root)
@@ -130,7 +142,12 @@ def _load_function_from_file(
         # Import the module
         module = importlib.import_module(mod_name)
         # It might have been imported before, so reload to get the latest version
-        importlib.reload(module)
+        # For temporary modules (like *_old.py, *_new.py), reload might fail
+        try:
+            importlib.reload(module)
+        except (ModuleNotFoundError, ImportError):
+            # Reload failed, but the module is already imported, so continue
+            pass
     finally:
         # Clean up sys.path in reverse order
         for path_to_remove in reversed(added_paths):
@@ -157,9 +174,12 @@ def _load_function_from_file(
     # Auto-detection: Try module-level function first
     func = getattr(module, func_name, None)
 
-    # If found at module level and it's a plain function, return it
-    if func is not None and isinstance(func, types.FunctionType):
-        return func
+    # If found at module level and it's callable (includes plain functions,
+    # decorated functions, lambdas, etc.), return it
+    if func is not None and callable(func):
+        # Make sure it's not a class (classes are callable too)
+        if not isinstance(func, type):
+            return func
 
     # Not found at module level or not a function, search in classes
     result = _find_method_in_module(module, func_name)

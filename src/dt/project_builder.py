@@ -97,8 +97,12 @@ class ProjectBuilder:
         Returns:
             ProjectEnvironment with cloned repository
         """
-        # Create temporary directory
-        temp_dir = tempfile.mkdtemp(prefix="difftest_project_")
+        # Create temporary directory in project root
+        project_base = os.path.join(os.path.dirname(__file__), "..", "..")
+        project_base = os.path.abspath(project_base)
+        temp_parent = os.path.join(project_base, ".difftest_temp")
+        os.makedirs(temp_parent, exist_ok=True)
+        temp_dir = tempfile.mkdtemp(prefix="difftest_project_", dir=temp_parent)
 
         try:
             # Clone repository
@@ -135,17 +139,21 @@ class ProjectBuilder:
             if install_deps:
                 venv_path = self._install_dependencies(temp_dir)
 
-            # Cleanup function
+            # Cleanup function (disabled to keep temp directories for inspection)
             def cleanup():
-                try:
-                    shutil.rmtree(temp_dir)
-                    self.log.debug(
-                        f"[ProjectBuilder] Cleaned up project directory: {temp_dir}"
-                    )
-                except Exception as e:
-                    self.log.debug(
-                        f"[ProjectBuilder] Failed to cleanup: {e}"
-                    )
+                self.log.debug(
+                    f"[ProjectBuilder] Keeping project directory for inspection: {temp_dir}"
+                )
+                # Uncomment below to enable auto-cleanup:
+                # try:
+                #     shutil.rmtree(temp_dir)
+                #     self.log.debug(
+                #         f"[ProjectBuilder] Cleaned up project directory: {temp_dir}"
+                #     )
+                # except Exception as e:
+                #     self.log.debug(
+                #         f"[ProjectBuilder] Failed to cleanup: {e}"
+                #     )
 
             return ProjectEnvironment(
                 project_root=temp_dir,
@@ -253,26 +261,99 @@ class ProjectBuilder:
 
             return venv_path
 
-        # Try pyproject.toml
-        if os.path.exists(pyproject_file):
+        # Try pyproject.toml or setup.py
+        setup_py_file = os.path.join(project_root, "setup.py")
+
+        if os.path.exists(pyproject_file) or os.path.exists(setup_py_file):
             self.log.verbose(
-                f"[ProjectBuilder] Installing project from pyproject.toml"
+                f"[ProjectBuilder] Installing project in editable mode"
             )
 
             try:
-                # Install the project in editable mode to get dependencies
+                # First, install build dependencies
+                # For older projects, we need an older setuptools version that has dep_util
+                self.log.verbose("[ProjectBuilder] Installing build dependencies")
                 subprocess.run(
-                    [pip_cmd, "install", "-q", "-e", "."],
+                    [pip_cmd, "install", "--upgrade", "pip", "wheel"],
                     cwd=project_root,
                     capture_output=True,
                     text=True,
-                    check=True
+                    timeout=120
                 )
-                self.log.verbose("[ProjectBuilder] Project and dependencies installed successfully")
+
+                # Install setuptools<58 for compatibility with older projects
+                # setuptools 58+ removed setuptools.dep_util
+                subprocess.run(
+                    [pip_cmd, "install", "setuptools<58", "setuptools-scm[toml]"],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    timeout=120
+                )
+
+                # For older scientific projects, install common dependencies
+                subprocess.run(
+                    [pip_cmd, "install", "extension-helpers", "numpy<2.0", "cython"],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    timeout=180
+                )
+
+                # Install the project in editable mode to get dependencies
+                # Use --no-build-isolation so it uses our setuptools<58
+                self.log.verbose("[ProjectBuilder] Running pip install -e . --no-build-isolation")
+                result = subprocess.run(
+                    [pip_cmd, "install", "-e", ".", "--no-build-isolation"],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    timeout=600  # 10 minute timeout for complex builds with compilation
+                )
+
+                if result.returncode == 0:
+                    self.log.verbose("[ProjectBuilder] Project and dependencies installed successfully")
+                else:
+                    self.log.normal(f"⚠️  Warning: pip install -e . failed (exit code: {result.returncode})")
+                    if result.stderr:
+                        # Show last 15 lines of stderr for debugging
+                        stderr_lines = result.stderr.strip().split('\n')
+                        self.log.normal("   Last few error lines:")
+                        for line in stderr_lines[-15:]:
+                            if line.strip():
+                                self.log.normal(f"   {line}")
+
+                    # Try build_ext --inplace as fallback for projects with C extensions
+                    if os.path.exists(setup_py_file):
+                        self.log.normal("   Attempting fallback: python setup.py build_ext --inplace")
+                        try:
+                            python_cmd = self._get_venv_python(venv_path) if venv_path else "python3"
+                            fallback_result = subprocess.run(
+                                [python_cmd, "setup.py", "build_ext", "--inplace"],
+                                cwd=project_root,
+                                capture_output=True,
+                                text=True,
+                                timeout=600  # 10 minute timeout for complex builds
+                            )
+                            if fallback_result.returncode == 0:
+                                self.log.normal("   ✓ Fallback build succeeded - C extensions compiled")
+                            else:
+                                self.log.normal(f"   ✗ Fallback build also failed")
+                                if fallback_result.stderr:
+                                    stderr_lines = fallback_result.stderr.strip().split('\n')
+                                    for line in stderr_lines[-10:]:
+                                        if line.strip():
+                                            self.log.debug(f"   {line}")
+                        except subprocess.TimeoutExpired:
+                            self.log.normal("   ✗ Fallback build timed out after 10 minutes")
+                        except Exception as e:
+                            self.log.debug(f"   Fallback build error: {e}")
+
+            except subprocess.TimeoutExpired:
+                self.log.normal(f"⚠️  Warning: Installation timed out after 5 minutes")
             except subprocess.CalledProcessError as e:
-                self.log.debug(
-                    f"[ProjectBuilder] Failed to install project: {e.stderr}"
-                )
+                self.log.normal(f"⚠️  Warning: Failed to install project")
+                self.log.debug(f"[ProjectBuilder] Failed to install project: {e.stderr}")
 
             return venv_path
 
