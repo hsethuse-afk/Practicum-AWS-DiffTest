@@ -131,7 +131,31 @@ python run_ab.py \
   --report my_report.html
 ```
 
-### 4. Test HumanEval Tasks
+### 4. Test from SWE-bench Dataset
+
+Test instances directly from the SWE-bench dataset:
+
+```bash
+python src/run_hf_dataset.py --index 46 --no-interactive --auto-approve --max-examples 10
+```
+
+**How it works:**
+1. Loads test instance from HuggingFace dataset by index
+2. Clones the repository specified in the instance
+3. Applies the patch from the dataset
+4. Runs differential testing on the modified functions
+5. Reports any behavioral differences
+
+**Parameters:**
+- `--index N` - Index of the test instance in the dataset (required)
+- `--no-interactive` - Skip interactive function selection
+- `--auto-approve` - Automatically approve test strategies without user confirmation
+- `--max-examples N` - Number of test cases to generate (default: 10)
+- `--seed N` - Random seed for reproducible test generation (optional)
+- `--report PATH` - Generate HTML report at specified path (optional)
+- `--log MODE` - Logging level (silent/normal/verbose/debug)
+
+### 5. Test HumanEval Tasks
 
 ```bash
 cd src
@@ -140,7 +164,7 @@ python run_by_taskid.py --t HumanEval/10
 
 Test file is automatically used for type inference.
 
-### 4. Run All Tests
+### 6. Run All Tests
 
 ```bash
 cd src

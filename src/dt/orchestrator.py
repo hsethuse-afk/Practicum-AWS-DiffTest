@@ -1066,3 +1066,258 @@ class Orchestrator:
         if seed is not None:
             cmd += f" --seed {seed}"
         return cmd
+
+    def run_base_and_patch_from_repo(
+        self,
+        repo_url: str,
+        base_commit: str,
+        patch_content: str,
+        func_name: str = None,
+        max_examples: int = 200,
+        install_deps: bool = True,
+        auto_approve: bool = False,
+        interactive_select: bool = True,
+        selected_functions: str = None,
+        report_path: str = None,
+        seed: int = None,
+    ):
+        """
+        Run differential testing using base commit + patch approach.
+
+        Instead of parsing the patch file, this method:
+        1. Checkouts to base_commit (pre-change state)
+        2. Extracts files from the patch
+        3. Applies the patch
+        4. Compares the two states
+
+        This avoids issues with malformed patch files.
+
+        Args:
+            repo_url: Repository URL to clone
+            base_commit: Base commit hash (before changes)
+            patch_content: Patch content as string
+            func_name: Optional filter for specific function name
+            max_examples: Maximum number of test examples per function
+            install_deps: Whether to install dependencies
+            auto_approve: If True, skip user confirmation for strategies
+            interactive_select: If True, prompt user to select functions
+            selected_functions: Pre-selected function indices
+            report_path: Optional path to save HTML report
+            seed: Optional random seed for reproducible test generation
+
+        Returns:
+            List of test results for each modified function
+        """
+        import os
+        import subprocess
+        import tempfile
+        import shutil
+
+        # Clone repo and checkout to base commit
+        self.log.verbose(
+            f"[Orchestrator] Cloning repository and checking out base commit: {base_commit}"
+        )
+        env = self.project_builder.build_from_url(
+            repo_url, base_commit, install_deps=install_deps
+        )
+
+        try:
+            self.log.verbose(
+                f"[Orchestrator] Project cloned to: {env.project_root}"
+            )
+
+            # Find test file if exists (for type inference)
+            test_file = self._find_test_file(env.project_root)
+
+            # Change to project root
+            original_cwd = os.getcwd()
+            os.chdir(env.project_root)
+
+            try:
+                # Save patch to temporary file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.patch', delete=False) as f:
+                    f.write(patch_content)
+                    patch_file = f.name
+
+                try:
+                    # Extract list of modified files from patch
+                    self.log.verbose("[Orchestrator] Extracting modified files from patch")
+                    cmd = ["git", "apply", "--numstat", patch_file]
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True
+                    )
+
+                    modified_files = []
+                    if result.stdout:
+                        for line in result.stdout.strip().split('\n'):
+                            if line:
+                                parts = line.split('\t')
+                                if len(parts) >= 3:
+                                    modified_files.append(parts[2])
+
+                    self.log.verbose(f"[Orchestrator] Found {len(modified_files)} modified files")
+
+                    # Create temp directory for file pairs
+                    temp_dir = tempfile.mkdtemp(prefix='dt_base_patch_')
+
+                    try:
+                        # Save "before" versions (base commit)
+                        before_files = {}
+                        for file_path in modified_files:
+                            if os.path.exists(file_path):
+                                before_file = os.path.join(temp_dir, f"before_{os.path.basename(file_path)}")
+                                shutil.copy(file_path, before_file)
+                                before_files[file_path] = before_file
+                                self.log.debug(f"[Orchestrator] Saved before: {file_path} -> {before_file}")
+
+                        # Apply patch
+                        self.log.verbose("[Orchestrator] Applying patch")
+                        cmd = ["git", "apply", patch_file]
+                        result = subprocess.run(
+                            cmd,
+                            capture_output=True,
+                            text=True
+                        )
+
+                        if result.returncode != 0:
+                            self.log.normal(f"⚠️  Warning: git apply failed: {result.stderr}")
+                            self.log.normal("Attempting to apply with 3-way merge...")
+                            cmd = ["git", "apply", "--3way", patch_file]
+                            result = subprocess.run(
+                                cmd,
+                                capture_output=True,
+                                text=True
+                            )
+                            if result.returncode != 0:
+                                raise RuntimeError(f"Failed to apply patch: {result.stderr}")
+
+                        # Save "after" versions (with patch applied)
+                        after_files = {}
+                        for file_path in modified_files:
+                            if os.path.exists(file_path):
+                                after_file = os.path.join(temp_dir, f"after_{os.path.basename(file_path)}")
+                                shutil.copy(file_path, after_file)
+                                after_files[file_path] = after_file
+                                self.log.debug(f"[Orchestrator] Saved after: {file_path} -> {after_file}")
+
+                        # Now generate a proper diff from the current working directory changes
+                        # Since we've applied the patch, git diff will show the changes
+                        self.log.verbose("[Orchestrator] Generating diff from applied changes")
+
+                        # Create a diff file from current working directory changes
+                        diff_output_file = os.path.join(temp_dir, "applied.diff")
+                        cmd = ["git", "diff", "HEAD"]
+                        result = subprocess.run(
+                            cmd,
+                            capture_output=True,
+                            text=True
+                        )
+
+                        with open(diff_output_file, 'w') as f:
+                            f.write(result.stdout)
+
+                        # Parse the diff to find modified functions
+                        from .diffpairer import DiffPairer
+                        pairer = DiffPairer()
+
+                        self.log.verbose("[Orchestrator] Parsing diff to find modified functions")
+                        all_pairs = pairer.pair_from_diff_file(
+                            diff_output_file,
+                            func_name=func_name,
+                            project_root=env.project_root
+                        )
+
+                        if not all_pairs:
+                            self.log.verbose("[Orchestrator] No modified functions found")
+                            return []
+
+                        # Let user select which functions to test
+                        selected_pairs = self._select_functions_to_test(
+                            all_pairs,
+                            interactive=interactive_select,
+                            preselected=selected_functions
+                        )
+
+                        if not selected_pairs:
+                            print("\n❌ No functions selected for testing.")
+                            return []
+
+                        self.log.verbose(
+                            f"[Orchestrator] Testing {len(selected_pairs)} selected function(s)"
+                        )
+
+                        # Update harness with venv_path if available
+                        if env.venv_path:
+                            self.log.verbose(
+                                f"[Orchestrator] Using virtual environment: {env.venv_path}"
+                            )
+                            self.harness = HarnessBuilder(
+                                venv_path=env.venv_path
+                            )
+
+                        # Run tests on each pair
+                        results = []
+                        generated_reports = []
+                        for i, (target, cleanup_pair) in enumerate(selected_pairs, 1):
+                            self.log.verbose(
+                                f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
+                            )
+
+                            # Generate unique report path for each function
+                            func_report_path = None
+                            if report_path:
+                                if len(selected_pairs) > 1:
+                                    base, ext = os.path.splitext(report_path)
+                                    func_report_path = f"{base}_{target.func_name}{ext}"
+                                else:
+                                    func_report_path = report_path
+                            else:
+                                # Auto-generate report in project root if not specified
+                                instance_id = repo_url.split('/')[-1].replace('.git', '')
+                                func_report_path = os.path.join(
+                                    env.project_root,
+                                    f"report_{instance_id}_{target.func_name}.html"
+                                )
+
+                            generated_reports.append(func_report_path)
+
+                            try:
+                                result = self.run_pair(
+                                    file_a=target.file_a,
+                                    file_b=target.file_b,
+                                    func_name=target.func_name,
+                                    max_examples=max_examples,
+                                    test_file=test_file,
+                                    auto_approve=auto_approve,
+                                    report_path=func_report_path,
+                                    seed=seed,
+                                )
+                                results.append(result)
+                            finally:
+                                cleanup_pair()
+
+                        # Print summary of generated reports
+                        if generated_reports and not report_path:
+                            self.log.normal("\n📄 Generated Reports:")
+                            for report in generated_reports:
+                                self.log.normal(f"   • {report}")
+
+                        return results
+
+                    finally:
+                        # Cleanup temp directory
+                        if os.path.exists(temp_dir):
+                            shutil.rmtree(temp_dir)
+
+                finally:
+                    # Cleanup patch file
+                    if os.path.exists(patch_file):
+                        os.unlink(patch_file)
+
+            finally:
+                os.chdir(original_cwd)
+
+        finally:
+            env.cleanup()
