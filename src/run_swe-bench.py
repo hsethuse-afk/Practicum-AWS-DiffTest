@@ -8,37 +8,46 @@ in the context of the cloned repository to handle relative imports properly.
 
 import argparse
 import sys
-import requests
+import os
+import pandas as pd
 from dt.orchestrator import Orchestrator
 from utilities.coverage_runner import handle_coverage
 
 
-def fetch_hf_dataset_entry(dataset_index: int):
-    """Fetch a single entry from HF dataset"""
-    url = "https://datasets-server.huggingface.co/rows"
-    params = {
-        "dataset": "princeton-nlp/SWE-bench_Verified",
-        "config": "default",
-        "split": "test",
-        "offset": 0,
-        "length": 100
-    }
+def fetch_dataset_entry(instance_id: str):
+    """Fetch a single entry from SWE-bench parquet file by instance ID"""
+    # Path to the parquet file
+    parquet_path = os.path.join(
+        os.path.dirname(__file__),
+        "utilities",
+        "swe-bench",
+        "SWE-bench_verified.parquet",
+    )
 
-    print(f"Fetching data from Hugging Face dataset...")
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    data = response.json()
+    if not os.path.exists(parquet_path):
+        raise FileNotFoundError(
+            f"Parquet file not found at: {parquet_path}"
+        )
 
-    rows = data.get('rows', [])
-    if not rows or dataset_index >= len(rows):
-        raise ValueError(f"Invalid index {dataset_index}")
+    print(f"Loading SWE-bench dataset from: {parquet_path}")
+    df = pd.read_parquet(parquet_path)
 
-    row = rows[dataset_index]['row']
+    # Filter by instance_id
+    matching_rows = df[df["instance_id"] == instance_id]
+
+    if matching_rows.empty:
+        raise ValueError(
+            f"Instance ID '{instance_id}' not found in dataset"
+        )
+
+    row = matching_rows.iloc[0]
+
+    print(f"✓ Found instance: {instance_id}")
     return {
-        'instance_id': row.get('instance_id', f'index_{dataset_index}'),
-        'repo': row.get('repo', ''),
-        'base_commit': row.get('base_commit', ''),
-        'patch': row.get('patch', '')
+        "instance_id": row["instance_id"],
+        "repo": row["repo"],
+        "base_commit": row["base_commit"],
+        "patch": row["patch"],
     }
 
 
@@ -49,10 +58,10 @@ def main():
 
     # Required arguments
     p.add_argument(
-        "--index",
-        type=int,
+        "--instance-id",
+        type=str,
         required=True,
-        help="Dataset index to fetch (0-99 for first 100 entries)"
+        help="Instance ID to fetch from the dataset (e.g., 'django__django-11099')",
     )
 
     # Optional arguments
@@ -60,58 +69,61 @@ def main():
         "--func",
         type=str,
         default=None,
-        help="Optional: test only this specific function by name"
+        help="Optional: test only this specific function by name",
     )
     p.add_argument(
         "--functions",
         type=str,
         default=None,
-        help="Comma-separated function indices to test, e.g., '1,2,3' or '1-3' (optional)"
+        help="Comma-separated function indices to test, e.g., '1,2,3' or '1-3' (optional)",
     )
     p.add_argument(
         "--no-interactive",
         action="store_true",
-        help="Skip interactive function selection"
+        help="Skip interactive function selection",
     )
     p.add_argument(
         "--max-examples",
         type=int,
         default=200,
-        help="Number of test cases to generate (default: 200)"
+        help="Number of test cases to generate (default: 200)",
     )
     p.add_argument(
         "--seed",
         type=int,
         default=None,
-        help="Random seed for reproducible test generation (optional)"
+        help="Random seed for reproducible test generation (optional)",
     )
     p.add_argument(
         "--report",
         type=str,
         default=None,
-        help="Generate HTML report at specified path (optional)"
+        help="Generate HTML report at specified path (optional)",
     )
     p.add_argument(
         "--log",
         type=str,
         default="N",
-        help="Logging mode: (s)ilent, (n)ormal, (v)erbose, (d)ebug"
+        help="Logging mode: (s)ilent, (n)ormal, (v)erbose, (d)ebug",
     )
     p.add_argument(
         "--coverage",
         action="store_true",
-        help="Generate coverage report"
+        help="Generate coverage report",
     )
     p.add_argument(
-        "--auto-approve",
-        action="store_true",
-        help="Automatically approve test strategies without user confirmation"
+        "--no-auto-approve",
+        action="store_false",
+        dest="auto_approve",
+        help="Disable automatic approval of test strategies (requires user confirmation)",
     )
     p.add_argument(
         "--no-install-deps",
         action="store_true",
-        help="Skip dependency installation"
+        help="Skip dependency installation",
     )
+
+    p.set_defaults(auto_approve=True)
 
     args = p.parse_args()
 
@@ -129,21 +141,23 @@ def main():
     elif val in ("d", "debug"):
         log_mode = 4
 
-    print(f"\n🔬 Running differential testing from HuggingFace dataset")
+    print(
+        f"\n🔬 Running differential testing from SWE-bench_Verified dataset"
+    )
     print(f"📊 Dataset: SWE-bench_Verified")
-    print(f"📍 Index: {args.index}")
+    print(f"📍 Instance ID: {args.instance_id}")
     if args.func:
         print(f"🎯 Testing specific function: {args.func}")
     print()
 
     try:
-        # Fetch entry from HF dataset
-        entry = fetch_hf_dataset_entry(args.index)
+        # Fetch entry from parquet file
+        entry = fetch_dataset_entry(args.instance_id)
 
-        instance_id = entry['instance_id']
-        repo = entry['repo']
-        base_commit = entry['base_commit']
-        patch_content = entry['patch']
+        instance_id = entry["instance_id"]
+        repo = entry["repo"]
+        base_commit = entry["base_commit"]
+        patch_content = entry["patch"]
 
         if not patch_content or not repo or not base_commit:
             print("❌ Missing required data in dataset entry")
@@ -163,7 +177,9 @@ def main():
         repo_url = f"https://github.com/{repo}.git"
 
         print(f"{'='*60}")
-        print(f"🧪 Running Differential Tests using Base Commit + Patch")
+        print(
+            f"🧪 Running Differential Tests using Base Commit + Patch"
+        )
         print(f"{'='*60}\n")
 
         # Run differential testing using base commit + patch approach
@@ -199,12 +215,13 @@ def main():
             print(f"\n📄 Report saved to: {args.report}")
         print()
 
-    except requests.RequestException as e:
-        print(f"❌ Failed to fetch data from Hugging Face: {e}")
+    except FileNotFoundError as e:
+        print(f"❌ {e}")
         sys.exit(1)
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

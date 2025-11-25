@@ -164,13 +164,6 @@ python run_ab.py \
   --report my_report.html
 ```
 
-### Run HumanEval Task by ID
-
-```bash
-cd src
-python run_by_taskid.py --t HumanEval/10
-```
-
 ### Command-Line Options
 
 | Option | Description |
@@ -225,6 +218,16 @@ PyDiffer utilized code generation benchmarks to test the abilities to detect beh
 | Task Supported | 150 |
 | Task Passed | 150 |
 
+**Single test:**
+```bash
+python src/run_human-eval.py --t HumanEval/0 --max-examples 200
+```
+
+**Batch mode (all tests with 5s timeout per test, customize using --timeout n):**
+```bash
+python src/run_human-eval.py --run-all --max-examples 200
+```
+
 ### [SWE-bench](https://www.swebench.com/)
 
 | Metric | Value |
@@ -233,11 +236,14 @@ PyDiffer utilized code generation benchmarks to test the abilities to detect beh
 | Task Supported | TBD |
 | Task Passed | TBD |
 
+**Single test:**
+```bash
+python src/run_swe-bench.py --instance-id django__django-15916
+```
+
 For detailed benchmark results and methodology, see [docs/benchmarks.md](docs/benchmarks.md).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 <!-- CONTRIBUTING -->
 ## Contributing

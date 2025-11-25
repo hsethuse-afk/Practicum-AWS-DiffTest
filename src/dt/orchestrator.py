@@ -234,7 +234,9 @@ class Orchestrator:
         run_config = RunConfig(max_examples=max_examples, seed=seed)
 
         # Use provided timeout or fall back to instance timeout
-        effective_timeout = timeout if timeout is not None else self.timeout
+        effective_timeout = (
+            timeout if timeout is not None else self.timeout
+        )
 
         a_results, b_results, warnings = self.runner.execute(
             fn_a, fn_b, plan, run_config, timeout=effective_timeout
@@ -244,7 +246,9 @@ class Orchestrator:
 
         # If timeout occurred and no results, return None
         if effective_timeout and not a_results and not b_results:
-            self.log.normal(f"\n⏱️  Test timed out after {effective_timeout}s with no results")
+            self.log.normal(
+                f"\n⏱️  Test timed out after {effective_timeout}s with no results"
+            )
             return None
 
         cmp = self.comparator.compare(a_results, b_results)
@@ -482,6 +486,7 @@ class Orchestrator:
                 if len(pairs) > 1:
                     # Multiple functions: add function name to report path
                     import os as os_module
+
                     base, ext = os_module.path.splitext(report_path)
                     func_report_path = f"{base}_{target.func_name}{ext}"
                 else:
@@ -565,6 +570,7 @@ class Orchestrator:
             try:
                 # Parse patch to find modified functions
                 from .diffpairer import DiffPairer
+
                 pairer = DiffPairer()
 
                 self.log.verbose(
@@ -574,7 +580,7 @@ class Orchestrator:
                 # Use the patch parser which will read files from the cloned repo
                 pairs = pairer.pair_from_patch(
                     os.path.join(original_cwd, patch_file_path),
-                    func_name
+                    func_name,
                 )
 
                 if not pairs:
@@ -587,7 +593,7 @@ class Orchestrator:
                 selected_pairs = self._select_functions_to_test(
                     pairs,
                     interactive=interactive_select,
-                    preselected=selected_functions
+                    preselected=selected_functions,
                 )
 
                 if not selected_pairs:
@@ -609,7 +615,9 @@ class Orchestrator:
 
                 # Run tests on each pair
                 results = []
-                for i, (target, cleanup_pair) in enumerate(selected_pairs, 1):
+                for i, (target, cleanup_pair) in enumerate(
+                    selected_pairs, 1
+                ):
                     self.log.verbose(
                         f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
                     )
@@ -620,8 +628,13 @@ class Orchestrator:
                         if len(selected_pairs) > 1:
                             # Multiple functions: add function name to report path
                             import os as os_module
-                            base, ext = os_module.path.splitext(report_path)
-                            func_report_path = f"{base}_{target.func_name}{ext}"
+
+                            base, ext = os_module.path.splitext(
+                                report_path
+                            )
+                            func_report_path = (
+                                f"{base}_{target.func_name}{ext}"
+                            )
                         else:
                             # Single function: use original report path
                             func_report_path = report_path
@@ -717,16 +730,16 @@ class Orchestrator:
                 )
                 cmd = ["git", "diff", f"{commit}^", commit]
                 result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    check=True
+                    cmd, capture_output=True, text=True, check=True
                 )
                 diff_content = result.stdout
 
                 # Save diff to temporary file for parsing
                 import tempfile
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.diff', delete=False) as tmp:
+
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".diff", delete=False
+                ) as tmp:
                     tmp.write(diff_content)
                     tmp_diff_path = tmp.name
 
@@ -739,18 +752,25 @@ class Orchestrator:
 
                     # Get pairs for testing and extract info about all modified functions
                     pairs = pairer.pair_from_diff_file(
-                        tmp_diff_path, func_name, commit, project_root=env.project_root
+                        tmp_diff_path,
+                        func_name,
+                        commit,
+                        project_root=env.project_root,
                     )
 
                     # Also get ALL modified functions (including class methods) for reporting
-                    all_modified = pairer.git_parser.parse_diff_from_file(
-                        tmp_diff_path, commit
+                    all_modified = (
+                        pairer.git_parser.parse_diff_from_file(
+                            tmp_diff_path, commit
+                        )
                     )
 
                     # Report all found functions/methods
                     if all_modified:
                         module_funcs = [
-                            m for m in all_modified if not m.is_class_method
+                            m
+                            for m in all_modified
+                            if not m.is_class_method
                         ]
                         class_methods = [
                             m for m in all_modified if m.is_class_method
@@ -792,7 +812,7 @@ class Orchestrator:
                 selected_pairs = self._select_functions_to_test(
                     pairs,
                     interactive=interactive_select,
-                    preselected=selected_functions
+                    preselected=selected_functions,
                 )
 
                 if not selected_pairs:
@@ -814,7 +834,9 @@ class Orchestrator:
 
                 # Run tests on each pair
                 results = []
-                for i, (target, cleanup_pair) in enumerate(selected_pairs, 1):
+                for i, (target, cleanup_pair) in enumerate(
+                    selected_pairs, 1
+                ):
                     self.log.verbose(
                         f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
                     )
@@ -825,8 +847,13 @@ class Orchestrator:
                         if len(selected_pairs) > 1:
                             # Multiple functions: add function name to report path
                             import os as os_module
-                            base, ext = os_module.path.splitext(report_path)
-                            func_report_path = f"{base}_{target.func_name}{ext}"
+
+                            base, ext = os_module.path.splitext(
+                                report_path
+                            )
+                            func_report_path = (
+                                f"{base}_{target.func_name}{ext}"
+                            )
                         else:
                             # Single function: use original report path
                             func_report_path = report_path
@@ -892,7 +919,7 @@ class Orchestrator:
         self,
         pairs: list,
         interactive: bool = True,
-        preselected: str = None
+        preselected: str = None,
     ) -> list:
         """
         Let user select which functions to test.
@@ -910,12 +937,18 @@ class Orchestrator:
 
         # Non-interactive mode with preselected functions
         if not interactive and preselected:
-            selected_indices = self._parse_function_selection(preselected, len(pairs))
+            selected_indices = self._parse_function_selection(
+                preselected, len(pairs)
+            )
             if selected_indices is None:
-                print("⚠️  Invalid function selection. Testing all functions.")
+                print(
+                    "⚠️  Invalid function selection. Testing all functions."
+                )
                 return pairs
 
-            selected_pairs = [pairs[idx - 1] for idx in selected_indices]
+            selected_pairs = [
+                pairs[idx - 1] for idx in selected_indices
+            ]
             print(f"\n✅ Selected {len(selected_pairs)} function(s):")
             for idx in selected_indices:
                 target, _ = pairs[idx - 1]
@@ -960,17 +993,25 @@ class Orchestrator:
                     return []
 
                 # Parse input
-                selected_indices = self._parse_function_selection(user_input, len(pairs))
+                selected_indices = self._parse_function_selection(
+                    user_input, len(pairs)
+                )
 
                 if selected_indices is None:
-                    print("⚠️  No valid functions selected. Please try again.")
+                    print(
+                        "⚠️  No valid functions selected. Please try again."
+                    )
                     continue
 
                 # Get selected pairs
-                selected_pairs = [pairs[idx - 1] for idx in selected_indices]
+                selected_pairs = [
+                    pairs[idx - 1] for idx in selected_indices
+                ]
 
                 # Show selection
-                print(f"\n✅ Selected {len(selected_pairs)} function(s):")
+                print(
+                    f"\n✅ Selected {len(selected_pairs)} function(s):"
+                )
                 for idx in selected_indices:
                     target, _ = pairs[idx - 1]
                     print(f"   {idx}. {target.func_name}")
@@ -984,7 +1025,9 @@ class Orchestrator:
                 print(f"⚠️  Error: {e}. Please try again.")
                 continue
 
-    def _parse_function_selection(self, selection: str, max_index: int) -> list:
+    def _parse_function_selection(
+        self, selection: str, max_index: int
+    ) -> list:
         """
         Parse function selection string into list of indices.
 
@@ -1020,7 +1063,9 @@ class Orchestrator:
                         )
                         continue
 
-                    selected_indices.update(range(start_idx, end_idx + 1))
+                    selected_indices.update(
+                        range(start_idx, end_idx + 1)
+                    )
                 except ValueError:
                     print(f"⚠️  Invalid range format: '{part}'")
                     continue
@@ -1035,7 +1080,9 @@ class Orchestrator:
                     elif 1 <= idx <= max_index:
                         selected_indices.add(idx)
                     else:
-                        print(f"⚠️  Number {idx} is out of bounds (1-{max_index})")
+                        print(
+                            f"⚠️  Number {idx} is out of bounds (1-{max_index})"
+                        )
                 except ValueError:
                     print(f"⚠️  Invalid number: '{part}'")
                     continue
@@ -1161,113 +1208,140 @@ class Orchestrator:
 
             try:
                 # Save patch to temporary file
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.patch', delete=False) as f:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".patch", delete=False
+                ) as f:
                     f.write(patch_content)
                     patch_file = f.name
 
                 try:
                     # Extract list of modified files from patch
-                    self.log.verbose("[Orchestrator] Extracting modified files from patch")
+                    self.log.verbose(
+                        "[Orchestrator] Extracting modified files from patch"
+                    )
                     cmd = ["git", "apply", "--numstat", patch_file]
                     result = subprocess.run(
-                        cmd,
-                        capture_output=True,
-                        text=True
+                        cmd, capture_output=True, text=True
                     )
 
                     modified_files = []
                     if result.stdout:
-                        for line in result.stdout.strip().split('\n'):
+                        for line in result.stdout.strip().split("\n"):
                             if line:
-                                parts = line.split('\t')
+                                parts = line.split("\t")
                                 if len(parts) >= 3:
                                     modified_files.append(parts[2])
 
-                    self.log.verbose(f"[Orchestrator] Found {len(modified_files)} modified files")
+                    self.log.verbose(
+                        f"[Orchestrator] Found {len(modified_files)} modified files"
+                    )
 
                     # Create temp directory for file pairs
-                    temp_dir = tempfile.mkdtemp(prefix='dt_base_patch_')
+                    temp_dir = tempfile.mkdtemp(prefix="dt_base_patch_")
 
                     try:
                         # Save "before" versions (base commit)
                         before_files = {}
                         for file_path in modified_files:
                             if os.path.exists(file_path):
-                                before_file = os.path.join(temp_dir, f"before_{os.path.basename(file_path)}")
+                                before_file = os.path.join(
+                                    temp_dir,
+                                    f"before_{os.path.basename(file_path)}",
+                                )
                                 shutil.copy(file_path, before_file)
                                 before_files[file_path] = before_file
-                                self.log.debug(f"[Orchestrator] Saved before: {file_path} -> {before_file}")
+                                self.log.debug(
+                                    f"[Orchestrator] Saved before: {file_path} -> {before_file}"
+                                )
 
                         # Apply patch
-                        self.log.verbose("[Orchestrator] Applying patch")
+                        self.log.verbose(
+                            "[Orchestrator] Applying patch"
+                        )
                         cmd = ["git", "apply", patch_file]
                         result = subprocess.run(
-                            cmd,
-                            capture_output=True,
-                            text=True
+                            cmd, capture_output=True, text=True
                         )
 
                         if result.returncode != 0:
-                            self.log.normal(f"⚠️  Warning: git apply failed: {result.stderr}")
-                            self.log.normal("Attempting to apply with 3-way merge...")
+                            self.log.normal(
+                                f"⚠️  Warning: git apply failed: {result.stderr}"
+                            )
+                            self.log.normal(
+                                "Attempting to apply with 3-way merge..."
+                            )
                             cmd = ["git", "apply", "--3way", patch_file]
                             result = subprocess.run(
-                                cmd,
-                                capture_output=True,
-                                text=True
+                                cmd, capture_output=True, text=True
                             )
                             if result.returncode != 0:
-                                raise RuntimeError(f"Failed to apply patch: {result.stderr}")
+                                raise RuntimeError(
+                                    f"Failed to apply patch: {result.stderr}"
+                                )
 
                         # Save "after" versions (with patch applied)
                         after_files = {}
                         for file_path in modified_files:
                             if os.path.exists(file_path):
-                                after_file = os.path.join(temp_dir, f"after_{os.path.basename(file_path)}")
+                                after_file = os.path.join(
+                                    temp_dir,
+                                    f"after_{os.path.basename(file_path)}",
+                                )
                                 shutil.copy(file_path, after_file)
                                 after_files[file_path] = after_file
-                                self.log.debug(f"[Orchestrator] Saved after: {file_path} -> {after_file}")
+                                self.log.debug(
+                                    f"[Orchestrator] Saved after: {file_path} -> {after_file}"
+                                )
 
                         # Now generate a proper diff from the current working directory changes
                         # Since we've applied the patch, git diff will show the changes
-                        self.log.verbose("[Orchestrator] Generating diff from applied changes")
-
-                        # Create a diff file from current working directory changes
-                        diff_output_file = os.path.join(temp_dir, "applied.diff")
-                        cmd = ["git", "diff", "HEAD"]
-                        result = subprocess.run(
-                            cmd,
-                            capture_output=True,
-                            text=True
+                        self.log.verbose(
+                            "[Orchestrator] Generating diff from applied changes"
                         )
 
-                        with open(diff_output_file, 'w') as f:
+                        # Create a diff file from current working directory changes
+                        diff_output_file = os.path.join(
+                            temp_dir, "applied.diff"
+                        )
+                        cmd = ["git", "diff", "HEAD"]
+                        result = subprocess.run(
+                            cmd, capture_output=True, text=True
+                        )
+
+                        with open(diff_output_file, "w") as f:
                             f.write(result.stdout)
 
                         # Parse the diff to find modified functions
                         from .diffpairer import DiffPairer
+
                         pairer = DiffPairer()
 
-                        self.log.verbose("[Orchestrator] Parsing diff to find modified functions")
+                        self.log.verbose(
+                            "[Orchestrator] Parsing diff to find modified functions"
+                        )
                         all_pairs = pairer.pair_from_diff_file(
                             diff_output_file,
                             func_name=func_name,
-                            project_root=env.project_root
+                            project_root=env.project_root,
                         )
 
                         if not all_pairs:
-                            self.log.verbose("[Orchestrator] No modified functions found")
+                            self.log.verbose(
+                                "[Orchestrator] No modified functions found"
+                            )
                             return []
 
                         # Let user select which functions to test
                         selected_pairs = self._select_functions_to_test(
                             all_pairs,
                             interactive=interactive_select,
-                            preselected=selected_functions
+                            preselected=selected_functions,
                         )
 
                         if not selected_pairs:
-                            print("\n❌ No functions selected for testing.")
+                            print(
+                                "\n❌ No functions selected for testing."
+                            )
                             return []
 
                         self.log.verbose(
@@ -1286,7 +1360,9 @@ class Orchestrator:
                         # Run tests on each pair
                         results = []
                         generated_reports = []
-                        for i, (target, cleanup_pair) in enumerate(selected_pairs, 1):
+                        for i, (target, cleanup_pair) in enumerate(
+                            selected_pairs, 1
+                        ):
                             self.log.verbose(
                                 f"[Orchestrator] Testing {i}/{len(selected_pairs)}: {target.func_name}"
                             )
@@ -1295,16 +1371,20 @@ class Orchestrator:
                             func_report_path = None
                             if report_path:
                                 if len(selected_pairs) > 1:
-                                    base, ext = os.path.splitext(report_path)
+                                    base, ext = os.path.splitext(
+                                        report_path
+                                    )
                                     func_report_path = f"{base}_{target.func_name}{ext}"
                                 else:
                                     func_report_path = report_path
                             else:
                                 # Auto-generate report in project root if not specified
-                                instance_id = repo_url.split('/')[-1].replace('.git', '')
+                                instance_id = repo_url.split("/")[
+                                    -1
+                                ].replace(".git", "")
                                 func_report_path = os.path.join(
                                     env.project_root,
-                                    f"report_{instance_id}_{target.func_name}.html"
+                                    f"report_{instance_id}_{target.func_name}.html",
                                 )
 
                             generated_reports.append(func_report_path)
