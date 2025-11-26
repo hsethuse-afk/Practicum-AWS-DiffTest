@@ -21,13 +21,13 @@ def main():
         "--repo",
         type=str,
         required=True,
-        help="Repository URL (e.g., https://github.com/user/repo.git)"
+        help="Repository URL (e.g., https://github.com/user/repo.git)",
     )
     p.add_argument(
         "--commit",
         type=str,
         required=True,
-        help="Commit hash to test (e.g., ed7facc1b108ceff12bcb412d7a98471509f41b0)"
+        help="Commit hash to test (e.g., ed7facc1b108ceff12bcb412d7a98471509f41b0)",
     )
 
     # Optional arguments
@@ -35,47 +35,47 @@ def main():
         "--func",
         type=str,
         default=None,
-        help="Optional: test only this specific function by name"
+        help="Optional: test only this specific function by name",
     )
     p.add_argument(
         "--functions",
         type=str,
         default=None,
-        help="Optional: comma-separated function indices to test (e.g., '1,2,3' or '1-3'). Use with --no-interactive to skip selection prompt."
+        help="Optional: comma-separated function indices to test (e.g., '1,2,3' or '1-3'). Use with --no-interactive to skip selection prompt.",
     )
     p.add_argument(
         "--no-interactive",
         action="store_true",
-        help="Skip interactive function selection. If --functions not specified, tests all functions."
+        help="Skip interactive function selection. If --functions not specified, tests all functions.",
     )
     p.add_argument(
         "--max-examples",
         type=int,
         default=200,
-        help="Number of test cases to generate (default: 200)"
+        help="Number of test cases to generate (default: 200)",
     )
     p.add_argument(
         "--seed",
         type=int,
         default=None,
-        help="Random seed for reproducible test generation (optional)"
+        help="Random seed for reproducible test generation (optional)",
     )
     p.add_argument(
         "--report",
         type=str,
         default=None,
-        help="Generate HTML report at specified path (optional)"
+        help="Generate HTML report at specified path (optional)",
     )
     p.add_argument(
         "--no-install-deps",
         action="store_true",
-        help="Skip installing dependencies from requirements.txt"
+        help="Skip installing dependencies from requirements.txt",
     )
     p.add_argument(
         "--log",
         type=str,
         default="N",
-        help="Logging mode: (s)ilent, (n)ormal, (v)erbose, (d)ebug"
+        help="Logging mode: (s)ilent, (n)ormal, (v)erbose, (d)ebug",
     )
     p.add_argument(
         "--coverage",
@@ -85,7 +85,7 @@ def main():
     p.add_argument(
         "--auto-approve",
         action="store_true",
-        help="Automatically approve test strategies without user confirmation"
+        help="Automatically approve test strategies without user confirmation",
     )
 
     args = p.parse_args()
@@ -134,8 +134,8 @@ def main():
     print(f"Total functions tested: {len(results)}")
     passed = sum(1 for r in results if r.passed)
     failed = len(results) - passed
-    print(f"✅ Passed: {passed}")
-    print(f"❌ Failed: {failed}")
+    print(f"✅ No Difference Found: {passed}")
+    print(f"❌ Differences Found: {failed}")
     print()
 
 

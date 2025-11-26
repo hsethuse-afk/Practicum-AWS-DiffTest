@@ -164,6 +164,19 @@ python run_ab.py \
   --report my_report.html
 ```
 
+### Test from Git Commit
+
+Test modified functions directly from a commit hash:
+
+```bash
+python src/run_commit.py \
+  --repo https://github.com/carpedm20/emoji \
+  --commit 8b317b0e185fddc3dea86a067892a5cbc3b6ad4a \
+  --report test_report.html \
+  --auto-approve \
+  --log v
+```
+
 ### Command-Line Options
 
 | Option | Description |

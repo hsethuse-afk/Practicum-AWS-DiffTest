@@ -208,8 +208,8 @@ def main():
         print(f"Total functions tested: {len(results)}")
         passed = sum(1 for r in results if r.passed)
         failed = len(results) - passed
-        print(f"✅ Passed: {passed}")
-        print(f"❌ Failed: {failed}")
+        print(f"✅ No Difference Found: {passed}")
+        print(f"❌ Differences Found: {failed}")
 
         if args.report:
             print(f"\n📄 Report saved to: {args.report}")
