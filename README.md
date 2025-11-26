@@ -251,9 +251,27 @@ python src/run_human-eval.py --run-all --max-examples 200
 
 **Single test:**
 
-We used the [SWE-bench Verified](https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified) dataset, please refer the instance-id in the datatset.
+We used the [SWE-bench Verified](https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified) dataset, please refer the instance-id in the dataset.
 ```bash
 python src/run_swe-bench.py --instance-id django__django-15916
+```
+
+**Batch mode:**
+
+Process multiple SWE-bench instances from an Excel file. The script will automatically:
+- Generate formatted Excel output with proper column widths
+- Extract and include clickable HTML report URLs
+- Truncate long log entries for better readability
+- Save intermediate results after each instance
+
+```bash
+# Process instances from an Excel file
+python batch_swe_bench.py \
+  --input SWE-bench_verified.xlsx \
+    --sheet pydata_xarray \
+    --output results.xlsx \
+    --max-examples 100 \
+    --log normal
 ```
 
 For detailed benchmark results and methodology, see [docs/benchmarks.md](docs/benchmarks.md).
