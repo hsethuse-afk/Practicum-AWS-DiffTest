@@ -30,10 +30,16 @@ def _save_formatted_excel(df: pd.DataFrame, output_path: str):
     - Applies formatting to headers
     """
     # Truncate log entries to prevent format issues
+    # Keep the LATEST messages (truncate from the beginning) since valuable results are at the end
     if 'log' in df.columns:
         df = df.copy()
+        max_log_length = 5000  # Increased from 1000 to capture more valuable information
         df['log'] = df['log'].apply(
-            lambda x: str(x)[:1000] + '...[truncated]' if pd.notna(x) and len(str(x)) > 1000 else x
+            lambda x: (
+                '...[earlier messages truncated]\n' + str(x)[-max_log_length:]
+                if pd.notna(x) and len(str(x)) > max_log_length
+                else x
+            )
         )
 
     try:

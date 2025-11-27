@@ -151,27 +151,7 @@ The benchmark applies real patches from open-source projects to identify functio
 
 **Test a specific instance:**
 ```bash
-python src/run_swe-bench.py --instance-id django__django-11099 --max-examples 200
-```
-
-**Test specific function by name:**
-```bash
-python src/run_swe-bench.py --instance-id django__django-11099 --func my_function
-```
-
-**Test multiple functions by index:**
-```bash
-python src/run_swe-bench.py --instance-id django__django-11099 --functions 1,2,3
-```
-
-**Non-interactive mode (test all modified functions):**
-```bash
-python src/run_swe-bench.py --instance-id django__django-11099 --no-interactive
-```
-
-**Skip dependency installation:**
-```bash
-python src/run_swe-bench.py --instance-id django__django-11099 --no-install-deps
+python src/run_swe-bench.py --instance-id django__django-11099
 ```
 
 ### Output
@@ -199,19 +179,7 @@ Total functions tested: 5
 
 ## Results and Evaluation
 
-### Evaluation Metrics
-
-Both benchmarks track:
-- **Accuracy**: Percentage of correctly identified differences
-- **False Positives**: Cases where tool reports difference when none exists
-- **False Negatives**: Cases where tool misses actual differences
-- **Timeout Rate**: Percentage of tests that exceed time limits
-
-### Current Results
-
-**TBA** - Results will be added after completing benchmark runs on both datasets.
-
----
+See [Benchmark Results and Analysis](benchmark_results_draft.md) for detailed results, failure analysis, and recommendations for future work.
 
 ## Programmatic Access
 
