@@ -211,10 +211,21 @@ class StrategySerializer:
         kwargs: dict, strategy: Any, cache: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Process keyword args for LazyStrategy. Returns config or _chained_method."""
-        # Check if any kwargs contain callables
-        has_callables = any(
-            callable(v) and not hasattr(v, "do_draw") for v in kwargs.values()
-        )
+        # Check if any kwargs contain user-provided callables (lambdas, functions)
+        # Exclude: classes, types, and built-in callables
+        def is_user_callable(v):
+            if not callable(v):
+                return False
+            if hasattr(v, "do_draw"):  # It's a strategy
+                return False
+            if inspect.isclass(v):  # It's a class/type
+                return False
+            if inspect.isbuiltin(v):  # It's a built-in function
+                return False
+            # Check if it's a lambda or user-defined function
+            return inspect.isfunction(v) or inspect.ismethod(v)
+
+        has_callables = any(is_user_callable(v) for v in kwargs.values())
 
         if has_callables:
             # For strategies with callables (e.g., functions(like=lambda)), use repr
@@ -238,7 +249,8 @@ class StrategySerializer:
                     StrategySerializer._introspect_strategy(s, cache) for s in value
                 ]
             else:
-                config[key] = value
+                # Use _serialize_value to handle types/classes properly
+                config[key] = StrategySerializer._serialize_value(value, cache)
 
         return config
 
@@ -376,9 +388,9 @@ class StrategySerializer:
                 # Handle tuples (convert to list for JSON)
                 elif isinstance(value, tuple):
                     config[attr] = list(value)
-                # Handle regular values
+                # Handle regular values (use _serialize_value to handle types)
                 else:
-                    config[attr] = value
+                    config[attr] = StrategySerializer._serialize_value(value, cache)
 
         return config
 
@@ -625,6 +637,13 @@ class StrategySerializer:
                 "sampled_from",
             ):
                 args.append(value)
+            # Handle type parameters that need to be resolved from strings
+            elif key == "dict_class" and strategy_type == "dictionaries":
+                # Resolve dict_class string back to actual type
+                if isinstance(value, str):
+                    kwargs[key] = self._resolve_type(value, eval_env)
+                else:
+                    kwargs[key] = value
             else:
                 # Primitive value as keyword arg
                 kwargs[key] = value

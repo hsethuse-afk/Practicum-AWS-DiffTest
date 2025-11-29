@@ -6,6 +6,10 @@ if TYPE_CHECKING:
     import taskmanager
     import numpy.dtypes
     import taskmanager
+    import numpy.dtypes
+    import taskmanager
+    import numpy.dtypes
+    import taskmanager
 from typing import Any, Self
 import numpy as np
 from .task import Task

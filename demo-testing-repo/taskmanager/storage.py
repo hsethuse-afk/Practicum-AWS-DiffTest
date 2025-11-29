@@ -1,11 +1,10 @@
-from typing import Self
 import json
 import os
 from datetime import datetime
 
 
 class Storage:
-    def __init__(self: Self, filepath: str="tasks.json") -> None:
+    def __init__(self, filepath="tasks.json"):
         self.filepath = filepath
 
     def save_tasks(self, tasks):
