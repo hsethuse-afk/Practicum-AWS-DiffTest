@@ -25,7 +25,20 @@ class RightTyperEngine(TypeInferenceEngine):
     - RightTyper installed: pip install git+https://github.com/GrammaTech/righttyper.git
     """
 
-    def needs_inference(self, func: Callable, test_file: Optional[str] = None) -> bool:
+    def __init__(self):
+        """
+        Initialize RightTyper engine.
+
+        By default, RightTyper will:
+        - Use --all-files flag to analyze all imported modules
+        - Use --include-files to include only .py files in the project directory
+          (excludes Python standard library and site-packages)
+        """
+        super().__init__()  # Initialize logger from base class
+
+    def needs_inference(
+        self, func: Callable, test_file: Optional[str] = None
+    ) -> bool:
         """
         Check if a function needs RightTyper inference.
 
@@ -80,13 +93,26 @@ class RightTyperEngine(TypeInferenceEngine):
             test_dir = os.path.dirname(os.path.abspath(test_file))
             test_filename = os.path.basename(test_file)
 
+            # Get parent directory name to create a pattern that matches only local files
+            # This prevents matching Python's standard library files
+            parent_dir = os.path.basename(os.path.dirname(test_dir))
+            if parent_dir:
+                # Pattern to match files in parent directory only (e.g., "^demo-testing-repo/.*\.py$")
+                include_pattern = f".*/{parent_dir}/.*\\.py$"
+            else:
+                # Fallback: match relative paths starting with ./ or direct filenames
+                include_pattern = r"^(\./|\.\./|[^/]+\.py$)"
+
             cmd = [
                 sys.executable,
                 "-m",
                 "righttyper",
+                "--all-files",  # Analyze all imported modules
+                "--include-files",
+                include_pattern,  # Include only local project .py files
                 test_filename,
-                "--overwrite",      # Modify source files
-                "--output-files",   # Required with --overwrite
+                "--overwrite",  # Modify source files
+                "--output-files",  # Required with --overwrite
             ]
 
             self.log.debug(

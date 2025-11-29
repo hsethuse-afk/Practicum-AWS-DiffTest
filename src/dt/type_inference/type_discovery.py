@@ -223,8 +223,13 @@ class TypeDiscoverer:
         """
         Resolve a string annotation to an actual type object.
 
-        For complex generics that can't be resolved (e.g., "np.ndarray[Any, DType]"),
-        extracts the base type ("np.ndarray") and resolves it using module globals.
+        Resolution strategies (in order):
+        1. Check if it's a basic type (int, str, float, etc.)
+        2. Extract base type from generics (e.g., "List[int]" -> "List")
+        3. Try to resolve using module globals (handles aliases like "np" -> numpy)
+        4. Try to resolve using sys.modules for fully qualified names
+           (handles TYPE_CHECKING imports like "taskmanager.SortConfig")
+        5. Fallback to Any if all resolution attempts fail
 
         Args:
             annotation: The annotation (could be string or already a type)
@@ -284,8 +289,29 @@ class TypeDiscoverer:
                     return obj
             except Exception as e:
                 self.log.debug(
-                    f"[TypeDiscoverer] Could not resolve '{annotation}': {e}"
+                    f"[TypeDiscoverer] Could not resolve '{annotation}' via module globals: {e}"
                 )
+
+        # Try to resolve using sys.modules for fully qualified names
+        # This handles TYPE_CHECKING imports like "taskmanager.SortConfig"
+        import sys
+        try:
+            parts = annotation.split(".")
+            # Try to get the module from sys.modules
+            if parts[0] in sys.modules:
+                obj = sys.modules[parts[0]]
+                # Traverse the rest of the path
+                for part in parts[1:]:
+                    obj = getattr(obj, part)
+
+                self.log.verbose(
+                    f"[TypeDiscoverer] Resolved '{annotation}' via sys.modules to {obj}"
+                )
+                return obj
+        except Exception as e:
+            self.log.debug(
+                f"[TypeDiscoverer] Could not resolve '{annotation}' via sys.modules: {e}"
+            )
 
         # Could not resolve - return Any
         self.log.verbose(

@@ -1,0 +1,11 @@
+/home/toris/practicum/Practicum-AWS-DiffTest/demo-testing-repo/taskmanager/manager.py:
+======================================================================================
+
+TaskManager.analyze_task_metrics
+
+  def analyze_task_metrics(
+-     self, metrics_array, weights=None, config=None, exclusions=None
+- ):
++     self: Self, metrics_array: "np.ndarray[Any, numpy.dtypes.Float64DType]", weights: None=None, config: None=None, exclusions: dict[str, list[int]]=None
++ ) -> "np.ndarray[Any, numpy.dtypes.Int64DType]":
+
