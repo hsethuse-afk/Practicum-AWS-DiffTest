@@ -120,6 +120,7 @@ class Orchestrator:
             )
 
         # Step 3: Run type inference if needed
+        # Check fn_a (BEFORE version) since it's the stable version with working tests
         if test_file and self.inference_engine.needs_inference(
             fn_a, test_file
         ):
@@ -140,6 +141,8 @@ class Orchestrator:
                     fn_a, fn_b = result_a, result_b
 
         # Step 4: Discover parameter types from (possibly updated) function
+        # Use fn_a (BEFORE version) since that's where type inference was applied
+        # The BEFORE version is more stable and likely has working tests
         param_types = self.type_discoverer.discover_param_types(fn_a)
         self.log.verbose(
             f"[Orchestrator] Discovered method/function parameter types: {param_types}"
@@ -156,6 +159,7 @@ class Orchestrator:
             )
 
         # Step 5: Generate new strategy from discovered types
+        # Use fn_a and cls_a since those have the inferred types from BEFORE version
         plan = self.strategy.create_strategy(
             fn_a,
             param_types=param_types,
@@ -677,13 +681,15 @@ class Orchestrator:
         """
         Run differential testing directly from a commit in a remote repository.
 
-        This is simpler than run_diff_with_repo - just provide repo URL and commit!
-        It will:
-        1. Clone the repository
-        2. Install dependencies
+        This creates two complete project directories (before and after the commit),
+        preserving the full project structure for accurate differential testing.
+
+        Workflow:
+        1. Clone repository twice (before and after versions)
+        2. Install dependencies in both versions
         3. Extract diff from the commit
         4. Parse the diff to find modified functions
-        5. Run differential tests with full type inference support
+        5. Run differential tests using actual files from both project directories
 
         Args:
             repo_url: Repository URL to clone (e.g., "https://github.com/user/repo.git")
@@ -702,26 +708,40 @@ class Orchestrator:
         """
         import os
         import subprocess
+        import tempfile
 
-        # Build project environment
+        # Build BOTH project environments (before and after)
         self.log.verbose(
-            f"[Orchestrator] Building project from {repo_url}"
+            f"[Orchestrator] Building project pair from {repo_url}"
         )
-        env = self.project_builder.build_from_url(
+        self.log.normal(
+            "\n📦 Setting up two project environments (BEFORE and AFTER)..."
+        )
+
+        before_env, after_env = self.project_builder.build_commit_pair(
             repo_url, commit, install_deps=install_deps
         )
 
         try:
             self.log.verbose(
-                f"[Orchestrator] Project cloned to: {env.project_root}"
+                f"[Orchestrator] BEFORE project: {before_env.project_root}"
+            )
+            self.log.verbose(
+                f"[Orchestrator] AFTER project: {after_env.project_root}"
+            )
+            self.log.normal(
+                f"\n✅ Both project environments ready!\n"
+                f"   BEFORE: {before_env.project_root}\n"
+                f"   AFTER:  {after_env.project_root}\n"
             )
 
-            # Find test file if exists (for type inference)
-            test_file = self._find_test_file(env.project_root)
+            # Find test file in BEFORE version (for type inference)
+            # Use BEFORE since it's the stable version with working tests
+            test_file = self._find_test_file(before_env.project_root)
 
-            # Change to project root for git commands
+            # Change to after project root for git commands
             original_cwd = os.getcwd()
-            os.chdir(env.project_root)
+            os.chdir(after_env.project_root)
 
             try:
                 # Get diff from commit
@@ -735,8 +755,6 @@ class Orchestrator:
                 diff_content = result.stdout
 
                 # Save diff to temporary file for parsing
-                import tempfile
-
                 with tempfile.NamedTemporaryFile(
                     mode="w", suffix=".diff", delete=False
                 ) as tmp:
@@ -744,24 +762,24 @@ class Orchestrator:
                     tmp_diff_path = tmp.name
 
                 try:
-                    # Parse diff to find modified functions
+                    # Parse diff to find modified functions using the new method
                     pairer = DiffPairer()
                     self.log.verbose(
-                        f"[Orchestrator] Parsing diff from commit"
+                        f"[Orchestrator] Parsing diff to find modified functions"
                     )
 
-                    # Get pairs for testing and extract info about all modified functions
-                    pairs = pairer.pair_from_diff_file(
-                        tmp_diff_path,
-                        func_name,
-                        commit,
-                        project_root=env.project_root,
+                    # Use the NEW pair_from_commit_dirs method that works with two directories
+                    pairs = pairer.pair_from_commit_dirs(
+                        before_project_root=before_env.project_root,
+                        after_project_root=after_env.project_root,
+                        diff_file_path=tmp_diff_path,
+                        func_name=func_name,
                     )
 
                     # Also get ALL modified functions (including class methods) for reporting
                     all_modified = (
                         pairer.git_parser.parse_diff_from_file(
-                            tmp_diff_path, commit
+                            tmp_diff_path
                         )
                     )
 
@@ -823,13 +841,15 @@ class Orchestrator:
                     f"[Orchestrator] Testing {len(selected_pairs)} selected function(s)"
                 )
 
-                # Update harness with venv_path if available
-                if env.venv_path:
+                # Update harness with venv_path from BEFORE version
+                # We use BEFORE version for type inference since it has stable tests
+                # For differential testing, we'll need both environments
+                if before_env.venv_path:
                     self.log.verbose(
-                        f"[Orchestrator] Using virtual environment: {env.venv_path}"
+                        f"[Orchestrator] Using virtual environment for type inference: {before_env.venv_path}"
                     )
                     self.harness = HarnessBuilder(
-                        venv_path=env.venv_path
+                        venv_path=before_env.venv_path
                     )
 
                 # Run tests on each pair
@@ -878,7 +898,9 @@ class Orchestrator:
                 os.chdir(original_cwd)
 
         finally:
-            env.cleanup()
+            # Cleanup both environments
+            before_env.cleanup()
+            after_env.cleanup()
 
     def _find_test_file(self, project_root: str) -> str:
         """

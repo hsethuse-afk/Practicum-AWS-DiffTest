@@ -160,3 +160,68 @@ class DiffPairer:
             pairs.append((target, temp_files.cleanup))
 
         return pairs
+
+    def pair_from_commit_dirs(
+        self,
+        before_project_root: str,
+        after_project_root: str,
+        diff_file_path: str,
+        func_name: Optional[str] = None,
+    ) -> List[Tuple[TargetPair, callable]]:
+        """
+        Create pairs from two complete project directories (before and after).
+
+        This is the preferred method for differential testing as it preserves
+        the full project structure and all dependencies in both versions.
+
+        Args:
+            before_project_root: Root directory of the project BEFORE changes
+            after_project_root: Root directory of the project AFTER changes
+            diff_file_path: Path to diff file showing the changes
+            func_name: Optional filter for specific function name
+
+        Returns:
+            List of (TargetPair, cleanup_function) tuples
+        """
+        import os
+
+        # Parse diff to find modified functions
+        modified_funcs = self.git_parser.parse_diff_from_file(diff_file_path)
+
+        # Filter by function name if specified
+        if func_name:
+            modified_funcs = [
+                f for f in modified_funcs
+                if f.function_name == func_name
+            ]
+
+        # Create target pairs pointing to actual files in each project directory
+        pairs = []
+        for mod_func in modified_funcs:
+            # Build paths to the actual files in before/after directories
+            file_a = os.path.join(before_project_root, mod_func.file_path)
+            file_b = os.path.join(after_project_root, mod_func.file_path)
+
+            # Verify files exist
+            if not os.path.exists(file_a):
+                raise FileNotFoundError(
+                    f"Before file not found: {file_a}"
+                )
+            if not os.path.exists(file_b):
+                raise FileNotFoundError(
+                    f"After file not found: {file_b}"
+                )
+
+            target = TargetPair(
+                file_a=file_a,
+                file_b=file_b,
+                func_name=mod_func.function_name,
+                class_name=mod_func.class_name,
+                is_class_method=mod_func.is_class_method,
+            )
+
+            # No temp files to cleanup since we're using actual project files
+            no_cleanup = lambda: None
+            pairs.append((target, no_cleanup))
+
+        return pairs

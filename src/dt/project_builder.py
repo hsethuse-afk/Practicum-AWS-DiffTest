@@ -11,7 +11,7 @@ import os
 import shutil
 import subprocess
 import tempfile
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 from dataclasses import dataclass
 from .logger import get_logger
 
@@ -540,3 +540,180 @@ class ProjectBuilder:
             return match.group(1)
 
         return None
+
+    def build_commit_pair(
+        self,
+        repo_url: str,
+        commit: str,
+        install_deps: bool = True,
+    ) -> Tuple["ProjectEnvironment", "ProjectEnvironment"]:
+        """
+        Clone a repository twice: once for before and once for after the commit.
+
+        This creates two complete project directories, preserving the full
+        project structure for both versions. This is essential for differential
+        testing as it maintains all imports and dependencies.
+
+        Args:
+            repo_url: Git repository URL
+            commit: Commit hash to test (will test commit^ vs commit)
+            install_deps: Whether to install dependencies in both environments
+
+        Returns:
+            Tuple of (before_env, after_env) ProjectEnvironment objects
+        """
+        import subprocess
+
+        # Create temporary directory in project root
+        project_base = os.path.join(
+            os.path.dirname(__file__), "..", ".."
+        )
+        project_base = os.path.abspath(project_base)
+        temp_parent = os.path.join(project_base, ".difftest_temp")
+        os.makedirs(temp_parent, exist_ok=True)
+
+        # Create base temp directory for this commit pair
+        pair_temp_dir = tempfile.mkdtemp(
+            prefix="difftest_pair_", dir=temp_parent
+        )
+
+        before_dir = os.path.join(pair_temp_dir, "before")
+        after_dir = os.path.join(pair_temp_dir, "after")
+
+        try:
+            # Clone for BEFORE version (parent commit)
+            self.log.verbose(
+                f"[ProjectBuilder] Cloning BEFORE version to {before_dir}"
+            )
+            self.log.normal(
+                f"   🔄 Cloning repository for BEFORE state (commit^ = {commit}^)..."
+            )
+            subprocess.run(
+                ["git", "clone", repo_url, before_dir],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            # Checkout parent commit (before the change)
+            parent_commit = f"{commit}^"
+            self.log.normal(
+                f"   🔄 Checking out parent commit {commit[:8]}^..."
+            )
+            subprocess.run(
+                ["git", "checkout", parent_commit],
+                cwd=before_dir,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            # Get actual parent commit hash
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=before_dir,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            before_commit_hash = result.stdout.strip()
+            self.log.normal(f"   ✓ BEFORE version ready at {before_commit_hash[:8]}")
+
+            # Clone for AFTER version (target commit)
+            self.log.verbose(
+                f"[ProjectBuilder] Cloning AFTER version to {after_dir}"
+            )
+            self.log.normal(
+                f"   🔄 Cloning repository for AFTER state (commit = {commit[:8]})..."
+            )
+            subprocess.run(
+                ["git", "clone", repo_url, after_dir],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            # Checkout target commit (after the change)
+            self.log.normal(
+                f"   🔄 Checking out target commit {commit[:8]}..."
+            )
+            subprocess.run(
+                ["git", "checkout", commit],
+                cwd=after_dir,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            # Get actual commit hash
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=after_dir,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            after_commit_hash = result.stdout.strip()
+            self.log.normal(f"   ✓ AFTER version ready at {after_commit_hash[:8]}")
+
+            # Install dependencies if requested
+            before_venv_path = None
+            after_venv_path = None
+
+            if install_deps:
+                self.log.normal(
+                    f"   🔄 Installing dependencies for BEFORE version..."
+                )
+                before_venv_path = self._install_dependencies(before_dir)
+                self.log.normal(
+                    f"   ✓ BEFORE dependencies installed"
+                )
+
+                self.log.normal(
+                    f"   🔄 Installing dependencies for AFTER version..."
+                )
+                after_venv_path = self._install_dependencies(after_dir)
+                self.log.normal(
+                    f"   ✓ AFTER dependencies installed"
+                )
+
+            # Cleanup function for both directories
+            def cleanup():
+                self.log.debug(
+                    f"[ProjectBuilder] Keeping project directories for inspection: {pair_temp_dir}"
+                )
+                # Uncomment below to enable auto-cleanup:
+                # try:
+                #     shutil.rmtree(pair_temp_dir)
+                #     self.log.debug(
+                #         f"[ProjectBuilder] Cleaned up project directories: {pair_temp_dir}"
+                #     )
+                # except Exception as e:
+                #     self.log.debug(
+                #         f"[ProjectBuilder] Failed to cleanup: {e}"
+                #     )
+
+            before_env = ProjectEnvironment(
+                project_root=before_dir,
+                repo_url=repo_url,
+                commit=before_commit_hash,
+                venv_path=before_venv_path,
+                cleanup=cleanup,
+            )
+
+            after_env = ProjectEnvironment(
+                project_root=after_dir,
+                repo_url=repo_url,
+                commit=after_commit_hash,
+                venv_path=after_venv_path,
+                cleanup=lambda: None,  # Cleanup is handled by before_env
+            )
+
+            return before_env, after_env
+
+        except Exception as e:
+            # Cleanup on error
+            shutil.rmtree(pair_temp_dir, ignore_errors=True)
+            raise RuntimeError(
+                f"Failed to build commit pair from {repo_url}: {e}"
+            )
